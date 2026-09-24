@@ -192,7 +192,7 @@ async function loadScene(url) {
 
   if (data.extra && data.extra.paths) {
     const palette = [0xe0a84a, 0x7fb3d5, 0xc8553d, 0x9ccc65, 0xf2e394, 0xba68c8, 0x4db6ac, 0xff8a65];
-    data.extra.paths.forEach((path, i) => {
+    (Array.isArray(data.extra.paths) ? data.extra.paths : []).forEach((path, i) => {
       const pts = path.points.map(([x, z]) => new THREE.Vector3(x, 1.2, z));
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: palette[i % palette.length], linewidth: 3, depthTest: false }));
@@ -201,7 +201,7 @@ async function loadScene(url) {
     });
     overlay.visible = false;
   }
-  addFigures(data.extra && data.extra.figures);
+  addFigures(data.extra && Array.isArray(data.extra.figures) ? data.extra.figures : []);
   return count;
 }
 

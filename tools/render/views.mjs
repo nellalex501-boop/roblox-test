@@ -25,4 +25,22 @@ export const VIEW_SETS = {
     { name: "social", label: "SOCIAL AREA — CANTEEN COURTYARD", eye: [-6, 11, 64], target: [-6, 4, 120], fov: 72 },
     { name: "theater-map", label: "CENTRAL THEATRE MAP", eye: [0, 16, 18], target: [0, 1, -6], fov: 70 },
   ],
+  closeup: [
+    { name: "bikes", label: "BICYCLES AT THE CANTEEN", eye: [-26, 4, 103], target: [-17, 1.5, 109], fov: 60 },
+    { name: "desk", label: "WATCH DESK", eye: [-4, 7, -118], target: [-4, 3.5, -124], fov: 60 },
+  ],
+  phase4: [
+    { name: "courtyard", label: "CANTEEN COURTYARD — DETAILING", eye: [-6, 12, 72], target: [-6, 3, 100], fov: 72 },
+    { name: "canteen", label: "CANTEEN — INTERIOR", eye: [-6, 8, 114], target: [-6, 3, 134], fov: 72 },
+    { name: "parking", label: "STAFF PARKING", eye: [30, 14, 66], target: [55, 2, 100], fov: 70 },
+    { name: "helipad", label: "HELIPAD", eye: [96, 14, 54], target: [118, 3, 29], fov: 70 },
+    { name: "motorpool", label: "MOTOR POOL (VEHICLE SHED)", eye: [0, 11, -137], target: [-12, 4, -158], fov: 72 },
+    { name: "gate", label: "MAIN GATE CHECKPOINT", eye: [168, 11, -38], target: [196, 3, -62], fov: 70 },
+    { name: "ops-desks", label: "OPERATIONS CENTER — WATCH DESKS", eye: [0, 10, -104], target: [0, 5, -134], fov: 72 },
+    { name: "briefing", label: "OPERATIONS CENTER — BRIEFING ROOM", eye: [37, 9, -108], target: [46, 4, -126], fov: 72 },
+    { name: "signals", label: "OPERATIONS CENTER — SIGNALS ROOM", eye: [-37, 9, -76], target: [-46, 4, -100], fov: 72 },
+    { name: "garage-workshop", label: "GARAGE — WORKSHOP SIDE", eye: [-92, 10, -30], target: [-112, 3, -42], fov: 72 },
+    { name: "plaza-edge", label: "PARADE SQUARE — BENCHES AND LAMPS", eye: [-36, 8, -22], target: [-64, 2, -6], fov: 70 },
+    { name: "street", label: "SOUTH ROAD — STREET LAMPS", eye: [96, 7, 58], target: [140, 6, 66], fov: 70 },
+  ],
 };

@@ -19,7 +19,8 @@ local function hsv(color)
 end
 
 return function(test)
-	local runtime, root = WorldChecks.build("Full")
+	-- architecture only; the detailed world is covered by 06_detailing
+	local runtime, root = WorldChecks.build("Full", { details = false })
 	local cfg = WorldChecks.config(runtime)
 	local Layout = cfg.Layout
 	local stats

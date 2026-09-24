@@ -9,6 +9,7 @@
 
 local World = script.Parent
 local Blockout = require(World.Blockout)
+local Details = require(World.Details)
 local Ground = require(World.Ground)
 local Kit = require(World.Kit)
 local LightingSetup = require(World.LightingSetup)
@@ -39,13 +40,14 @@ export type Options = {
 	Mode: Mode?,
 	Parent: Instance?,
 	SkipLighting: boolean?,
+	SkipDetails: boolean?, -- Full mode without the Phase 4 detailing pass
 	Now: number?, -- unix time used to pick the active event (default os.time())
 }
 
 local Builder = {}
 
 Builder.RootName = "ColdWarLobby"
-Builder.Version = 3
+Builder.Version = 4
 
 local ZONE_BUILDERS: { [string]: (Instance) -> (Model, CFrame) } = {
 	OperationsCenter = OperationsCenter.build,
@@ -68,7 +70,7 @@ local STATION_BUILDERS: { [string]: (Instance, CFrame, number) -> () } = {
 	MissionBoard = MissionBoardStations.build,
 }
 
-local function buildFull(root: Model, now: number)
+local function buildFull(root: Model, now: number, details: boolean)
 	Ground.build(root, true)
 	Ground.markings(root)
 	Plaza.build(root)
@@ -82,6 +84,9 @@ local function buildFull(root: Model, now: number)
 	end
 	PlazaStations.build(root)
 	Perimeter.build(root)
+	if details then
+		Details.build(root)
+	end
 end
 
 function Builder.Build(options: Options?): Model
@@ -104,7 +109,7 @@ function Builder.Build(options: Options?): Model
 		Ground.build(root, false)
 		Blockout.build(root)
 	else
-		buildFull(root, opts.Now or os.time())
+		buildFull(root, opts.Now or os.time(), not opts.SkipDetails)
 		if not opts.SkipLighting then
 			LightingSetup.apply()
 		end

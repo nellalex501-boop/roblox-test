@@ -16,10 +16,12 @@ local Vector3 = roblox.Vector3
 
 local WorldChecks = {}
 
-function WorldChecks.build(mode: string)
+-- options.details = false builds Full mode without the Phase 4 detailing.
+function WorldChecks.build(mode: string, options)
+	options = options or {}
 	local runtime = Runtime.new({ place = "build/lobby.rbxl", context = "server" })
 	local Builder = runtime:requirePath("ServerScriptService.LobbyServer.World.Builder")
-	local root = Builder.Build({ Mode = mode, Parent = runtime.workspace })
+	local root = Builder.Build({ Mode = mode, Parent = runtime.workspace, SkipDetails = options.details == false })
 	return runtime, root
 end
 

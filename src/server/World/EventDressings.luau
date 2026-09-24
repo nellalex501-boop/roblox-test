@@ -5,6 +5,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Effects = require(script.Parent.Effects)
 local Kit = require(script.Parent.Kit)
 local Nature = require(script.Parent.Nature)
 local Theme = require(ReplicatedStorage.Lobby.Config.Theme)
@@ -114,6 +115,15 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 		}
 	)
 	Kit.anchor(brazier, "Fire", "FireBarrel")
+	local flameBase = Kit.part(
+		dressing,
+		Vector3.new(1.4, 0.4, 1.4),
+		frame * CFrame.new(-6, 3, -26),
+		W.Charcoal,
+		nil,
+		{ Name = "FlameBase", Transparency = 1, Decor = true }
+	)
+	Effects.fire(flameBase, 2.4)
 	-- tyre tracks through the snow toward the display pad
 	for i = 0, 5 do
 		for _, dx in { -2.6, 2.6 } do
