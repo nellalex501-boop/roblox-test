@@ -382,13 +382,19 @@ function Architecture.guiArrow(parent: Instance, position: UDim2, size: number, 
 	shaft.Position = UDim2.fromScale(0.05, 0.5)
 	shaft.Size = UDim2.fromScale(0.6, 0.2)
 	shaft.Parent = holder
+	-- GUI rotation pivots on the element centre, so place each barb's centre
+	-- half a barb-length back from the tip along its own direction.
+	local tip = Vector2.new(0.95, 0.5)
+	local length, thickness = 0.46, 0.18
 	for _, sign in { -1, 1 } do
+		local a = math.rad(180 + sign * 40)
+		local centre = tip + Vector2.new(math.cos(a), math.sin(a)) * (length / 2)
 		local barb = Instance.new("Frame")
 		barb.BorderSizePixel = 0
 		barb.BackgroundColor3 = color
-		barb.AnchorPoint = Vector2.new(1, 0.5)
-		barb.Position = UDim2.fromScale(0.95, 0.5 + sign * 0.14)
-		barb.Size = UDim2.fromScale(0.5, 0.18)
+		barb.AnchorPoint = Vector2.new(0.5, 0.5)
+		barb.Position = UDim2.fromScale(centre.X, centre.Y)
+		barb.Size = UDim2.fromScale(length, thickness)
 		barb.Rotation = sign * 40
 		barb.Parent = holder
 	end
@@ -483,8 +489,16 @@ local function square(parent: Instance, scale: number): Frame
 	return f
 end
 
--- Ring with `rays` rays radiating from the flag centre (compass/star).
-local function emblem(canvas: Frame, color: Color3, rays: number, rayLength: number)
+local function diamond(canvas: Frame, color: Color3, scale: number)
+	local d = square(canvas, scale)
+	d.Rotation = 45
+	d.BackgroundTransparency = 0
+	d.BackgroundColor3 = color
+	d.BorderSizePixel = 0
+end
+
+-- NATO-style compass: ring with four points.
+local function compass(canvas: Frame, color: Color3)
 	local ring = square(canvas, 0.42)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0.5, 0)
@@ -493,18 +507,31 @@ local function emblem(canvas: Frame, color: Color3, rays: number, rayLength: num
 	stroke.Color = color
 	stroke.Thickness = 5
 	stroke.Parent = ring
-	for i = 0, rays - 1 do
-		-- GUI rotation pivots on an element's centre, so rotate a centred
-		-- square holder and put the ray in its upper half.
+	for _, angle in { 0, 90 } do
 		local holder = square(canvas, 0.95)
-		holder.Rotation = i * 360 / rays
-		local ray = Instance.new("Frame")
-		ray.BorderSizePixel = 0
-		ray.BackgroundColor3 = color
-		ray.AnchorPoint = Vector2.new(0.5, 1)
-		ray.Position = UDim2.fromScale(0.5, 0.5)
-		ray.Size = UDim2.fromScale(0.07, rayLength)
-		ray.Parent = holder
+		holder.Rotation = angle
+		local bar = Instance.new("Frame")
+		bar.BorderSizePixel = 0
+		bar.BackgroundColor3 = color
+		bar.AnchorPoint = Vector2.new(0.5, 0.5)
+		bar.Position = UDim2.fromScale(0.5, 0.5)
+		bar.Size = UDim2.fromScale(0.07, 0.9)
+		bar.Parent = holder
+	end
+end
+
+-- Military chevron (two bars meeting in a point).
+local function chevron(canvas: Frame, color: Color3)
+	for _, sign in { -1, 1 } do
+		local holder = square(canvas, 0.7)
+		local bar = Instance.new("Frame")
+		bar.BorderSizePixel = 0
+		bar.BackgroundColor3 = color
+		bar.AnchorPoint = Vector2.new(0.5, 0.5)
+		bar.Position = UDim2.fromScale(0.5 + sign * 0.2, 0.5)
+		bar.Size = UDim2.fromScale(0.5, 0.16)
+		bar.Rotation = sign * 35
+		bar.Parent = holder
 	end
 end
 
@@ -512,13 +539,15 @@ Architecture.Flags = {
 	Nato = {
 		Field = Color3.fromRGB(34, 52, 94),
 		Draw = function(canvas: Frame)
-			emblem(canvas, Color3.fromRGB(230, 230, 222), 4, 0.42)
+			compass(canvas, Color3.fromRGB(230, 230, 222))
 		end,
 	},
 	Pact = {
 		Field = Color3.fromRGB(138, 42, 36),
 		Draw = function(canvas: Frame)
-			emblem(canvas, Color3.fromRGB(214, 170, 72), 5, 0.36)
+			band(canvas, 0.08, 0.07, Color3.fromRGB(214, 170, 72))
+			band(canvas, 0.85, 0.07, Color3.fromRGB(214, 170, 72))
+			diamond(canvas, Color3.fromRGB(214, 170, 72), 0.3)
 		end,
 	},
 	WestGermany = {
@@ -531,9 +560,9 @@ Architecture.Flags = {
 	Base = {
 		Field = Color3.fromRGB(78, 88, 54),
 		Draw = function(canvas: Frame)
-			band(canvas, 0.12, 0.08, Color3.fromRGB(206, 196, 160))
-			band(canvas, 0.8, 0.08, Color3.fromRGB(206, 196, 160))
-			emblem(canvas, Color3.fromRGB(206, 196, 160), 8, 0.3)
+			band(canvas, 0.1, 0.07, Color3.fromRGB(206, 196, 160))
+			band(canvas, 0.83, 0.07, Color3.fromRGB(206, 196, 160))
+			chevron(canvas, Color3.fromRGB(206, 196, 160))
 		end,
 	},
 	Regiment = {

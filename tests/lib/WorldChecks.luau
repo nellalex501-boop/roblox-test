@@ -8,6 +8,7 @@ local fs = require("@lune/fs")
 local roblox = require("@lune/roblox")
 local serde = require("@lune/serde")
 
+local GuiExport = require("./GuiExport")
 local Nav = require("./Nav")
 local Runtime = require("../harness/Runtime")
 
@@ -266,6 +267,9 @@ function WorldChecks.export(root, path: string, extra)
 	end
 	local payload = { parts = parts, extra = extra }
 	fs.writeFile(path, serde.encode("json", payload))
+	-- SurfaceGui trees for the renderer's texture pass
+	local guiPath = path:gsub("%.json$", "-guis.json")
+	fs.writeFile(guiPath, serde.encode("json", GuiExport.surfaces(root)))
 	return #parts
 end
 

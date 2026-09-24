@@ -1,5 +1,8 @@
 // Renders preview images of an exported lobby scene.
-//   node tools/render/render.mjs build/render/blockout.json docs/previews/blockout [viewSet]
+//   node tools/render/render.mjs <scene.json> <outPrefix> [viewSet]
+// If <scene>-guis.json exists (SurfaceGui trees from tests/lib/GuiExport),
+// every SurfaceGui is first rendered to a PNG with gui.js and mapped onto
+// its part face, so signs, screens and flags show their real content.
 // Uses the globally installed Playwright + the system Chromium.
 import http from "node:http";
 import fs from "node:fs";
@@ -51,7 +54,36 @@ page.on("console", (msg) => { if (msg.type() === "error") console.log("[page]", 
 page.on("pageerror", (err) => console.log("[pageerror]", err.message));
 await page.goto(`http://127.0.0.1:${port}/tools/render/viewer.html?w=${width}&h=${height}`);
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 60000 });
-const sceneUrl = "/" + path.relative(repoRoot, path.resolve(sceneArg));
+// ---- SurfaceGui pass --------------------------------------------------
+const guisFile = path.resolve(sceneArg).replace(/\.json$/, "-guis.json");
+let sceneFile = path.resolve(sceneArg);
+if (fs.existsSync(guisFile)) {
+  const surfaces = JSON.parse(fs.readFileSync(guisFile, "utf8"));
+  const outDir = path.resolve(sceneArg).replace(/\.json$/, "-surfaces");
+  fs.mkdirSync(outDir, { recursive: true });
+  const guiPage = await browser.newPage({ viewport: { width: 1800, height: 1400 } });
+  guiPage.on("pageerror", (err) => console.log("[gui pageerror]", err.message));
+  await guiPage.goto(`http://127.0.0.1:${port}/tools/render/guipage.html`);
+  await guiPage.waitForFunction(() => window.__ready === true, null, { timeout: 60000 });
+  const placed = [];
+  const t2 = Date.now();
+  for (const s of surfaces) {
+    const [pw, ph] = s.px;
+    if (pw < 2 || ph < 2 || pw > 4000 || ph > 4000) continue;
+    await guiPage.setViewportSize({ width: Math.max(pw, 16), height: Math.max(ph, 16) });
+    await guiPage.evaluate(([tree, w, h]) => window.renderInto(tree, w, h), [s.tree, pw, ph]);
+    const file = path.join(outDir, `${s.id}.png`);
+    await guiPage.locator("#stage").screenshot({ path: file, omitBackground: true });
+    placed.push({ image: "/" + path.relative(repoRoot, file), w: s.w, h: s.h, c: s.c, glow: Math.max(0, 1 - s.light) * 0.55 });
+  }
+  await guiPage.close();
+  const scene = JSON.parse(fs.readFileSync(sceneFile, "utf8"));
+  scene.surfaces = placed;
+  sceneFile = sceneFile.replace(/\.json$/, "-with-surfaces.json");
+  fs.writeFileSync(sceneFile, JSON.stringify(scene));
+  console.log(`rendered ${placed.length} SurfaceGuis in ${Date.now() - t2} ms`);
+}
+const sceneUrl = "/" + path.relative(repoRoot, sceneFile);
 const t0 = Date.now();
 const count = await page.evaluate(async (u) => await window.loadScene(u), sceneUrl);
 console.log(`loaded ${count} parts in ${Date.now() - t0} ms`);

@@ -34,7 +34,7 @@ function Garage.build(parent: Instance): (Model, CFrame)
 
 	local halfW, depth = zone.Width / 2, zone.Depth
 	local floorY, eaveY = Garage.FloorY, Garage.EaveY
-	local metal = W.OliveDark
+	local metal = W.Olive
 
 	Kit.box(
 		shell,

@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GUI stage</title>
+<style>
+  @font-face { font-family: 'Oswald'; font-weight: 200 700; src: url('/tools/render/node_modules/@fontsource/oswald/files/oswald-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Oswald'; font-weight: 500; src: url('/tools/render/node_modules/@fontsource/oswald/files/oswald-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Oswald'; font-weight: 600 900; src: url('/tools/render/node_modules/@fontsource/oswald/files/oswald-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Roboto Condensed'; font-weight: 100 450; src: url('/tools/render/node_modules/@fontsource/roboto-condensed/files/roboto-condensed-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Roboto Condensed'; font-weight: 451 900; src: url('/tools/render/node_modules/@fontsource/roboto-condensed/files/roboto-condensed-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Roboto Mono'; font-weight: 100 450; src: url('/tools/render/node_modules/@fontsource/roboto-mono/files/roboto-mono-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Roboto Mono'; font-weight: 451 900; src: url('/tools/render/node_modules/@fontsource/roboto-mono/files/roboto-mono-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Special Elite'; src: url('/tools/render/node_modules/@fontsource/special-elite/files/special-elite-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Permanent Marker'; src: url('/tools/render/node_modules/@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff2') format('woff2'); }
+  html, body { margin: 0; padding: 0; background: transparent; }
+  #stage { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+  import { renderGui } from "/tools/render/gui.js";
+  window.renderInto = (tree, w, h, options) => {
+    renderGui(tree, document.getElementById("stage"), w, h, options || {});
+    return true;
+  };
+  document.fonts.load("20px 'Oswald'").then(() => Promise.all([
+    document.fonts.load("20px 'Roboto Condensed'"), document.fonts.load("20px 'Roboto Mono'"),
+    document.fonts.load("20px 'Special Elite'"), document.fonts.load("20px 'Permanent Marker'"),
+    document.fonts.load("bold 20px 'Oswald'"), document.fonts.load("bold 20px 'Roboto Condensed'"),
+    document.fonts.load("bold 20px 'Roboto Mono'"),
+  ])).then(() => { window.__ready = true; });
+</script>
+</body>
+</html>

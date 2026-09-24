@@ -126,12 +126,12 @@ local function flags(parent: Instance)
 	local center = Layout.Dais.Center
 	local radius = Layout.Dais.Radius + 1.8
 	local plan = {
-		{ Angle = 160, Height = 26, Design = Architecture.Flags.Nato },
-		{ Angle = 134, Height = 29, Design = Architecture.Flags.WestGermany },
-		{ Angle = 106, Height = 33, Design = Architecture.Flags.Base },
-		{ Angle = 74, Height = 33, Design = Architecture.Flags.Base },
-		{ Angle = 46, Height = 29, Design = Architecture.Flags.Regiment },
-		{ Angle = 20, Height = 26, Design = Architecture.Flags.Pact },
+		{ Angle = 164, Height = 26, Design = Architecture.Flags.Nato },
+		{ Angle = 141, Height = 29, Design = Architecture.Flags.WestGermany },
+		{ Angle = 118, Height = 33, Design = Architecture.Flags.Base },
+		{ Angle = 62, Height = 33, Design = Architecture.Flags.Base },
+		{ Angle = 39, Height = 29, Design = Architecture.Flags.Regiment },
+		{ Angle = 16, Height = 26, Design = Architecture.Flags.Pact },
 	}
 	for _, f in plan do
 		local a = math.rad(f.Angle)

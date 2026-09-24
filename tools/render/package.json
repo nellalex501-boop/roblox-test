@@ -4,6 +4,11 @@
   "description": "Approximate three.js previews of the headless-built lobby (not Roblox rendering).",
   "type": "module",
   "dependencies": {
+    "@fontsource/oswald": "^5.3.0",
+    "@fontsource/permanent-marker": "^5.3.0",
+    "@fontsource/roboto-condensed": "^5.3.0",
+    "@fontsource/roboto-mono": "^5.3.0",
+    "@fontsource/special-elite": "^5.3.0",
     "three": "0.160.0"
   },
   "devDependencies": {

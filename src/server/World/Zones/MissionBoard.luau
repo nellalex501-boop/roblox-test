@@ -39,7 +39,7 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 			shell,
 			frame,
 			Vector3.new(x - 0.45, 0.5, -3.95),
-			Vector3.new(x + 0.45, 9.4, -3.05),
+			Vector3.new(x + 0.45, 10.8, -3.05),
 			W.Wood,
 			Enum.Material.Wood,
 			{ Name = "Post" }
@@ -78,7 +78,7 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 		8.6,
 		-5.2,
 		-0.8,
-		9.4,
+		10.8,
 		1.8,
 		0.7,
 		W.Roof,
@@ -89,8 +89,8 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 
 	local header = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, 9.0, -2.7)),
-		Vector2.new(13.8, 1.1),
+		Kit.facingOut(frame, Vector3.new(0, 9.85, -2.7)),
+		Vector2.new(13.8, 1.3),
 		"MISSION BOARD · CURRENT OPERATIONS",
 		{ Background = W.SignGreen, TextColor = W.OffWhite, PixelsPerStud = 40, Depth = 0.2 }
 	)
