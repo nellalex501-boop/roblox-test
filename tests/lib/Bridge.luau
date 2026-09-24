@@ -35,7 +35,7 @@ function Bridge.run(fn, maxSeconds)
 end
 
 local function bootServer(options)
-	local server = Runtime.new({ place = "build/lobby.rbxl", studio = true, epoch = options.epoch })
+	local server = Runtime.new({ place = options.place or "build/lobby.rbxl", studio = true, epoch = options.epoch })
 	server:runScript(server:find("ServerScriptService.LobbyServer"))
 	Scheduler.advance(0.5)
 	return server
@@ -51,15 +51,17 @@ function Bridge.boot(options)
 	server:spawnCharacter(serverPlayer)
 	Scheduler.advance(1)
 	local client = Runtime.new({
-		place = "build/lobby.rbxl",
+		place = options.place or "build/lobby.rbxl",
 		context = "client",
 		touch = options.touch,
 		viewport = options.viewport or Vector2.new(1280, 720),
 		epoch = options.epoch,
 	})
 	-- "replicate" the world, remotes and preview models
-	local Builder = client:requirePath("ServerScriptService.LobbyServer.World.Builder")
-	Builder.Build({ Parent = client.workspace, SkipLighting = true })
+	if not client.workspace:FindFirstChild("ColdWarLobby") then
+		local Builder = client:requirePath("ServerScriptService.LobbyServer.World.Builder")
+		Builder.Build({ Parent = client.workspace, SkipLighting = true })
+	end
 	local lobby = client:find("ReplicatedStorage.Lobby")
 	local remotes = roblox.Instance.new("Folder")
 	remotes.Name = "Remotes"
