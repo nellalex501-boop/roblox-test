@@ -1,0 +1,32 @@
+{
+  "name": "ColdWarLobby",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Lobby": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "LobbyServer": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$properties": {
+        "CameraMaxZoomDistance": 55,
+        "CharacterWalkSpeed": 16
+      },
+      "StarterPlayerScripts": {
+        "LobbyClient": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "ShadowMap"
+      }
+    }
+  }
+}

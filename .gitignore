@@ -1,0 +1,9 @@
+/build/
+/node_modules/
+/tools/render/node_modules/
+/tools/render/out/
+/tools/uipreview/out/
+sourcemap.json
+*.rbxl.lock
+*.rbxlx.lock
+/tests/scratch/

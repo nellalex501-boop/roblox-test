@@ -1,0 +1,2 @@
+--!strict
+-- LobbyClient bootstrap (Phase 1: nothing yet).
