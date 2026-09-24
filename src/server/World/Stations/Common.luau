@@ -36,7 +36,7 @@ end
 -- 1980s CRT monitor standing at `cf` (bottom centre, front facing the
 -- viewer = +Z of cf after facing-out). Returns the screen part.
 function Common.crt(parent: Instance, cf: CFrame, width: number, role: string, color: Color3?): Part
-	local model = Kit.model(parent, "CRT")
+	local model = Kit.model(parent, "CRT_" .. role)
 	local h = width * 0.82
 	local d = width * 0.85
 	Kit.part(
@@ -69,7 +69,6 @@ function Common.crt(parent: Instance, cf: CFrame, width: number, role: string, c
 		{ Name = "Screen", Decor = true }
 	)
 	Kit.anchor(screen, "CrtFlicker")
-	local _ = role
 	return screen
 end
 

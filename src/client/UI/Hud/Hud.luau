@@ -112,12 +112,54 @@ local function child(parent: Instance, name: string): any
 	return parent:FindFirstChild(name)
 end
 
+local lastCredits: number? = nil
+local lastLevel: number? = nil
+
+-- "+150 CR" rising from the credits line when credits go up.
+local function creditFloater(card: Frame, amount: number)
+	local label = child(card, "Credits") :: TextLabel
+	local floater = Kit.text(card, {
+		Name = "CreditGain",
+		Text = ("+%s CR"):format(Format.number(amount)),
+		FontFace = Kit.Fonts.MonoBold,
+		TextSize = Kit.Text.Small,
+		TextColor3 = UI.Accent,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Position = UDim2.new(0, 14, 0, 42),
+		Size = UDim2.new(1, -28, 0, 18),
+	})
+	TweenService:Create(floater, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0, 14, 0, 26),
+		TextTransparency = 1,
+	}):Play()
+	task.delay(1.3, function()
+		floater:Destroy()
+	end)
+	label.TextColor3 = UI.Accent
+	TweenService:Create(label, TweenInfo.new(0.9), { TextColor3 = UI.Text }):Play()
+end
+
 local function updateCard()
 	local card = refs.card
 	local p = State.profile
 	if not card or not p then
 		return
 	end
+	local credits = p.credits or 0
+	local level = p.level or 1
+	if lastCredits and credits > lastCredits then
+		creditFloater(card, credits - lastCredits)
+	end
+	if lastLevel and level > lastLevel then
+		Sound.play("Reward")
+		State.notified:Fire({
+			kind = "Reward",
+			title = "PROMOTED",
+			text = ("LEVEL %d · %s"):format(level, tostring(p.rankName or "")),
+			detail = "NEW TITLES AND INSIGNIA MAY BE AVAILABLE AT COMMAND HQ",
+		})
+	end
+	lastCredits, lastLevel = credits, level
 	child(card, "Rank").Text = p.rankShort or ""
 	child(card, "Name").Text = p.name or ""
 	child(card, "Level").Text = ("LV %d"):format(p.level or 1)

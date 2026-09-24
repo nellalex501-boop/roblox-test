@@ -130,7 +130,7 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 	end
 
 	-- equipment rack with blinking lamps
-	local rack = Kit.part(
+	Kit.part(
 		model,
 		Vector3.new(1.8, 5.4, 1.8),
 		frame * CFrame.new(width / 2 + 1.4, 2.7, -1.8),
@@ -154,7 +154,6 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 		)
 		Kit.anchor(lamp, if i == 2 then "BlinkFast" else "BlinkSlow")
 	end
-	local _ = rack
 
 	-- overhead sign
 	local signW = if big then 14 else 10

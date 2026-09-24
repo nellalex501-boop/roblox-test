@@ -20,6 +20,8 @@ local Vector3 = roblox.Vector3
 local Vector2 = roblox.Vector2
 local CFrame = roblox.CFrame
 local Enum = roblox.Enum
+local UDim = roblox.UDim
+local UDim2 = roblox.UDim2
 
 local Runtime = {}
 Runtime.__index = Runtime
@@ -352,32 +354,109 @@ function TweenInfo.new(time, style, direction, repeatCount, reverses, delayTime)
 	}, TweenInfo)
 end
 
+-- Easing (subset of Enum.EasingStyle) for the emulated tweens.
+local EASE = {
+	Linear = function(t)
+		return t
+	end,
+	Quad = function(t)
+		return t * t
+	end,
+	Cubic = function(t)
+		return t * t * t
+	end,
+	Sine = function(t)
+		return 1 - math.cos(t * math.pi / 2)
+	end,
+	Back = function(t)
+		local s = 1.70158
+		return t * t * ((s + 1) * t - s)
+	end,
+}
+
+local function eased(info, alpha)
+	local style = EASE[info.EasingStyle and info.EasingStyle.Name] or EASE.Quad
+	local direction = info.EasingDirection and info.EasingDirection.Name or "Out"
+	if direction == "In" then
+		return style(alpha)
+	elseif direction == "InOut" then
+		if alpha < 0.5 then
+			return style(alpha * 2) / 2
+		end
+		return 1 - style((1 - alpha) * 2) / 2
+	end
+	return 1 - style(1 - alpha)
+end
+
+local function lerp(a, b, t)
+	local kind = typeof(b)
+	if kind == "number" then
+		return a + (b - a) * t
+	elseif kind == "UDim2" then
+		return UDim2.new(
+			a.X.Scale + (b.X.Scale - a.X.Scale) * t,
+			a.X.Offset + (b.X.Offset - a.X.Offset) * t,
+			a.Y.Scale + (b.Y.Scale - a.Y.Scale) * t,
+			a.Y.Offset + (b.Y.Offset - a.Y.Offset) * t
+		)
+	elseif kind == "UDim" then
+		return UDim.new(a.Scale + (b.Scale - a.Scale) * t, a.Offset + (b.Offset - a.Offset) * t)
+	elseif kind == "Color3" or kind == "Vector3" or kind == "Vector2" or kind == "CFrame" then
+		return a:Lerp(b, t)
+	end
+	return if t >= 1 then b else a
+end
+
+-- Tweens interpolate on the virtual clock (one step per frame) so specs can
+-- observe transitions; Completed fires when the goal is reached.
 local function newTween(instance, info, goals)
 	local tween = { Instance = instance, TweenInfo = info, PlaybackState = Enum.PlaybackState.Begin }
 	tween.Completed = Signal.new("Completed")
-	local playing = false
+	local token = 0
 	function tween:Play()
-		playing = true
+		token += 1
+		local mine = token
 		tween.PlaybackState = Enum.PlaybackState.Playing
-		for key, value in goals do
-			instance[key] = value
+		local starts = {}
+		for key in goals do
+			starts[key] = instance[key]
 		end
-		if info.RepeatCount >= 0 then
-			Scheduler.delay(info.Time + info.DelayTime, function()
-				if playing then
-					playing = false
-					tween.PlaybackState = Enum.PlaybackState.Completed
-					tween.Completed:Fire(Enum.PlaybackState.Completed)
+		local duration = math.max(info.Time or 0, 0)
+		Scheduler.spawn(function()
+			if (info.DelayTime or 0) > 0 then
+				Scheduler.wait(info.DelayTime)
+			end
+			local elapsed = 0
+			while elapsed < duration do
+				if token ~= mine then
+					return
 				end
-			end)
-		end
+				elapsed += Scheduler.wait(Scheduler.frame)
+				local alpha = eased(info, math.clamp(elapsed / duration, 0, 1))
+				for key, goal in goals do
+					pcall(function()
+						instance[key] = lerp(starts[key], goal, alpha)
+					end)
+				end
+			end
+			if token ~= mine then
+				return
+			end
+			for key, goal in goals do
+				pcall(function()
+					instance[key] = goal
+				end)
+			end
+			tween.PlaybackState = Enum.PlaybackState.Completed
+			tween.Completed:Fire(Enum.PlaybackState.Completed)
+		end)
 	end
 	function tween:Cancel()
-		playing = false
+		token += 1
 		tween.PlaybackState = Enum.PlaybackState.Cancelled
 	end
 	function tween:Pause()
-		playing = false
+		token += 1
 		tween.PlaybackState = Enum.PlaybackState.Paused
 	end
 	function tween:Destroy() end
@@ -993,8 +1072,16 @@ local function install()
 	end)
 
 	-- Sound
+	-- IsPlaying is a reflection-DB property without a default in Lune, so
+	-- it is written directly (Instance.new in the runtime globals seeds it).
+	local function setPlaying(sound, playing)
+		extraSet(sound, "IsPlaying", playing)
+		pcall(function()
+			sound.IsPlaying = playing
+		end)
+	end
 	roblox.implementMethod("Sound", "Play", function(self)
-		extraSet(self, "IsPlaying", true)
+		setPlaying(self, true)
 		local rt = runtimeOf(self)
 		if rt then
 			table.insert(rt.soundsPlayed, self.SoundId)
@@ -1002,13 +1089,13 @@ local function install()
 		signalFor(self, "Played"):Fire(self.SoundId)
 	end)
 	roblox.implementMethod("Sound", "Stop", function(self)
-		extraSet(self, "IsPlaying", false)
+		setPlaying(self, false)
 	end)
 	roblox.implementMethod("Sound", "Pause", function(self)
-		extraSet(self, "IsPlaying", false)
+		setPlaying(self, false)
 	end)
 	roblox.implementMethod("Sound", "Resume", function(self)
-		extraSet(self, "IsPlaying", true)
+		setPlaying(self, true)
 	end)
 	roblox.implementMethod("SoundService", "PlayLocalSound", function(self, sound)
 		local rt = runtimeOf(self)
@@ -1263,7 +1350,6 @@ function Runtime:_makeGlobals()
 	end
 	for _, name in
 		{
-			"Instance",
 			"Vector3",
 			"Vector2",
 			"Vector3int16",
@@ -1294,6 +1380,21 @@ function Runtime:_makeGlobals()
 	-- Lune 0.10's CFrame.lookAt mirrors the Z component of the look direction
 	-- (verified in tests/specs/00_harness.spec.luau); use a Roblox-correct one.
 	g.CFrame = setmetatable({ lookAt = Runtime.lookAt }, { __index = roblox.CFrame })
+	-- Instance.new seeds properties Lune cannot default (see Sound).
+	g.Instance = setmetatable({
+		new = function(className, parent)
+			local inst = roblox.Instance.new(className)
+			if className == "Sound" then
+				pcall(function()
+					inst.IsPlaying = false
+				end)
+			end
+			if parent then
+				inst.Parent = parent
+			end
+			return inst
+		end,
+	}, { __index = roblox.Instance })
 	g.TweenInfo = TweenInfo
 	g.Random = Random
 	g.DateTime = {

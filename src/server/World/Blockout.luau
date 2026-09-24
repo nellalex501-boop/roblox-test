@@ -222,15 +222,6 @@ local function interactionPoint(parent: Instance, frame: CFrame, point: Point)
 	Interactions.attach(marker, point.Kind, point.Id, point.Label)
 end
 
--- Places the planned interaction markers for one zone (used by the Full
--- build until the zone's real stations exist).
-function Blockout.placePoints(model: Instance, frame: CFrame, zoneId: string)
-	local points: { Point } = Blockout.Points[zoneId] or {}
-	for _, point in points do
-		interactionPoint(model, frame, point)
-	end
-end
-
 function Blockout.build(root: Instance)
 	local zones = Kit.folder(root, "Zones")
 	for _, zoneId in Layout.ZoneOrder do

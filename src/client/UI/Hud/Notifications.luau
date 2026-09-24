@@ -81,17 +81,26 @@ show = function(payload: { [string]: any })
 	end
 	toastCount += 1
 	local color = KIND_COLORS[payload.kind] or UI.Accent
-	local toast = Kit.frame(container, {
+	-- the list layout positions the holder; the card inside slides + fades
+	local toast = Kit.box(container, {
 		Name = "Toast",
-		BackgroundColor3 = UI.Background,
-		BackgroundTransparency = 0.05,
 		Size = UDim2.fromOffset(330, 74),
 		LayoutOrder = -toastCount,
 	})
-	Kit.stroke(toast, color, 1, 0.2)
-	Kit.corner(toast, 3)
-	Kit.frame(toast, { Name = "Accent", BackgroundColor3 = color, Size = UDim2.new(0, 4, 1, 0) })
-	Kit.text(toast, {
+	local card: CanvasGroup = Kit.new("CanvasGroup", {
+		Name = "Card",
+		BackgroundColor3 = UI.Background,
+		BackgroundTransparency = 0.05,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromOffset(40, 0),
+		GroupTransparency = 1,
+		Parent = toast,
+	})
+	Kit.stroke(card, color, 1, 0.2)
+	Kit.corner(card, 3)
+	Kit.frame(card, { Name = "Accent", BackgroundColor3 = color, Size = UDim2.new(0, 4, 1, 0) })
+	Kit.text(card, {
 		Name = "Title",
 		Text = tostring(payload.title or ""),
 		FontFace = Kit.Fonts.MonoBold,
@@ -100,7 +109,7 @@ show = function(payload: { [string]: any })
 		Position = UDim2.fromOffset(16, 6),
 		Size = UDim2.new(1, -24, 0, 16),
 	})
-	Kit.text(toast, {
+	Kit.text(card, {
 		Name = "Text",
 		Text = tostring(payload.text or ""),
 		FontFace = Kit.Fonts.Header,
@@ -109,7 +118,7 @@ show = function(payload: { [string]: any })
 		Size = UDim2.new(1, -24, 0, 24),
 		TextTruncate = Enum.TextTruncate.AtEnd,
 	})
-	Kit.text(toast, {
+	Kit.text(card, {
 		Name = "Detail",
 		Text = tostring(payload.detail or ""),
 		FontFace = Kit.Fonts.Mono,
@@ -119,6 +128,10 @@ show = function(payload: { [string]: any })
 		Size = UDim2.new(1, -24, 0, 16),
 		TextTruncate = Enum.TextTruncate.AtEnd,
 	})
+	TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.fromOffset(0, 0),
+		GroupTransparency = 0,
+	}):Play()
 	-- keep the stack short
 	local toasts = {}
 	for _, child in container:GetChildren() do
@@ -135,14 +148,10 @@ show = function(payload: { [string]: any })
 	Sound.play(if payload.kind == "Reward" then "Reward" elseif payload.kind == "Mission" then "Paper" else "Confirm")
 	task.delay(Notifications.ToastSeconds, function()
 		if toast.Parent then
-			local t = TweenService:Create(toast, TweenInfo.new(0.4), { BackgroundTransparency = 1 })
-			for _, d in toast:GetDescendants() do
-				if d:IsA("TextLabel") then
-					TweenService:Create(d, TweenInfo.new(0.4), { TextTransparency = 1 }):Play()
-				elseif d:IsA("Frame") then
-					TweenService:Create(d, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
-				end
-			end
+			local t = TweenService:Create(card, TweenInfo.new(0.4), {
+				GroupTransparency = 1,
+				Position = UDim2.fromOffset(24, 0),
+			})
 			t.Completed:Connect(function()
 				toast:Destroy()
 			end)

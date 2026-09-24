@@ -233,6 +233,17 @@ function Kit.button(parent: Instance?, text: string, style: ButtonStyle?, onClic
 			button.BackgroundColor3 = colors.bg
 		end
 	end)
+	-- pressed feedback: a darker shade while held
+	button.MouseButton1Down:Connect(function()
+		if button:GetAttribute("Disabled") ~= true then
+			button.BackgroundColor3 = colors.bg:Lerp(Color3.new(0, 0, 0), 0.25)
+		end
+	end)
+	button.MouseButton1Up:Connect(function()
+		if button:GetAttribute("Disabled") ~= true then
+			button.BackgroundColor3 = colors.hover
+		end
+	end)
 	button.Activated:Connect(function()
 		if button:GetAttribute("Disabled") == true then
 			return

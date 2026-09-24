@@ -46,12 +46,8 @@ function Setup.prepareWorkspace(): { string }
 		end
 	end
 	if #moved > 0 then
-		print(
-			("[Lobby] Moved template %s to ServerStorage.%s"):format(
-				table.concat(moved, ", "),
-				Setup.DisplacedFolderName
-			)
-		)
+		local where = "ServerStorage." .. Setup.DisplacedFolderName
+		print(("[Lobby] Moved template %s to %s"):format(table.concat(moved, ", "), where))
 	end
 	return moved
 end

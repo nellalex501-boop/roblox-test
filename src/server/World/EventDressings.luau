@@ -34,7 +34,7 @@ end
 EventDressings.Winter = function(dressing: Model, frame: CFrame)
 	local rng = Random.new(1941)
 	-- snow cover over the yard: overlapping low patches
-	for i = 1, 14 do
+	for _ = 1, 14 do
 		local x = rng:NextNumber(-34, 34)
 		local z = rng:NextNumber(-52, -4)
 		local cf = frame * CFrame.new(x, 0.24, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0)
@@ -51,7 +51,6 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 			}
 		)
 		patch.CastShadow = false
-		local _ = i
 	end
 	-- snow banks along the fence
 	for _, spec in { { -34, -2, 6 }, { 34, -2, 6 }, { -20, -54, 10 }, { 22, -54, 10 } } do
@@ -84,7 +83,7 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 		end
 	end
 	-- frosted supply crates
-	for i, spec in { { -18, -12, 0 }, { -15.5, -12.5, 0.3 }, { -17, -15, -0.2 }, { 8, -30, 0.1 } } do
+	for _, spec in { { -18, -12, 0 }, { -15.5, -12.5, 0.3 }, { -17, -15, -0.2 }, { 8, -30, 0.1 } } do
 		crate(
 			dressing,
 			frame * CFrame.new(spec[1], 0.2, spec[2]) * CFrame.Angles(0, spec[3], 0),
@@ -92,7 +91,6 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 			W.OliveDark,
 			true
 		)
-		local _ = i
 	end
 	-- whitewashed tent sign
 	Kit.sign(dressing, Kit.facingOut(frame, Vector3.new(-9, 9.8, -34.8)), Vector2.new(8, 1.8), "WINTER WARFARE CELL", {
@@ -102,8 +100,8 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 		Depth = 0.2,
 		MaxDistance = 120,
 	})
-	-- brazier for warmth (fire effect added by the ambient pass)
-	local brazier = Kit.cylinder(
+	-- brazier for warmth: flames + flickering light (client ambient pass)
+	Kit.cylinder(
 		dressing,
 		2.6,
 		2,
@@ -114,7 +112,6 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 			Name = "Brazier",
 		}
 	)
-	Kit.anchor(brazier, "Fire", "FireBarrel")
 	local flameBase = Kit.part(
 		dressing,
 		Vector3.new(1.4, 0.4, 1.4),
@@ -123,6 +120,7 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 		nil,
 		{ Name = "FlameBase", Transparency = 1, Decor = true }
 	)
+	Kit.anchor(flameBase, "Fire", "FireBarrel")
 	Effects.fire(flameBase, 2.4)
 	-- tyre tracks through the snow toward the display pad
 	for i = 0, 5 do

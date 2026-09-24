@@ -1,6 +1,7 @@
 --!strict
 -- LobbyClient bootstrap: waits for the lobby remotes, then starts the
--- client store, the UI (window manager, panels, HUD) and the controllers.
+-- client store, the UI (window manager, panels, HUD), the controllers and
+-- the ambient layer (animation, positional sound, flyby).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -14,6 +15,9 @@ local Notifications = require(script.UI.Hud.Notifications)
 local InteractionController = require(script.Controllers.InteractionController)
 local CameraController = require(script.Controllers.CameraController)
 local MissionBoardView = require(script.Controllers.MissionBoardView)
+local AmbientAnimator = require(script.Ambient.AmbientAnimator)
+local AmbientSound = require(script.Ambient.AmbientSound)
+local Flyby = require(script.Ambient.Flyby)
 
 local Panels = script.UI.Panels
 local PANELS: { [string]: WindowManager.Panel } = {
@@ -37,3 +41,6 @@ Notifications.start()
 InteractionController.start()
 CameraController.start()
 MissionBoardView.start()
+AmbientAnimator.start()
+AmbientSound.start()
+Flyby.start()
