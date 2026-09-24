@@ -194,8 +194,13 @@ local function request(player: Player, req: { [string]: any }): { [string]: any 
 	return { ok = false, error = "UNKNOWN_ACTION" }
 end
 
-function EventService.start(root: Instance)
+-- `refresh` re-applies the event to the Event Area (needed when the world
+-- was baked earlier and the active event or its days may have changed).
+function EventService.start(root: Instance, refresh: boolean?)
 	world = root
+	if refresh then
+		EventService.applyWorld()
+	end
 	Net.fn("Event").OnServerInvoke = function(player: Player, req: any)
 		if type(req) ~= "table" or type(req.action) ~= "string" then
 			return { ok = false, error = "BAD_REQUEST" }

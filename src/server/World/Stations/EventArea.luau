@@ -147,7 +147,8 @@ function EventArea.apply(zoneModel: Instance, frame: CFrame, event: Events.Event
 				local vehicleFrame = frame
 					* CFrame.new(pad.X, pad.Y, pad.Z + (i - 1) * 14)
 					* CFrame.Angles(0, math.rad(200), 0)
-				local camo = Units.Camos.List[if event.Dressing == "Winter" then "WINTER" else "FACTORY"]
+				local camoId = Units.List[unitId].Camo or (if event.Dressing == "Winter" then "WINTER" else "FACTORY")
+				local camo = Units.Camos.List[camoId] or Units.Camos.List.FACTORY
 				Garage.display(dressing, unitId, vehicleFrame, { Base = camo.Colors[1], Accent = camo.Colors[2] })
 			end
 		end

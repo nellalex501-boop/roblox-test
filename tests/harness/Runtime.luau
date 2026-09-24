@@ -29,9 +29,12 @@ Runtime.Signal = Signal
 Runtime.DEFAULT_EPOCH = 1790251200 -- 2026-09-24 12:00:00 UTC
 
 local runtimes = setmetatable({}, { __mode = "k" }) -- [DataModel] = runtime
-local signals = setmetatable({}, { __mode = "k" }) -- [Instance] = { [name] = Signal }
-local callbacks = setmetatable({}, { __mode = "k" }) -- [Instance] = { [name] = fn }
-local extra = setmetatable({}, { __mode = "k" }) -- [Instance] = { [prop] = value }
+-- Strong keys on purpose: Lune hands out one userdata per instance only
+-- while that userdata is alive, so weak keys would silently drop signal
+-- connections / callbacks / emulated properties when the GC runs.
+local signals = {} -- [Instance] = { [name] = Signal }
+local callbacks = {} -- [Instance] = { [name] = fn }
+local extra = {} -- [Instance] = { [prop] = value }
 
 local function rootOf(inst)
 	if inst.ClassName == "DataModel" then
@@ -663,7 +666,7 @@ local function install()
 	roblox.implementMethod("Instance", "GetAttributeChangedSignal", function(self, attribute)
 		return signalFor(self, "AttributeChanged:" .. attribute)
 	end)
-	local debugIds = setmetatable({}, { __mode = "k" })
+	local debugIds = {}
 	local nextId = 0
 	roblox.implementMethod("Instance", "GetDebugId", function(self)
 		if not debugIds[self] then

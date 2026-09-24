@@ -584,6 +584,12 @@ end
 
 Vehicles.Builders = Builders
 
+local function sameColor(a: Color3, b: Color3): boolean
+	return math.round(a.R * 255) == math.round(b.R * 255)
+		and math.round(a.G * 255) == math.round(b.G * 255)
+		and math.round(a.B * 255) == math.round(b.B * 255)
+end
+
 local function assetFor(key: string): Model?
 	local folder = ServerStorage:FindFirstChild("LobbyAssets")
 	local units = folder and folder:FindFirstChild("Units")
@@ -634,6 +640,16 @@ function Vehicles.spawn(
 	model.Name = id
 	local ctx: Ctx = { model = model, frame = frame, paint = paint or Vehicles.DefaultPaint.NATO }
 	builder(ctx)
+	-- tag painted parts so clients can preview other paint schemes
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			if sameColor(d.Color, ctx.paint.Base) then
+				d:SetAttribute("Paint", "Base")
+			elseif sameColor(d.Color, ctx.paint.Accent) then
+				d:SetAttribute("Paint", "Accent")
+			end
+		end
+	end
 	model:SetAttribute("VehicleModel", modelKey)
 	model.Parent = parent
 	return model

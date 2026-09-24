@@ -82,6 +82,20 @@ function DataService.isAvailable(): boolean
 	return available
 end
 
+-- Access errors (unpublished place, Studio API access off) will not fix
+-- themselves: stop using DataStores for this server session.
+function DataService.reportError(err: any): boolean
+	local text = tostring(err)
+	if text:find("StudioAccessToApisNotAllowed") or text:find("publish") then
+		if available then
+			warn("[Lobby] DataStores unavailable for this session:", text)
+		end
+		available = false
+		return true
+	end
+	return false
+end
+
 local function seedDemo(profile: ProfileSchema.Profile, userId: number)
 	local rng = Random.new(math.abs(userId) % 100000 + 7)
 	local stats = profile.stats
@@ -112,9 +126,8 @@ function DataService.load(player: Player): Session
 			profile = ProfileSchema.reconcile(result, now())
 			temporary = false
 		else
-			warn(("[Lobby] Could not load profile for %s: %s"):format(player.Name, tostring(result)))
-			if tostring(result):find("StudioAccessToApisNotAllowed") or tostring(result):find("publish") then
-				available = false
+			if not DataService.reportError(result) then
+				warn(("[Lobby] Could not load profile for %s: %s"):format(player.Name, tostring(result)))
 			end
 			profile = ProfileSchema.default(now())
 		end

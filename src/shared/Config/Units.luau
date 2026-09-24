@@ -23,6 +23,7 @@ export type Unit = {
 	Crew: number,
 	Stats: { Armor: number, Firepower: number, Mobility: number, Cost: number },
 	Unlock: Unlock,
+	Camo: string?, -- default paint scheme (Units.Camos), FACTORY when nil
 	Description: string,
 }
 
@@ -254,6 +255,7 @@ Units.List = {
 		Crew = 3,
 		Stats = { Armor = 9, Firepower = 8, Mobility = 9, Cost = 9 },
 		Unlock = { Event = "IRON_WINTER" },
+		Camo = "WINTER",
 		Description = "Reactive-armour T-80 in winter whitewash. Earned only during Operation Iron Winter.",
 	},
 } :: { [string]: Unit }

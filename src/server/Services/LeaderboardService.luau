@@ -147,7 +147,9 @@ local function fetchGlobal(board: Config.Board): { Entry }?
 	if ok then
 		return result
 	end
-	warn("[Lobby] Leaderboard fetch failed:", result)
+	if not DataService.reportError(result) then
+		warn("[Lobby] Leaderboard fetch failed:", result)
+	end
 	return nil
 end
 
