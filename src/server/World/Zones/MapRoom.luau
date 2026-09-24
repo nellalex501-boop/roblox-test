@@ -214,7 +214,7 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 		Kit.facingOut(frame, Vector3.new(0, 15.5, 0.25)),
 		Vector2.new(22, 3.6),
 		zone.DisplayName,
-		{ Background = W.SignGreen, Stripe = W.Beige, PixelsPerStud = 30 }
+		{ Background = W.SignGreen, Stripe = W.Beige, PixelsPerStud = 20 }
 	)
 	sign.Name = "EntranceSign"
 	Architecture.doorFrame(shell, frame, door.Offset, 0, door.Width, door.Height, floorY, W.DarkGrey)

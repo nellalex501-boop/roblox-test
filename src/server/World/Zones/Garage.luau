@@ -247,7 +247,7 @@ function Garage.build(parent: Instance): (Model, CFrame)
 		Kit.facingOut(frame, Vector3.new(0, floorY + 18 + 3.2, 0.4)),
 		Vector2.new(30, 5.4),
 		zone.DisplayName,
-		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.HazardYellow, PixelsPerStud = 24 }
+		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.HazardYellow, PixelsPerStud = 18 }
 	)
 	sign.Name = "EntranceSign"
 	local plate = Kit.sign(

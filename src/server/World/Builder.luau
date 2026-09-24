@@ -23,6 +23,15 @@ local MissionBoard = require(Zones.MissionBoard)
 local OperationsCenter = require(Zones.OperationsCenter)
 local Plaza = require(Zones.Plaza)
 local SocialArea = require(Zones.SocialArea)
+local Stations = World.Stations
+local CommandHQStations = require(Stations.CommandHQ)
+local EventAreaStations = require(Stations.EventArea)
+local GarageStations = require(Stations.Garage)
+local LeaderboardStations = require(Stations.Leaderboards)
+local MapRoomStations = require(Stations.MapRoom)
+local MissionBoardStations = require(Stations.MissionBoard)
+local OperationsStations = require(Stations.Operations)
+local PlazaStations = require(Stations.Plaza)
 
 export type Mode = "Full" | "Blockout"
 
@@ -30,12 +39,13 @@ export type Options = {
 	Mode: Mode?,
 	Parent: Instance?,
 	SkipLighting: boolean?,
+	Now: number?, -- unix time used to pick the active event (default os.time())
 }
 
 local Builder = {}
 
 Builder.RootName = "ColdWarLobby"
-Builder.Version = 2
+Builder.Version = 3
 
 local ZONE_BUILDERS: { [string]: (Instance) -> (Model, CFrame) } = {
 	OperationsCenter = OperationsCenter.build,
@@ -48,15 +58,29 @@ local ZONE_BUILDERS: { [string]: (Instance) -> (Model, CFrame) } = {
 	SocialArea = SocialArea.build,
 }
 
-local function buildFull(root: Model)
+local STATION_BUILDERS: { [string]: (Instance, CFrame, number) -> () } = {
+	OperationsCenter = OperationsStations.build,
+	MapRoom = MapRoomStations.build,
+	CommandHQ = CommandHQStations.build,
+	Garage = GarageStations.build,
+	Leaderboards = LeaderboardStations.build,
+	EventArea = EventAreaStations.build,
+	MissionBoard = MissionBoardStations.build,
+}
+
+local function buildFull(root: Model, now: number)
 	Ground.build(root, true)
 	Ground.markings(root)
 	Plaza.build(root)
 	local zones = Kit.folder(root, "Zones")
 	for zoneId, build in ZONE_BUILDERS do
 		local model, frame = build(zones)
-		Blockout.placePoints(model, frame, zoneId)
+		local stations = STATION_BUILDERS[zoneId]
+		if stations then
+			stations(model, frame, now)
+		end
 	end
+	PlazaStations.build(root)
 	Perimeter.build(root)
 end
 
@@ -80,7 +104,7 @@ function Builder.Build(options: Options?): Model
 		Ground.build(root, false)
 		Blockout.build(root)
 	else
-		buildFull(root)
+		buildFull(root, opts.Now or os.time())
 		if not opts.SkipLighting then
 			LightingSetup.apply()
 		end

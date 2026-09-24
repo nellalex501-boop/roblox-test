@@ -9,16 +9,13 @@
 -- Match stats are written by the RTS match servers; interaction missions are
 -- completed inside the lobby and double as a no-tutorial orientation.
 
-export type Tracker = {
-	Type: "Stat" | "Distinct" | "Interaction",
-	Stat: string?,
-	Kind: string?,
-	DistinctIds: boolean?,
-}
+local EventTypes = require(script.Parent.EventTypes)
+
+export type Tracker = EventTypes.Tracker
 
 export type Mission = {
 	Id: string,
-	Group: "DAILY" | "ORIENTATION",
+	Group: string, -- "DAILY" | "ORIENTATION"
 	Text: string,
 	Target: number,
 	Tracker: Tracker,

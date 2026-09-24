@@ -293,7 +293,7 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 		Kit.facingOut(frame, Vector3.new(0, 30, tw.z1 + 0.25)),
 		Vector2.new(36, 7.5),
 		zone.DisplayName,
-		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.MutedBlue, PixelsPerStud = 24 }
+		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.MutedBlue, PixelsPerStud = 18 }
 	)
 	towerSign.Name = "TowerSign"
 
@@ -393,7 +393,7 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 		Kit.facingOut(frame, Vector3.new(0, canopyY + 3.05, 9.25)),
 		Vector2.new(34, 3.2),
 		zone.DisplayName,
-		{ Background = W.Charcoal, TextColor = W.OffWhite, PixelsPerStud = 30 }
+		{ Background = W.Charcoal, TextColor = W.OffWhite, PixelsPerStud = 22 }
 	)
 	fascia.Name = "EntranceSign"
 	Kit.box(shell, frame, Vector3.new(-17, canopyY - 0.2, 8.6), Vector3.new(17, canopyY + 1, 9.6), W.MutedBlue, nil, {

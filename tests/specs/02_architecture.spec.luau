@@ -42,7 +42,22 @@ return function(test)
 		t.eq(stats.unanchored, 0, "no physics-simulated parts")
 		t.eq(stats.touchEnabled, 0, "CanTouch disabled on all static parts")
 		t.le(stats.transparentParts, 20, "semi-transparent parts kept rare")
-		t.le(stats.surfaceGuis, 120, "SurfaceGui count")
+		-- SurfaceGui cost is texture memory (canvas pixels) and how many are
+		-- rendered regardless of distance, not the raw count.
+		local GuiExport = require("../lib/GuiExport")
+		local pixels, unculled = 0, 0
+		for _, surface in GuiExport.surfaces(root) do
+			pixels += surface.px[1] * surface.px[2]
+		end
+		for _, gui in root:GetDescendants() do
+			if gui:IsA("SurfaceGui") and gui.MaxDistance == 0 then
+				unculled += 1
+			end
+		end
+		t.metric("SurfaceGui canvas pixels", pixels)
+		t.metric("SurfaceGuis without distance culling", unculled)
+		t.le(pixels, 4000000, "total SurfaceGui canvas under 4 Mpx (~16 MB)")
+		t.le(unculled, 45, "always-rendered SurfaceGuis limited to landmark signs/boards")
 	end)
 
 	test("visual consistency: muted palette (no neon/cartoon colours)", function(t)

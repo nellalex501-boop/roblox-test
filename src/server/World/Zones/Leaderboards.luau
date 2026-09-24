@@ -123,7 +123,7 @@ function Leaderboards.build(parent: Instance): (Model, CFrame)
 		Kit.facingOut(frame, Vector3.new(0, y + 2.6, -22.2)),
 		Vector2.new(46, 3.6),
 		"HALL OF COMMANDERS",
-		{ Background = W.Charcoal, TextColor = W.CrtAmber, Stripe = W.MutedRed, PixelsPerStud = 24 }
+		{ Background = W.Charcoal, TextColor = W.CrtAmber, Stripe = W.MutedRed, PixelsPerStud = 18 }
 	)
 	sign.Name = "EntranceSign"
 	local sub = Kit.sign(
