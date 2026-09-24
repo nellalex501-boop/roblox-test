@@ -4,6 +4,8 @@
 -- dist/ColdWarLobby.rbxl with the whole base already in Workspace, so it
 -- can be opened, inspected and edited in Studio without pressing Play.
 -- The server reuses a baked lobby when its LobbyVersion matches.
+-- Also writes the insert kit (tools/kit.luau): the same lobby as one model
+-- file per service, for adding it to an existing place.
 --
 --   lune run tools/bake.luau [output.rbxl]
 
@@ -12,6 +14,7 @@ local process = require("@lune/process")
 local roblox = require("@lune/roblox")
 
 local Runtime = require("../tests/harness/Runtime")
+local Kit = require("./kit")
 
 local output = process.args[1] or "dist/ColdWarLobby.rbxl"
 
@@ -60,3 +63,13 @@ end
 local bytes = roblox.serializePlace(rt.game)
 fs.writeFile(output, bytes)
 print(("baked %s: lobby v%d, %d parts, %.1f MB"):format(output, Builder.Version, parts, #bytes / 1048576))
+
+fs.writeDir(Kit.Dir)
+for _, entry in Kit.Files do
+	local parent = Kit.resolve(rt.game, entry.into)
+	local instance = parent and parent:FindFirstChild(entry.name)
+	assert(instance, ("%s.%s missing"):format(entry.into, entry.name))
+	local model = roblox.serializeModel({ instance })
+	fs.writeFile(Kit.Dir .. "/" .. entry.file, model)
+	print(("  kit %s: %d KB"):format(entry.file, math.ceil(#model / 1024)))
+end

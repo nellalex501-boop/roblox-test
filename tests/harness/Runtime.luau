@@ -1514,6 +1514,13 @@ end
 --------------------------------------------------------------------------
 -- Players & characters
 --------------------------------------------------------------------------
+-- The engine copies these StarterPlayer settings onto each joining Player.
+local function copyStarterSettings(game, player)
+	local starter = game:GetService("StarterPlayer")
+	player.CameraMaxZoomDistance = starter.CameraMaxZoomDistance
+	player.CameraMinZoomDistance = starter.CameraMinZoomDistance
+end
+
 function Runtime:addPlayer(name: string, userId: number?)
 	local players = self.game:GetService("Players")
 	local player = Instance.new("Player")
@@ -1521,6 +1528,7 @@ function Runtime:addPlayer(name: string, userId: number?)
 	self.nextUserId += 1
 	player.UserId = userId or self.nextUserId
 	player.DisplayName = name
+	copyStarterSettings(self.game, player)
 	local gui = Instance.new("PlayerGui")
 	gui.Name = "PlayerGui"
 	gui.Parent = player
@@ -1541,6 +1549,7 @@ function Runtime:setLocalPlayer(name: string, userId: number?)
 	player.Name = name
 	player.UserId = userId or 1
 	player.DisplayName = name
+	copyStarterSettings(self.game, player)
 	local gui = Instance.new("PlayerGui")
 	gui.Name = "PlayerGui"
 	gui.Parent = player

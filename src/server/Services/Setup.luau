@@ -7,6 +7,9 @@
 --   not deleted - into ServerStorage.LobbyDisplacedTemplate.
 -- * A lobby baked in edit mode (Builder.Build() from the command bar) is
 --   reused when its LobbyVersion matches; otherwise the lobby is rebuilt.
+-- * A baked lobby pasted or inserted into another place can arrive shifted
+--   (Studio lifts pasted models clear of parts such as a Baseplate). The
+--   layout, zones and HUD use world coordinates, so it is moved back.
 -- * Characters that loaded before the lobby existed are moved to a spawn.
 
 local Players = game:GetService("Players")
@@ -52,6 +55,23 @@ function Setup.prepareWorkspace(): { string }
 	return moved
 end
 
+-- Moves the lobby so its origin marker sits at the world origin again.
+-- Returns how far it was moved (0 when it was already in place).
+function Setup.alignWorld(world: Model): number
+	local marker = world:FindFirstChild(Builder.OriginName)
+	if not marker or not marker:IsA("BasePart") then
+		return 0
+	end
+	local offset = marker.CFrame
+	if offset:FuzzyEq(CFrame.identity, 0.01) then
+		return 0
+	end
+	world:PivotTo(offset:Inverse() * world:GetPivot())
+	local distance = offset.Position.Magnitude
+	print(("[Lobby] Moved the lobby %.1f studs back to the world origin"):format(distance))
+	return distance
+end
+
 -- Returns the lobby model and whether a baked copy was reused.
 function Setup.ensureWorld(): (Model, boolean)
 	local existing = workspace:FindFirstChild(Builder.RootName)
@@ -61,6 +81,7 @@ function Setup.ensureWorld(): (Model, boolean)
 		and existing:GetAttribute("LobbyVersion") == Builder.Version
 		and existing:GetAttribute("BuildMode") == "Full"
 	then
+		Setup.alignWorld(existing)
 		LightingSetup.apply()
 		return existing, true
 	end

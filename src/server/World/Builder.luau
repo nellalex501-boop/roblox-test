@@ -47,6 +47,7 @@ export type Options = {
 local Builder = {}
 
 Builder.RootName = "ColdWarLobby"
+Builder.OriginName = "LobbyOrigin"
 Builder.Version = 4
 
 local ZONE_BUILDERS: { [string]: (Instance) -> (Model, CFrame) } = {
@@ -104,6 +105,14 @@ function Builder.Build(options: Options?): Model
 	root.Name = Builder.RootName
 	root:SetAttribute("LobbyVersion", Builder.Version)
 	root:SetAttribute("BuildMode", mode)
+	-- invisible marker at the world origin; Setup.alignWorld moves a lobby
+	-- that was pasted into another place at an offset back onto it
+	local origin = Kit.part(root, Vector3.new(1, 1, 1), CFrame.identity, Color3.fromRGB(128, 128, 128), nil, {
+		Name = Builder.OriginName,
+		Decor = true,
+		Transparency = 1,
+	})
+	origin.Locked = true
 
 	if mode == "Blockout" then
 		Ground.build(root, false)

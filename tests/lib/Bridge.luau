@@ -62,6 +62,15 @@ function Bridge.boot(options)
 		local Builder = client:requirePath("ServerScriptService.LobbyServer.World.Builder")
 		Builder.Build({ Parent = client.workspace, SkipLighting = true })
 	end
+	-- "replicate" the lobby's position: the server moves a lobby that was
+	-- inserted at an offset back to the origin (Setup.alignWorld)
+	local serverLobby = server.workspace:FindFirstChild("ColdWarLobby")
+	local clientLobby = client.workspace:FindFirstChild("ColdWarLobby")
+	local serverOrigin = serverLobby and serverLobby:FindFirstChild("LobbyOrigin")
+	local clientOrigin = clientLobby and clientLobby:FindFirstChild("LobbyOrigin")
+	if serverOrigin and clientOrigin and not serverOrigin.CFrame:FuzzyEq(clientOrigin.CFrame, 1e-4) then
+		clientLobby:PivotTo(serverOrigin.CFrame * clientOrigin.CFrame:Inverse() * clientLobby:GetPivot())
+	end
 	local lobby = client:find("ReplicatedStorage.Lobby")
 	local remotes = roblox.Instance.new("Folder")
 	remotes.Name = "Remotes"

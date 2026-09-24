@@ -40,16 +40,48 @@ opened in Roblox Studio yet**. Please run the checks in
 3. **File → Publish to Roblox As…** Pick your game. Publishing over an
    existing place (such as Place1) replaces that place's contents.
 
-### Option B: sync into Place1 with Rojo
+"Place1" is the name Studio gives a new place. If yours is still empty,
+Option A is all you need.
+
+### Option B: insert the kit into Place1 (keeps what is already there)
+`dist/InsertKit` holds the same lobby as one model file per service. Open
+Place1, right-click each service in the Explorer, choose **Insert from
+File…** and pick its file:
+
+| File | Right-click |
+|---|---|
+| `1_Workspace_ColdWarLobby.rbxm` | Workspace |
+| `2_ReplicatedStorage_Lobby.rbxm` | ReplicatedStorage |
+| `3_ServerScriptService_LobbyServer.rbxm` | ServerScriptService |
+| `4_StarterPlayerScripts_LobbyClient.rbxm` | StarterPlayer → StarterPlayerScripts |
+| `5_ServerStorage_LobbyAssets.rbxm` | ServerStorage (the slot for Fulda Gap vehicle copies) |
+
+Then press **Play**.
+- **Offset lobby.** Studio may drop the lobby at an offset, lifting it clear
+  of the Baseplate. That's fine: at start-up the server moves it back to the
+  world origin and logs `[Lobby] Moved the lobby … back to the world origin`.
+  To line it up in edit mode too, run this in the command bar:
+  ```lua
+  local l = workspace.ColdWarLobby; l:PivotTo(l.LobbyOrigin.CFrame:Inverse() * l:GetPivot())
+  ```
+- **Template pieces.** On Play, the template `Baseplate` and `SpawnLocation`
+  are moved (not deleted) to `ServerStorage.LobbyDisplacedTemplate`.
+- **Lighting technology.** The camera zoom limit comes with the scripts. The
+  only setting that can't is Lighting's rendering mode, which scripts aren't
+  allowed to change. For the intended look, select **Lighting** and set
+  **Technology** to **ShadowMap** in the Properties window.
+
+Copying the same five containers from an open `ColdWarLobby.rbxl` into
+Place1 (copy, then paste into the same service) works as well.
+
+### Option C: sync with Rojo (for development)
 1. Install [Rojo](https://rojo.space) 7.x and its Studio plugin.
 2. Run `rojo serve` in this folder, open Place1 in Studio and click
    **Connect** in the Rojo plugin. Scripts sync into `ReplicatedStorage.Lobby`,
    `ServerScriptService.LobbyServer` and
    `StarterPlayer.StarterPlayerScripts.LobbyClient`.
-3. Press **Play**. The server builds the lobby at startup. The template
-   `Baseplate` and `SpawnLocation` are moved (not deleted) to
-   `ServerStorage.LobbyDisplacedTemplate`, because they would clash with the
-   lobby's ground and spawn pads.
+3. Press **Play**. The server builds the lobby at startup and moves the
+   template `Baseplate` and `SpawnLocation` aside.
 4. To see and edit the lobby without playing, "bake" it once from the
    command bar:
    ```lua
@@ -57,12 +89,6 @@ opened in Roblox Studio yet**. Please run the checks in
    ```
    A baked lobby is reused at runtime while its `LobbyVersion` attribute
    matches `Builder.Version`. If you change the builders, bake again.
-
-### Option C: copy the containers
-Open `dist/ColdWarLobby.rbxl`, copy `Workspace.ColdWarLobby`,
-`ReplicatedStorage.Lobby`, `ServerScriptService.LobbyServer`,
-`StarterPlayer.StarterPlayerScripts.LobbyClient` and
-`ServerStorage.LobbyAssets`, then paste each into the same service in Place1.
 
 ## Using Fulda Gap assets without changing that game
 
@@ -134,7 +160,7 @@ src/server   init.server.luau (bootstrap)
 src/client   init.client.luau, State, UI/ (Kit, WindowManager, Panels/, Hud/),
              Controllers/ (prompts, camera, mission board), Ambient/
 tests        Lune harness + specs per phase (see below)
-tools        bake.luau (dist place), render/ (preview renderer)
+tools        bake.luau (dist place + insert kit), kit.luau, render/ (preview renderer)
 ```
 
 ## Verification
@@ -142,8 +168,8 @@ tools        bake.luau (dist place), render/ (preview renderer)
 Everything below runs headlessly in [Lune](https://lune-org.github.io/docs):
 ```
 ./scripts/check.sh              # rojo build + luau-lsp strict type check + stylua
-lune run tests/run.luau         # 80 test cases → build/test-report.md
-lune run tools/bake.luau        # rebuild dist/ColdWarLobby.rbxl
+lune run tests/run.luau         # 83 test cases → build/test-report.md
+lune run tools/bake.luau        # rebuild dist/ColdWarLobby.rbxl and dist/InsertKit
 node tools/render/render.mjs build/render/detailing.json build/previews/p overview
 ```
 The harness loads the Rojo-built place, emulates the engine services the code
@@ -159,7 +185,8 @@ the remotes. The specs cover:
   leaderboards, events and the garage
 - DataStore failure modes and save merging
 - ambient animation, sound and flyby, and UI feedback
-- code hygiene, and that the baked place matches the source and boots
+- code hygiene, and that the baked place and the insert kit match the source
+  and boot, including a kit inserted at an offset into a Baseplate place
 
 The preview images in `docs/previews` come from an approximate three.js
 renderer. They are not Roblox renders.

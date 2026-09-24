@@ -6,10 +6,16 @@ navigation analysis, and an approximate three.js preview renderer. There was
 no Studio connection in the build environment, so the items below are
 **NOT VERIFIED** until you check them in Studio.
 
-Setup for all tests: open `dist/ColdWarLobby.rbxl`, or sync the project into
-Place1 with Rojo (see README).
+Setup for all tests: open `dist/ColdWarLobby.rbxl`, or add the lobby to
+Place1 with the insert kit or Rojo (see README).
 
 Legend: **Steps** → **Expected**. Tick each box as you go.
+
+## 0. Getting it into Place1
+
+- [ ] **Insert kit.** In Place1, right-click each service and use *Insert from File…* with its file from `dist/InsertKit` (README, Option B). Press Play. → You spawn on one of the lobby's spawn pads, not on the old SpawnLocation. The Output shows `[Lobby] Moved template Baseplate, SpawnLocation to ServerStorage.LobbyDisplacedTemplate`. If Studio inserted the lobby at an offset, it also shows `[Lobby] Moved the lobby … studs back to the world origin`, and the base sits level with no gaps.
+- [ ] **Camera limit after inserting.** Zoom out with the mouse wheel. → Zoom stops at about 55 studs, although Place1's StarterPlayer still allows 400.
+- [ ] **Zone banner and locator after inserting.** Walk into the Garage and press **L**. → The banner names the Garage, and the locator arrows point at the buildings they name. If they are wrong, the lobby was not moved back to the origin.
 
 ## 1. Blockout: movement and scale
 

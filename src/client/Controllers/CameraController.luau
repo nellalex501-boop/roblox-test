@@ -2,6 +2,7 @@
 -- Cinematic camera for vehicle inspection: while the inspection sheet is
 -- open the camera eases into a slow orbit around the vehicle on display
 -- (framed to the left of the docked sheet), then hands control back.
+-- Also caps the zoom distance so the camera stays inside the buildings.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -13,6 +14,10 @@ local CameraController = {}
 
 CameraController.OrbitSpeed = math.rad(7) -- radians per second
 CameraController.EaseTime = 0.7
+-- same as StarterPlayer in default.project.json; applied here as well
+-- because StarterPlayer settings stay behind when the lobby's scripts are
+-- copied into another place
+CameraController.MaxZoom = 55
 
 local orbiting = false
 local connection: RBXScriptConnection? = nil
@@ -97,6 +102,8 @@ function CameraController.stopOrbit()
 end
 
 function CameraController.start()
+	local player = Players.LocalPlayer
+	player.CameraMaxZoomDistance = math.min(player.CameraMaxZoomDistance, CameraController.MaxZoom)
 	WindowManager.opened:Connect(function(name, context)
 		local part = context.part
 		if name == "Inspect" and part then

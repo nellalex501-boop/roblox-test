@@ -3,7 +3,7 @@
 Every phase was approved only after its spec passed. Results come from
 `lune run tests/run.luau` (see `build/test-report.md` after a run).
 
-**Final run:** 80 cases and 1,069 checks, all passing.
+**Final run:** 83 cases and 1,112 checks, all passing.
 
 The checks are headless; the real-Roblox checks are in
 [STUDIO_TEST_PLAN.md](STUDIO_TEST_PLAN.md).
@@ -67,7 +67,7 @@ The checks are headless; the real-Roblox checks are in
 - **Design.** A reusable prop library, plus an outdoor and an interior pass that keep entrances, crossings and prompt approaches clear. Parked vehicles, utility lines, light fittings (no shadows), smoke and fire.
 - **Build.** `World/Props.luau`, `World/Details/` and `World/Effects.luau`: 215 floor props and about 1,600 parts.
 - **Test.** `06_detailing`: 10 cases, 194 checks.
-  - Budgets: 5,428 parts, 51 lights with no shadows, 4 particle effects.
+  - Budgets: 5,429 parts, 51 lights with no shadows, 4 particle effects.
   - Palette.
   - Every floor prop rests on the floor (±0.35 studs) and no collidable prop part cuts into existing geometry.
   - Navigation, spawn and sightline regressions.
@@ -91,4 +91,12 @@ The checks are headless; the real-Roblox checks are in
 
 ## Release
 - `tools/bake.luau` writes `dist/ColdWarLobby.rbxl` (0.4 MB) with the lobby baked in.
-- `08_release` (3 cases, 17 checks) verifies that the baked place matches the current source, that the server reuses the baked lobby instead of rebuilding it, and that a client starts its UI on it.
+- It also writes the insert kit, `dist/InsertKit`: one model file per service for adding the lobby to an existing place such as Place1.
+- **Design.** Copying into another place loses two things:
+  - The StarterPlayer camera zoom limit. The client now applies it itself.
+  - The lobby's position. Studio can shift a pasted or inserted model, while the layout, zones and HUD use world coordinates. An invisible `LobbyOrigin` marker lets the server move the lobby back at start-up.
+- **Test.** `08_release` (6 cases, 60 checks) verifies:
+  - The baked place and every kit file match the current source.
+  - The server reuses the baked lobby instead of rebuilding it, and a client starts its UI on it.
+  - The kit, inserted into a fresh Baseplate place with the lobby shifted by 40 studs, boots: the template is moved aside, the lobby returns to the origin with its spawn pads at their baked positions, a commander joins, and the camera limit applies.
+- **Fix.** A mutation check (snap-back and zoom limit removed, then rebaked) made the kit tests fail as expected. Restored and rebaked.
