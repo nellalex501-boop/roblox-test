@@ -236,7 +236,12 @@ function renderNode(node, parentEl, x, y, w, h, index) {
   const m = modsOf(node);
   const transforms = [];
   if (node.rot) transforms.push(`rotate(${node.rot}deg)`);
-  if (m.UIScale) transforms.push(`scale(${m.UIScale.scale})`);
+  if (m.UIScale) {
+    transforms.push(`scale(${m.UIScale.scale})`);
+    // Roblox scales around the AnchorPoint (the position stays put)
+    const a = node.anchor || [0, 0];
+    el.style.transformOrigin = `${a[0] * 100}% ${a[1] * 100}%`;
+  }
   if (transforms.length) el.style.transform = transforms.join(" ");
   if (node.bgT < 1 && !(node.c === "SurfaceGui" || node.c === "ScreenGui")) el.style.background = rgba(node.bg, node.bgT);
   const shadows = [];

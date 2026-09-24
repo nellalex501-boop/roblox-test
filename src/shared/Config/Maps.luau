@@ -323,7 +323,7 @@ Maps.Theater = {
 		{ 0.84, 0.66, 0.14, 0.2 },
 	},
 	Towns = {
-		{ x = 0.47, y = 0.46, label = "FULDA" },
+		{ x = 0.47, y = 0.52, label = "FULDA" },
 		{ x = 0.52, y = 0.12, label = "BAD HERSFELD" },
 		{ x = 0.58, y = 0.3, label = "HÜNFELD" },
 		{ x = 0.86, y = 0.18, label = "EISENACH" },

@@ -34,7 +34,7 @@ Interactions.Kinds = {
 	Statistics = { ActionText = "VIEW RECORDS", Panel = "Profile", Tab = "STATISTICS" },
 	Customize = { ActionText = "CUSTOMIZE", Panel = "Profile", Tab = "CUSTOMIZE" },
 	Achievements = { ActionText = "VIEW ACHIEVEMENTS", Panel = "Profile", Tab = "ACHIEVEMENTS" },
-	UnitInspect = { ActionText = "INSPECT VEHICLE", Panel = "Garage", Tab = "INSPECT", MaxDistance = 12 },
+	UnitInspect = { ActionText = "INSPECT VEHICLE", Panel = "Inspect", MaxDistance = 12 },
 	UnitCollection = { ActionText = "OPEN UNIT REGISTRY", Panel = "Garage", Tab = "COLLECTION" },
 	UnitCosmetics = { ActionText = "OPEN PAINT SHOP", Panel = "Garage", Tab = "PAINT" },
 	Leaderboard = { ActionText = "VIEW LEADERBOARD", Panel = "Leaderboards", MaxDistance = 14 },

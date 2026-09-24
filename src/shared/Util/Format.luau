@@ -45,6 +45,14 @@ function Format.zulu(timestamp: number): string
 	return string.format("%02d%02dZ", t.hour, t.min)
 end
 
+local MONTHS = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" }
+
+-- "17 OCT 2026 · 0000Z" from a unix timestamp (UTC).
+function Format.dateZulu(timestamp: number): string
+	local t = os.date("!*t", math.floor(timestamp))
+	return string.format("%02d %s %d · %02d%02dZ", t.day, MONTHS[t.month], t.year, t.hour, t.min)
+end
+
 -- Reads a dotted path ("victoriesByMap.RIVER_CROSSING") from a table.
 function Format.readPath(root: { [string]: any }, path: string): any
 	local node: any = root

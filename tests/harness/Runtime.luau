@@ -1161,6 +1161,15 @@ function Runtime.new(options)
 	}
 	self.nextUserId = 1000
 	runtimes[game] = self
+	-- Input capability properties are reflection-DB properties without a
+	-- default in Lune (implementProperty cannot override them), so they
+	-- are assigned directly on the service.
+	local uis = game:GetService("UserInputService")
+	for _, name in { "TouchEnabled", "KeyboardEnabled", "MouseEnabled", "GamepadEnabled" } do
+		pcall(function()
+			uis[name] = self.input[name]
+		end)
+	end
 
 	self.workspace = game:GetService("Workspace")
 	if not self.workspace:FindFirstChildOfClass("Camera") then
