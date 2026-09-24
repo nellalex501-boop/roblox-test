@@ -32,9 +32,17 @@ return function(test)
 		for _, spawn in spawns do
 			local p = spawn.CFrame.Position
 			local plaza = Layout.Plaza
-			t.ok(p.X > plaza.MinX and p.X < plaza.MaxX and p.Z > plaza.MinZ and p.Z < plaza.MaxZ, spawn.Name .. " on the parade square")
+			t.ok(
+				p.X > plaza.MinX and p.X < plaza.MaxX and p.Z > plaza.MinZ and p.Z < plaza.MaxZ,
+				spawn.Name .. " on the parade square"
+			)
 			local blockers = WorldChecks.spawnClearance(root, spawn)
-			t.ok(#blockers == 0, spawn.Name .. " has 5.5 studs headroom" .. (if #blockers > 0 then " (blocked by " .. blockers[1] .. ")" else ""))
+			t.ok(
+				#blockers == 0,
+				spawn.Name
+					.. " has 5.5 studs headroom"
+					.. (if #blockers > 0 then " (blocked by " .. blockers[1] .. ")" else "")
+			)
 			local look = spawn.CFrame.LookVector
 			t.ok(look.Z < -0.99, spawn.Name .. " faces north toward the Operations Center")
 			t.ok(spawn.Neutral and spawn.Duration == 0, spawn.Name .. " neutral, no forcefield delay")
@@ -79,13 +87,16 @@ return function(test)
 	local nav
 	test("navigation: every entrance and interaction point is reachable", function(t)
 		nav = WorldChecks.navigation(runtime, root)
-		t.metric("walkable grid cells reached", (function()
-			local n = 0
-			for _ in nav.dist do
-				n += 1
-			end
-			return n
-		end)())
+		t.metric(
+			"walkable grid cells reached",
+			(function()
+				local n = 0
+				for _ in nav.dist do
+					n += 1
+				end
+				return n
+			end)()
+		)
 		for _, dest in nav.destinations do
 			t.ok(dest.studs ~= nil, ("%s %s reachable"):format(dest.kind, dest.id))
 		end
@@ -114,7 +125,10 @@ return function(test)
 		local mustSee = { OperationsCenter = true, Garage = true, CommandHQ = true }
 		for _, line in lines do
 			if line.eye == "spawnCamera" then
-				t.metric(("sightline %s"):format(line.zone), if line.visible then "clear" else ("%d occluders"):format(line.occluders))
+				t.metric(
+					("sightline %s"):format(line.zone),
+					if line.visible then "clear" else ("%d occluders"):format(line.occluders)
+				)
 				if mustSee[line.zone] then
 					t.ok(line.visible, line.zone .. " facade visible from spawn camera")
 				end
@@ -139,7 +153,11 @@ return function(test)
 			local e = Layout.entrancePoint(Layout.Zones[zoneId])
 			table.insert(figures, { e.X, 0.3, e.Z, 0 })
 		end
-		local count = WorldChecks.export(root, "build/render/blockout.json", { start = nav.start, paths = paths, figures = figures })
+		local count = WorldChecks.export(
+			root,
+			"build/render/blockout.json",
+			{ start = nav.start, paths = paths, figures = figures }
+		)
 		t.ge(count, 100, "exported parts")
 		local summary = {}
 		for _, dest in nav.destinations do

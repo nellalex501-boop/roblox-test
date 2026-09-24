@@ -90,8 +90,8 @@ function Ground.build(parent: Instance, detailed: boolean)
 		local rng = Random.new(1987)
 		for c = 0, cols - 1 do
 			for r = 0, rows - 1 do
-				local tone = rng:NextNumber(-0.035, 0.035)
-				local base = if (c + r) % 2 == 0 then W.ConcreteLight else W.Concrete
+				local tone = rng:NextNumber(-0.022, 0.022)
+				local base = W.ConcreteLight:Lerp(W.Concrete, if (c + r) % 2 == 0 then 0.2 else 0.45)
 				local color = Color3.new(
 					math.clamp(base.R + tone, 0, 1),
 					math.clamp(base.G + tone, 0, 1),
@@ -152,6 +152,173 @@ function Ground.build(parent: Instance, detailed: boolean)
 		part.CastShadow = false
 	end
 
+	return folder
+end
+
+local MARKING = Color3.fromRGB(206, 202, 186)
+
+local function inAny(rects: { Layout.Rect }, x: number, z: number): boolean
+	for _, r in rects do
+		if x >= r.MinX and x <= r.MaxX and z >= r.MinZ and z <= r.MaxZ then
+			return true
+		end
+	end
+	return false
+end
+
+-- Zebra crossing across a road (stripes run with the traffic).
+local function crossing(parent: Instance, road: Layout.Rect, along: number, width: number)
+	local horizontal = (road.MaxX - road.MinX) > (road.MaxZ - road.MinZ)
+	local y = Ground.RoadTop
+	local span = if horizontal then road.MaxZ - road.MinZ else road.MaxX - road.MinX
+	local count = math.floor(span / 2.2)
+	for i = 0, count - 1 do
+		local offset = 0.6 + i * 2.2
+		if horizontal then
+			Kit.box(
+				parent,
+				CFrame.new(),
+				Vector3.new(along - width / 2, y, road.MinZ + offset),
+				Vector3.new(along + width / 2, y + 0.03, road.MinZ + offset + 1.1),
+				MARKING,
+				nil,
+				{
+					Name = "Crosswalk",
+					Decor = true,
+				}
+			)
+		else
+			Kit.box(
+				parent,
+				CFrame.new(),
+				Vector3.new(road.MinX + offset, y, along - width / 2),
+				Vector3.new(road.MinX + offset + 1.1, y + 0.03, along + width / 2),
+				MARKING,
+				nil,
+				{
+					Name = "Crosswalk",
+					Decor = true,
+				}
+			)
+		end
+	end
+end
+
+-- Centre-line dashes, zebra crossings at every entrance and the parking lot.
+function Ground.markings(parent: Instance)
+	local folder = Kit.folder(parent, "RoadMarkings")
+	local north, south = Layout.Roads[1], Layout.Roads[2]
+	local west, east = Layout.Roads[3], Layout.Roads[4]
+	local junctions = {
+		{ MinX = west.MinX, MaxX = west.MaxX, MinZ = north.MinZ, MaxZ = north.MaxZ },
+		{ MinX = east.MinX, MaxX = east.MaxX, MinZ = north.MinZ, MaxZ = north.MaxZ },
+		{ MinX = west.MinX, MaxX = west.MaxX, MinZ = south.MinZ, MaxZ = south.MaxZ },
+		{ MinX = east.MinX, MaxX = east.MaxX, MinZ = south.MinZ, MaxZ = south.MaxZ },
+	}
+
+	-- crossings in front of each entrance
+	local crossings = {}
+	local function addCrossing(road: Layout.Rect, along: number, width: number)
+		crossing(folder, road, along, width)
+		local horizontal = (road.MaxX - road.MinX) > (road.MaxZ - road.MinZ)
+		if horizontal then
+			table.insert(
+				crossings,
+				{ MinX = along - width / 2 - 1, MaxX = along + width / 2 + 1, MinZ = road.MinZ, MaxZ = road.MaxZ }
+			)
+		else
+			table.insert(
+				crossings,
+				{ MinX = road.MinX, MaxX = road.MaxX, MinZ = along - width / 2 - 1, MaxZ = along + width / 2 + 1 }
+			)
+		end
+	end
+	addCrossing(north, Layout.Zones.OperationsCenter.Facade.X, 12)
+	addCrossing(north, Layout.Zones.MapRoom.Facade.X, 8)
+	addCrossing(west, Layout.Zones.Garage.Facade.Z, 10)
+	addCrossing(east, Layout.Zones.CommandHQ.Facade.Z, 8)
+	addCrossing(south, Layout.Zones.SocialArea.Facade.X, 10)
+	addCrossing(south, Layout.Zones.EventArea.Facade.X, 8)
+	addCrossing(south, Layout.Zones.Leaderboards.Facade.X, 8)
+
+	-- dashed centre lines
+	local y = Ground.RoadTop
+	for _, road in Layout.Roads do
+		local horizontal = (road.MaxX - road.MinX) > (road.MaxZ - road.MinZ)
+		local length = if horizontal then road.MaxX - road.MinX else road.MaxZ - road.MinZ
+		local start = if horizontal then road.MinX else road.MinZ
+		local centre = if horizontal then (road.MinZ + road.MaxZ) / 2 else (road.MinX + road.MaxX) / 2
+		local d = 2
+		while d + 4 < length do
+			local a = start + d
+			local mid = a + 2
+			local x = if horizontal then mid else centre
+			local z = if horizontal then centre else mid
+			if not inAny(junctions, x, z) and not inAny(crossings, x, z) then
+				if horizontal then
+					Kit.box(
+						folder,
+						CFrame.new(),
+						Vector3.new(a, y, centre - 0.2),
+						Vector3.new(a + 4, y + 0.03, centre + 0.2),
+						MARKING,
+						nil,
+						{
+							Name = "CentreLine",
+							Decor = true,
+						}
+					)
+				else
+					Kit.box(
+						folder,
+						CFrame.new(),
+						Vector3.new(centre - 0.2, y, a),
+						Vector3.new(centre + 0.2, y + 0.03, a + 4),
+						MARKING,
+						nil,
+						{
+							Name = "CentreLine",
+							Decor = true,
+						}
+					)
+				end
+			end
+			d += 9
+		end
+	end
+
+	-- parking lot beside the canteen
+	local lot = { MinX = 40, MaxX = 70, MinZ = 70, MaxZ = 128 }
+	local asphalt =
+		rectBox(folder, lot, Ground.GrassTop, Ground.RoadTop, W.AsphaltLight, Enum.Material.Asphalt, "ParkingLot")
+	asphalt.CastShadow = false
+	local drive = rectBox(
+		folder,
+		{ MinX = 50, MaxX = 60, MinZ = south.MaxZ - 0.5, MaxZ = lot.MinZ + 0.5 },
+		Ground.GrassTop,
+		Ground.PavedTop - 0.08,
+		W.AsphaltLight,
+		Enum.Material.Asphalt,
+		"Driveway"
+	)
+	drive.CastShadow = false
+	for i = 0, 11 do
+		local z = lot.MinZ + 1 + i * 5
+		for _, xs in { { lot.MinX, lot.MinX + 10 }, { lot.MaxX - 10, lot.MaxX } } do
+			Kit.box(
+				folder,
+				CFrame.new(),
+				Vector3.new(xs[1], Ground.RoadTop, z - 0.15),
+				Vector3.new(xs[2], Ground.RoadTop + 0.03, z + 0.15),
+				MARKING,
+				nil,
+				{
+					Name = "StallLine",
+					Decor = true,
+				}
+			)
+		end
+	end
 	return folder
 end
 

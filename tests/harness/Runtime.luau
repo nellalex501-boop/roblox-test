@@ -540,19 +540,10 @@ local function install()
 		end)
 	end
 
-	-- Derived / engine-computed properties
-	roblox.implementProperty("BasePart", "Position", function(self)
-		return self.CFrame.Position
-	end, function(self, value)
-		self.CFrame = CFrame.new(value) * self.CFrame.Rotation
-	end)
-	roblox.implementProperty("BasePart", "Orientation", function(self)
-		local rx, ry, rz = self.CFrame:ToOrientation()
-		return Vector3.new(math.deg(rx), math.deg(ry), math.deg(rz))
-	end, function(self, value)
-		self.CFrame = CFrame.new(self.CFrame.Position)
-			* CFrame.fromOrientation(math.rad(value.X), math.rad(value.Y), math.rad(value.Z))
-	end)
+	-- NOTE: Lune only consults implementProperty for members it has no
+	-- stored/default value for, so DB-backed properties such as
+	-- BasePart.Position or Humanoid.Health cannot be emulated. Game code
+	-- reads CFrame.Position instead (documented in docs/TESTING.md).
 	roblox.implementProperty("BasePart", "AssemblyLinearVelocity", function(self)
 		return extraGet(self, "AssemblyLinearVelocity", Vector3.zero)
 	end, function(self, value)
@@ -1176,6 +1167,7 @@ function Runtime.new(options)
 		camera.Parent = self.workspace
 	end
 	self.workspace.CurrentCamera = self.workspace:FindFirstChildOfClass("Camera")
+	self.workspace.CurrentCamera.ViewportSize = self.viewport
 
 	self.shared = {}
 	self.globals = self:_makeGlobals()

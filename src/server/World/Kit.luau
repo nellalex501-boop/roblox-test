@@ -263,7 +263,13 @@ function Kit.wall(
 end
 
 -- SurfaceGui on a part face, sized in pixels per stud.
-function Kit.surface(part: BasePart, face: Enum.NormalId, pixelsPerStud: number?, lightInfluence: number?): SurfaceGui
+function Kit.surface(
+	part: BasePart,
+	face: Enum.NormalId,
+	pixelsPerStud: number?,
+	lightInfluence: number?,
+	maxDistance: number?
+): SurfaceGui
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "Surface" .. face.Name
 	gui.Face = face
@@ -271,6 +277,8 @@ function Kit.surface(part: BasePart, face: Enum.NormalId, pixelsPerStud: number?
 	gui.PixelsPerStud = pixelsPerStud or 40
 	gui.LightInfluence = lightInfluence or 0.35
 	gui.ClipsDescendants = true
+	-- stop rendering small labels when far away (0 = always render)
+	gui.MaxDistance = maxDistance or 0
 	gui.Parent = part
 	return gui
 end
@@ -326,6 +334,7 @@ export type SignStyle = {
 	Depth: number?,
 	PixelsPerStud: number?,
 	Border: Color3?,
+	MaxDistance: number?,
 }
 
 -- Military facility sign: a flat board with a title, optional subtitle and a
@@ -341,7 +350,9 @@ function Kit.sign(parent: Instance, cf: CFrame, size: Vector2, title: string, st
 		Enum.Material.SmoothPlastic,
 		{ Name = "Sign" }
 	)
-	local gui = Kit.surface(board, Enum.NormalId.Front, s.PixelsPerStud or 40, 0.25)
+	-- small signs stop rendering beyond ~40x their height
+	local maxDistance = s.MaxDistance or (if size.Y < 3 then math.max(60, size.Y * 45) else 0)
+	local gui = Kit.surface(board, Enum.NormalId.Front, s.PixelsPerStud or 40, 0.25, maxDistance)
 	local border = s.Border
 	if border then
 		local stroke = Kit.frame(gui, UDim2.new(0, 6, 0, 6), UDim2.new(1, -12, 1, -12), background, 1)

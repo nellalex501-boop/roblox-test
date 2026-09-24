@@ -217,7 +217,10 @@ function WorldChecks.spawnClearance(root, spawn)
 	for _, d in root:GetDescendants() do
 		if d:IsA("BasePart") and d.CanCollide and d ~= spawn then
 			local minX, maxX, minY, maxY, minZ, maxZ = Nav.worldBounds(d)
-			local overlapXZ = maxX > center.X - 1.5 and minX < center.X + 1.5 and maxZ > center.Z - 1.5 and minZ < center.Z + 1.5
+			local overlapXZ = maxX > center.X - 1.5
+				and minX < center.X + 1.5
+				and maxZ > center.Z - 1.5
+				and minZ < center.Z + 1.5
 			local overlapY = minY < top + 5.5 and maxY > top + 0.05
 			if overlapXZ and overlapY then
 				table.insert(blockers, d:GetFullName())

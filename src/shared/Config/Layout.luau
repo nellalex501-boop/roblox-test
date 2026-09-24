@@ -40,7 +40,7 @@ Layout.Plaza = { MinX = -66, MaxX = 66, MinZ = -50, MaxZ = 50 } :: Rect
 -- Central landmark: raised dais with the theatre map.
 Layout.Dais = {
 	Center = Vector3.new(0, 0, -4),
-	Radius = 20,
+	Radius = 23,
 	StepHeight = 0.6,
 	Steps = 2,
 }
@@ -161,10 +161,12 @@ Layout.Zones = {
 		DisplayName = "MISSIONS",
 		Subtitle = "CURRENT OPERATIONS BOARD",
 		Kind = "Open",
-		Facade = Vector3.new(0, 0, 40),
+		-- far enough behind the spawn that the default third-person camera
+		-- (~12 studs behind the player) never ends up under the shelter roof
+		Facade = Vector3.new(0, 0, 44.5),
 		Inward = Vector3.new(0, 0, 1),
 		Width = 22,
-		Depth = 6,
+		Depth = 5,
 		Height = 10,
 		Entrances = { { Offset = 0, Width = 22, Height = 10 } },
 		Locator = true,
