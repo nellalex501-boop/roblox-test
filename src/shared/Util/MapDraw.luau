@@ -252,12 +252,69 @@ function MapDraw.theater(parent: Instance, w: number, h: number, options: { high
 		polyline(canvas, axis, w, h, math.max(4, w * 0.009), C.Pact, 5)
 	end
 	local fontSize = math.max(9, w * 0.022)
-	for _, town in t.Towns do
-		local s = math.max(5, w * 0.012)
-		frame(canvas, "Town", town.x * w - s / 2, town.y * h - s / 2, s, s, C.Urban, 6)
-		label(canvas, town.label, town.x * w + s, town.y * h, fontSize * 0.85, C.Label, 7, Vector2.new(0, 0.5))
-	end
 	local mark = math.max(12, w * 0.03)
+	-- labels are placed greedily so none covers another label or a marker:
+	-- markers and towns first (fixed), then town names (right, else left),
+	-- then map names (below, above, right, left of the marker, whichever
+	-- is free first), all inside the canvas
+	type Box = { x0: number, y0: number, x1: number, y1: number }
+	local taken: { Box } = {}
+	local function free(b: Box): boolean
+		if b.x0 < 2 or b.y0 < 2 or b.x1 > w - 2 or b.y1 > h - 2 then
+			return false
+		end
+		for _, o in taken do
+			if b.x0 < o.x1 and o.x0 < b.x1 and b.y0 < o.y1 and o.y0 < b.y1 then
+				return false
+			end
+		end
+		return true
+	end
+	local function labelBox(text: string, size: number, x: number, y: number, anchor: Vector2): Box
+		local lw, lh = size * #text * 0.62 + 8, size * 1.3
+		local x0, y0 = x - anchor.X * lw, y - anchor.Y * lh
+		return { x0 = x0, y0 = y0, x1 = x0 + lw, y1 = y0 + lh }
+	end
+	local townSize = math.max(5, w * 0.012)
+	for _, town in t.Towns do
+		local x, y = town.x * w, town.y * h
+		table.insert(
+			taken,
+			{ x0 = x - townSize / 2, y0 = y - townSize / 2, x1 = x + townSize / 2, y1 = y + townSize / 2 }
+		)
+	end
+	for _, id in Maps.Order do
+		local info = Maps.List[id]
+		local x, y = info.TheaterPos[1] * w, info.TheaterPos[2] * h
+		table.insert(
+			taken,
+			{ x0 = x - mark / 2 - 2, y0 = y - mark / 2 - 2, x1 = x + mark / 2 + 2, y1 = y + mark / 2 + 2 }
+		)
+	end
+	local function place(text: string, size: number, candidates: { { number | Vector2 } }): (number, number, Vector2)
+		for _, c in candidates do
+			local x, y, anchor = c[1] :: number, c[2] :: number, c[3] :: Vector2
+			local b = labelBox(text, size, x, y, anchor)
+			if free(b) then
+				table.insert(taken, b)
+				return x, y, anchor
+			end
+		end
+		local first = candidates[1]
+		return first[1] :: number, first[2] :: number, first[3] :: Vector2
+	end
+	for _, town in t.Towns do
+		local x, y = town.x * w, town.y * h
+		frame(canvas, "Town", x - townSize / 2, y - townSize / 2, townSize, townSize, C.Urban, 6)
+		local size = fontSize * 0.85
+		local lx, ly, anchor = place(town.label, size, {
+			{ x + townSize, y, Vector2.new(0, 0.5) },
+			{ x - townSize, y, Vector2.new(1, 0.5) },
+			{ x, y - townSize, Vector2.new(0.5, 1) },
+			{ x, y + townSize, Vector2.new(0.5, 0) },
+		})
+		label(canvas, town.label, lx, ly, size, C.Label, 7, anchor)
+	end
 	for i, id in Maps.Order do
 		local info = Maps.List[id]
 		local x, y = info.TheaterPos[1] * w, info.TheaterPos[2] * h
@@ -286,7 +343,20 @@ function MapDraw.theater(parent: Instance, w: number, h: number, options: { high
 			if highlighted then Color3.new(0, 0, 0) else Theme.UI.Accent,
 			9
 		)
-		label(canvas, info.Name, x, y + mark, fontSize, C.Label, 9)
+		local gap = mark / 2 + 3
+		local lx, ly, anchor = place(info.Name, fontSize, {
+			{ x, y + gap, Vector2.new(0.5, 0) },
+			{ x, y - gap, Vector2.new(0.5, 1) },
+			{ x + gap, y, Vector2.new(0, 0.5) },
+			{ x - gap, y, Vector2.new(1, 0.5) },
+			{ x + gap, y + gap, Vector2.new(0, 0) },
+			{ x - gap, y + gap, Vector2.new(1, 0) },
+			{ x + gap, y - gap, Vector2.new(0, 1) },
+			{ x - gap, y - gap, Vector2.new(1, 1) },
+		})
+		local name = label(canvas, info.Name, lx, ly, fontSize, C.Label, 9, anchor)
+		name.Name = "MapLabel"
+		name:SetAttribute("MapId", id)
 	end
 	return canvas
 end

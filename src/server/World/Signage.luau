@@ -55,7 +55,7 @@ function Signage.post(parent: Instance, position: Vector3, facing: Vector3, dest
 			Enum.Material.SmoothPlastic,
 			{ Name = "Plate" }
 		)
-		local gui = Kit.surface(plate, Enum.NormalId.Front, 40, 0.25)
+		local gui = Kit.surface(plate, Enum.NormalId.Front, 40, 1)
 		local target = Layout.entrancePoint(zone)
 		local angle = Signage.arrowAngle(position, facing, target)
 		local pointsLeft = angle > 90 or angle < -90
@@ -91,7 +91,8 @@ function Signage.plaque(
 	local model = Kit.model(parent, "Plaque")
 	local s = size or Vector2.new(6, 2.4)
 	local postHeight = 3.4 + s.Y
-	Kit.post(model, CFrame.new(position), postHeight, 0.4, W.SteelDark, Enum.Material.Metal, { Name = "Post" })
+	-- the post rises 0.3 above the plate (its cap never shares the plate's top)
+	Kit.post(model, CFrame.new(position), postHeight + 0.3, 0.4, W.SteelDark, Enum.Material.Metal, { Name = "Post" })
 	local look = CFrame.lookAt(position, position + facing)
 	Kit.sign(model, look * CFrame.new(0, postHeight - s.Y / 2, -0.3), s, text, style)
 	return model

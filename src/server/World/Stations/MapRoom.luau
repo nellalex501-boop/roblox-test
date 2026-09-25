@@ -137,10 +137,12 @@ local function miniature(parent: Instance, top: CFrame, width: number, depth: nu
 		end
 	end
 	for _, box in water do
-		local cf = at(box[1] + box[3] / 2, box[2] + box[4] / 2, 0.32)
+		-- layers 0.06 apart: terrain 0.3, water 0.36, rivers 0.42, roads
+		-- 0.48, highways 0.54
+		local cf = at(box[1] + box[3] / 2, box[2] + box[4] / 2, 0.33)
 		Kit.part(
 			model,
-			Vector3.new(box[3] * width, 0.04, box[4] * depth),
+			Vector3.new(box[3] * width, 0.06, box[4] * depth),
 			cf,
 			MapDraw.Colors.Water,
 			Enum.Material.SmoothPlastic,
@@ -154,16 +156,16 @@ local function miniature(parent: Instance, top: CFrame, width: number, depth: nu
 		strip(
 			river,
 			math.max(0.5, (p.RiverWidth or 0.03) * width),
-			0.33,
+			0.39,
 			MapDraw.Colors.Water,
 			Enum.Material.SmoothPlastic
 		)
 	end
 	for _, road in p.Roads do
-		strip(road, 0.25, 0.34, MapDraw.Colors.Road, Enum.Material.SmoothPlastic)
+		strip(road, 0.25, 0.45, MapDraw.Colors.Road, Enum.Material.SmoothPlastic)
 	end
 	for _, road in highways do
-		strip(road, 0.5, 0.34, MapDraw.Colors.Highway, Enum.Material.SmoothPlastic)
+		strip(road, 0.5, 0.51, MapDraw.Colors.Highway, Enum.Material.SmoothPlastic)
 	end
 	local rng = Random.new(#info.Id * 97)
 	for _, box in p.Forests do
@@ -225,18 +227,12 @@ local function miniature(parent: Instance, top: CFrame, width: number, depth: nu
 		)
 	end
 	for _, s in p.Sectors do
-		Kit.part(
-			model,
-			Vector3.new(0.1, 0.9, 0.1),
-			at(s[1], s[2], 0.75),
-			W.OffWhite,
-			nil,
-			{ Name = "SectorPin", Decor = true }
-		)
+		-- round pin rising above the tallest town block (tops <= 1.2)
+		Kit.post(model, at(s[1], s[2], 0.34), 1.0, 0.1, W.OffWhite, nil, { Name = "SectorPin", Decor = true })
 		Kit.part(
 			model,
 			Vector3.new(0.5, 0.3, 0.05),
-			at(s[1], s[2], 1.05) * CFrame.new(0.25, 0, 0),
+			at(s[1], s[2], 1.18) * CFrame.new(0.3, 0, 0),
 			W.MutedRed,
 			nil,
 			{ Name = "SectorFlag", Decor = true }

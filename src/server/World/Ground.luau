@@ -1,6 +1,7 @@
 --!strict
 -- Ground plane, parade square, road network and sidewalks.
 -- Heights: grass 0.0, asphalt 0.1, plaza/sidewalk 0.3, building floors 0.6.
+-- Painted markings stand 0.06 proud of the surface they are painted on.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -40,10 +41,11 @@ Ground.rectBox = rectBox
 function Ground.build(parent: Instance, detailed: boolean)
 	local folder = Kit.folder(parent, "Ground")
 
-	-- Grass base, large enough to reach the tree line and hills beyond the fence.
+	-- Grass base (the largest part Roblox allows), reaching well past the
+	-- outer ring of hills, so its edge is never in view from the base.
 	local grass = Kit.part(
 		folder,
-		Vector3.new(900, 4, 900),
+		Vector3.new(2048, 4, 2048),
 		CFrame.new(0, Ground.GrassTop - 2, 0),
 		W.Grass,
 		Enum.Material.Grass,
@@ -51,10 +53,25 @@ function Ground.build(parent: Instance, detailed: boolean)
 	)
 	grass.CastShadow = false
 
-	-- Roads
+	-- Roads: the cross roads run through; the others stop at their edges
+	-- (butt joints, so no two asphalt slabs overlap at the junctions)
 	local roads = Kit.folder(folder, "Roads")
 	for _, road in Layout.Roads do
-		local part = rectBox(roads, road, Ground.GrassTop, Ground.RoadTop, W.Asphalt, Enum.Material.Asphalt, road.Name)
+		local rect = { MinX = road.MinX, MaxX = road.MaxX, MinZ = road.MinZ, MaxZ = road.MaxZ }
+		if (road.MaxZ - road.MinZ) > (road.MaxX - road.MinX) then
+			for _, other in Layout.Roads do
+				local crossRoad = (other.MaxX - other.MinX) > (other.MaxZ - other.MinZ)
+				if crossRoad and other.MinX < rect.MaxX and other.MaxX > rect.MinX then
+					if other.MaxZ > rect.MinZ and other.MinZ <= rect.MinZ then
+						rect.MinZ = other.MaxZ
+					end
+					if other.MinZ < rect.MaxZ and other.MaxZ >= rect.MaxZ then
+						rect.MaxZ = other.MinZ
+					end
+				end
+			end
+		end
+		local part = rectBox(roads, rect, Ground.GrassTop, Ground.RoadTop, W.Asphalt, Enum.Material.Asphalt, road.Name)
 		part.CastShadow = false
 	end
 
@@ -178,8 +195,8 @@ local function crossing(parent: Instance, road: Layout.Rect, along: number, widt
 			Kit.box(
 				parent,
 				CFrame.new(),
-				Vector3.new(along - width / 2, y, road.MinZ + offset),
-				Vector3.new(along + width / 2, y + 0.03, road.MinZ + offset + 1.1),
+				Vector3.new(along - width / 2, y - 0.04, road.MinZ + offset),
+				Vector3.new(along + width / 2, y + 0.06, road.MinZ + offset + 1.1),
 				MARKING,
 				nil,
 				{
@@ -191,8 +208,8 @@ local function crossing(parent: Instance, road: Layout.Rect, along: number, widt
 			Kit.box(
 				parent,
 				CFrame.new(),
-				Vector3.new(road.MinX + offset, y, along - width / 2),
-				Vector3.new(road.MinX + offset + 1.1, y + 0.03, along + width / 2),
+				Vector3.new(road.MinX + offset, y - 0.04, along - width / 2),
+				Vector3.new(road.MinX + offset + 1.1, y + 0.06, along + width / 2),
 				MARKING,
 				nil,
 				{
@@ -259,8 +276,8 @@ function Ground.markings(parent: Instance)
 					Kit.box(
 						folder,
 						CFrame.new(),
-						Vector3.new(a, y, centre - 0.2),
-						Vector3.new(a + 4, y + 0.03, centre + 0.2),
+						Vector3.new(a, y - 0.04, centre - 0.2),
+						Vector3.new(a + 4, y + 0.06, centre + 0.2),
 						MARKING,
 						nil,
 						{
@@ -272,8 +289,8 @@ function Ground.markings(parent: Instance)
 					Kit.box(
 						folder,
 						CFrame.new(),
-						Vector3.new(centre - 0.2, y, a),
-						Vector3.new(centre + 0.2, y + 0.03, a + 4),
+						Vector3.new(centre - 0.2, y - 0.04, a),
+						Vector3.new(centre + 0.2, y + 0.06, a + 4),
 						MARKING,
 						nil,
 						{
@@ -287,38 +304,84 @@ function Ground.markings(parent: Instance)
 		end
 	end
 
-	-- parking lot beside the canteen
-	local lot = { MinX = 40, MaxX = 70, MinZ = 70, MaxZ = 128 }
-	local asphalt =
-		rectBox(folder, lot, Ground.GrassTop, Ground.RoadTop, W.AsphaltLight, Enum.Material.Asphalt, "ParkingLot")
-	asphalt.CastShadow = false
-	local drive = rectBox(
-		folder,
-		{ MinX = 50, MaxX = 60, MinZ = south.MaxZ - 0.5, MaxZ = lot.MinZ + 0.5 },
-		Ground.GrassTop,
-		Ground.PavedTop - 0.08,
-		W.AsphaltLight,
-		Enum.Material.Asphalt,
-		"Driveway"
-	)
-	drive.CastShadow = false
-	for i = 0, 11 do
-		local z = lot.MinZ + 1 + i * 5
-		for _, xs in { { lot.MinX, lot.MinX + 10 }, { lot.MaxX - 10, lot.MaxX } } do
-			Kit.box(
-				folder,
-				CFrame.new(),
-				Vector3.new(xs[1], Ground.RoadTop, z - 0.15),
-				Vector3.new(xs[2], Ground.RoadTop + 0.03, z + 0.15),
-				MARKING,
-				nil,
-				{
-					Name = "StallLine",
-					Decor = true,
-				}
-			)
-		end
+	-- staff parking: access lane + field (asphalt), painted stall lines and
+	-- the lane's centre line, kerbs all round (butt-jointed), a footpath
+	-- along the west side
+	-- (the road's sidewalk runs across the lane mouth)
+	local P = Layout.Parking
+	local lane, field = P.Lane, P.Field
+	local laneStart = south.MaxZ + Layout.SidewalkWidth
+	for _, spec in { { rect = lane, name = "ParkingLane" }, { rect = field, name = "ParkingLot" } } do
+		local rect = spec.rect
+		local minZ = if spec.name == "ParkingLane" then laneStart else rect.MinZ
+		local slab = rectBox(
+			folder,
+			{ MinX = rect.MinX, MaxX = rect.MaxX, MinZ = minZ, MaxZ = rect.MaxZ },
+			Ground.GrassTop,
+			Ground.RoadTop,
+			W.AsphaltLight,
+			Enum.Material.Asphalt,
+			spec.name
+		)
+		slab.CastShadow = false
 	end
+	local kerbTop = Ground.PavedTop
+	for _, rect in
+		{
+			{ MinX = lane.MinX - 0.6, MaxX = lane.MinX, MinZ = laneStart, MaxZ = field.MaxZ + 0.6 },
+			{ MinX = lane.MinX, MaxX = field.MaxX + 0.6, MinZ = field.MaxZ, MaxZ = field.MaxZ + 0.6 },
+			{ MinX = field.MaxX, MaxX = field.MaxX + 0.6, MinZ = field.MinZ - 0.6, MaxZ = field.MaxZ },
+			{ MinX = lane.MaxX + 0.6, MaxX = field.MaxX, MinZ = field.MinZ - 0.6, MaxZ = field.MinZ },
+			{ MinX = lane.MaxX, MaxX = lane.MaxX + 0.6, MinZ = laneStart, MaxZ = field.MinZ },
+		}
+	do
+		local kerb =
+			rectBox(folder, rect, Ground.GrassTop, kerbTop, W.ConcreteLight, Enum.Material.Concrete, "ParkingKerb")
+		kerb.CastShadow = false
+	end
+	local path = rectBox(
+		folder,
+		{ MinX = lane.MinX - 3.6, MaxX = lane.MinX - 0.6, MinZ = laneStart, MaxZ = field.MaxZ + 0.6 },
+		Ground.GrassTop,
+		kerbTop,
+		W.Concrete,
+		Enum.Material.Pavement,
+		"ParkingPath"
+	)
+	path.CastShadow = false
+	-- paint: 0.25 wide lines 0.06 above the asphalt, stopping short of kerbs
+	local function paint(name: string, a: Vector3, b: Vector3)
+		Kit.box(folder, CFrame.new(), a, b, MARKING, nil, { Name = name, Decor = true })
+	end
+	local lineY0, lineY1 = Ground.RoadTop - 0.04, Ground.RoadTop + 0.06
+	for k = 0, P.NorthStalls do
+		local x = P.NorthRowX + k * P.StallWidth
+		paint(
+			"StallLine",
+			Vector3.new(x - 0.125, lineY0, field.MinZ + 0.4),
+			Vector3.new(x + 0.125, lineY1, field.MinZ + P.StallDepth)
+		)
+	end
+	for k = 0, P.SouthStalls do
+		local x = P.SouthRowX + k * P.StallWidth
+		paint(
+			"StallLine",
+			Vector3.new(x - 0.125, lineY0, field.MaxZ - P.StallDepth),
+			Vector3.new(x + 0.125, lineY1, field.MaxZ - 0.4)
+		)
+	end
+	-- dashed centre line up the lane, a stop line at the road
+	local mid = (lane.MinX + lane.MaxX) / 2
+	local z = laneStart + 3
+	while z + 3 < lane.MaxZ - 2 do
+		paint("CentreLine", Vector3.new(mid - 0.125, lineY0, z), Vector3.new(mid + 0.125, lineY1, z + 3))
+		z += 6
+	end
+	paint(
+		"StopLine",
+		Vector3.new(mid + 0.4, lineY0, laneStart + 0.4),
+		Vector3.new(lane.MaxX - 0.4, lineY1, laneStart + 1)
+	)
 	return folder
 end
 

@@ -72,13 +72,13 @@ function Props.picnicTable(parent: Instance, cf: CFrame): Model
 			Kit.part(
 				model,
 				Vector3.new(0.3, 3.1, 0.3),
-				cf * CFrame.new(x, 1.35, 0) * CFrame.Angles(math.rad(34 * s), 0, 0),
+				cf * CFrame.new(x + s * 0.18, 1.35, 0) * CFrame.Angles(math.rad(34 * s), 0, 0),
 				W.BrownDark,
 				WOOD,
 				decor("Leg")
 			)
 		end
-		Kit.part(model, Vector3.new(0.3, 0.25, 4.6), cf * CFrame.new(x, 1.3, 0), W.BrownDark, WOOD, decor("Brace"))
+		Kit.part(model, Vector3.new(0.5, 0.25, 4.6), cf * CFrame.new(x, 1.3, 0), W.BrownDark, WOOD, decor("Brace"))
 	end
 	return model
 end
@@ -104,7 +104,9 @@ function Props.streetLamp(parent: Instance, cf: CFrame, light: boolean?, height:
 	local h = height or 16
 	Kit.post(model, cf, 0.8, 1.1, W.ConcreteDark, CONCRETE, solid("Footing"))
 	Kit.post(model, cf * CFrame.new(0, 0.8, 0), h - 0.8, 0.5, W.SteelDark, METAL, solid("Pole"))
-	Kit.part(model, Vector3.new(0.3, 0.3, 3.2), cf * CFrame.new(0, h - 0.1, -1.4), W.SteelDark, METAL, decor("Arm"))
+	-- the arm runs from the pole into the head, clear of the pole's cap and
+	-- the head's top and bottom
+	Kit.part(model, Vector3.new(0.3, 0.26, 3.2), cf * CFrame.new(0, h - 0.24, -1.4), W.SteelDark, METAL, decor("Arm"))
 	Kit.part(model, Vector3.new(1.2, 0.5, 1.8), cf * CFrame.new(0, h - 0.2, -3.1), W.SteelDark, METAL, decor("Head"))
 	local lens = Kit.part(
 		model,
@@ -201,7 +203,7 @@ function Props.crate(parent: Instance, cf: CFrame, size: Vector3?, color: Color3
 	-- darker band so boxes read as crates, not blocks
 	Kit.part(
 		parent,
-		Vector3.new(s.X + 0.06, 0.25, s.Z + 0.06),
+		Vector3.new(s.X + 0.12, 0.25, s.Z + 0.12),
 		cf * CFrame.new(0, s.Y * 0.62, 0),
 		W.BrownDark,
 		WOOD,
@@ -238,9 +240,12 @@ function Props.pallet(parent: Instance, cf: CFrame, loaded: boolean?): Model
 	return model
 end
 
--- Row of sandbags along local X (two courses, staggered).
-function Props.sandbags(parent: Instance, cf: CFrame, length: number, courses: number?): Model
+-- Row of sandbags along local X (two courses by default, staggered).
+-- `step` (course height, default 0.66) lets runs that meet at a corner
+-- stack at different heights.
+function Props.sandbags(parent: Instance, cf: CFrame, length: number, courses: number?, step: number?): Model
 	local model = Kit.model(parent, "Sandbags")
+	local rise = step or 0.66
 	local n = math.max(1, math.floor(length / 1.6))
 	local tan = Color3.fromRGB(150, 136, 102)
 	for course = 0, (courses or 2) - 1 do
@@ -248,11 +253,16 @@ function Props.sandbags(parent: Instance, cf: CFrame, length: number, courses: n
 		for i = 0, n - 1 do
 			local x = -length / 2 + 0.8 + i * 1.6 + offset
 			if x <= length / 2 - 0.6 then
+				-- bags alternate between two fills (heights 0.70 / 0.64), so
+				-- neighbouring bags, and runs meeting at a corner, never
+				-- share a top face
+				local full = (i + course) % 2 == 0
+				local h = if full then 0.7 else 0.64
 				Kit.part(
 					model,
-					Vector3.new(1.55, 0.7, 1.1),
-					cf * CFrame.new(x, 0.35 + course * 0.66, 0) * CFrame.Angles(0, (i % 3 - 1) * 0.04, 0),
-					if (i + course) % 2 == 0 then tan else Color3.fromRGB(138, 124, 92),
+					Vector3.new(1.55, h, 1.1),
+					cf * CFrame.new(x, h / 2 + course * rise, course * 0.09) * CFrame.Angles(0, (i % 3 - 1) * 0.04, 0),
+					if full then tan else Color3.fromRGB(138, 124, 92),
 					FABRIC,
 					{ Name = "Sandbag", Shadow = course == 0 }
 				)
@@ -266,7 +276,7 @@ function Props.jerseyBarrier(parent: Instance, cf: CFrame): Model
 	local model = Kit.model(parent, "JerseyBarrier")
 	Kit.part(model, Vector3.new(6, 1, 2), cf * CFrame.new(0, 0.5, 0), W.Concrete, CONCRETE, solid("Base"))
 	Kit.part(model, Vector3.new(6, 1.8, 0.9), cf * CFrame.new(0, 1.9, 0), W.Concrete, CONCRETE, solid("Wall"))
-	Kit.part(model, Vector3.new(6.05, 0.3, 0.95), cf * CFrame.new(0, 2.3, 0), W.HazardYellow, CONCRETE, decor("Stripe"))
+	Kit.part(model, Vector3.new(6.1, 0.3, 1), cf * CFrame.new(0, 2.3, 0), W.HazardYellow, CONCRETE, decor("Stripe"))
 	return model
 end
 
@@ -416,7 +426,7 @@ function Props.noticeBoard(parent: Instance, cf: CFrame, title: string, lines: {
 	end
 	local board = Kit.part(model, Vector3.new(5.4, 3.6, 0.3), cf * CFrame.new(0, 4.6, 0), W.Cork, WOOD, solid("Board"))
 	Kit.part(model, Vector3.new(6, 0.3, 1), cf * CFrame.new(0, 6.65, 0.1), W.BrownDark, WOOD, decor("Roof"))
-	local gui = Kit.surface(board, Enum.NormalId.Front, 40, 0.6, 60)
+	local gui = Kit.surface(board, Enum.NormalId.Front, 40, 1, 80)
 	Kit.frame(gui, UDim2.fromScale(0.05, 0.05), UDim2.fromScale(0.9, 0.9), W.Paper)
 	Kit.text(gui, {
 		Name = "Title",
@@ -446,7 +456,7 @@ function Props.phoneBox(parent: Instance, cf: CFrame): Model
 	Kit.part(model, Vector3.new(3.4, 0.4, 3.4), cf * CFrame.new(0, 0.2, 0), W.ConcreteDark, CONCRETE, solid("Base"))
 	for _, x in { -1.5, 1.5 } do
 		for _, z in { -1.5, 1.5 } do
-			Kit.part(model, Vector3.new(0.35, 7.4, 0.35), cf * CFrame.new(x, 4.1, z), yellow, METAL, solid("Frame"))
+			Kit.part(model, Vector3.new(0.35, 7.3, 0.35), cf * CFrame.new(x, 4.05, z), yellow, METAL, solid("Frame"))
 		end
 	end
 	Kit.part(model, Vector3.new(3.4, 0.6, 3.4), cf * CFrame.new(0, 8, 0), yellow, METAL, solid("Roof"))
@@ -580,8 +590,8 @@ function Props.chair(parent: Instance, cf: CFrame, color: Color3?): Model
 	local model = Kit.model(parent, "Chair")
 	local c = color or W.SteelDark
 	Kit.part(model, Vector3.new(1.8, 0.25, 1.8), cf * CFrame.new(0, 1.6, 0), c, PLASTIC, decor("Seat"))
-	Kit.part(model, Vector3.new(1.8, 1.6, 0.2), cf * CFrame.new(0, 2.5, 0.85), c, PLASTIC, decor("Back"))
-	Kit.post(model, cf, 1.5, 0.25, W.Charcoal, METAL, decor("Stem"))
+	Kit.part(model, Vector3.new(1.7, 1.6, 0.2), cf * CFrame.new(0, 2.5, 0.85), c, PLASTIC, decor("Back"))
+	Kit.post(model, cf * CFrame.new(0, 0.1, 0), 1.4, 0.25, W.Charcoal, METAL, decor("Stem"))
 	Kit.part(model, Vector3.new(1.6, 0.15, 1.6), cf * CFrame.new(0, 0.08, 0), W.Charcoal, METAL, decor("Base"))
 	return model
 end
@@ -782,35 +792,78 @@ end
 function Props.radio(parent: Instance, cf: CFrame): Model
 	local model = Kit.model(parent, "Radio")
 	Kit.part(model, Vector3.new(1.8, 1.1, 0.7), cf * CFrame.new(0, 0.55, 0), W.BrownDark, WOOD, decor("Case"))
-	Kit.part(model, Vector3.new(0.9, 0.7, 0.05), cf * CFrame.new(-0.3, 0.6, -0.36), W.Charcoal, FABRIC, decor("Grille"))
+	Kit.part(model, Vector3.new(0.9, 0.7, 0.05), cf * CFrame.new(-0.3, 0.6, -0.4), W.Charcoal, FABRIC, decor("Grille"))
 	Kit.part(model, Vector3.new(0.08, 1.6, 0.08), cf * CFrame.new(0.7, 1.8, 0.2), W.Steel, METAL, decor("Aerial"))
 	return model
 end
 
+-- A tube (cylinder) from a to b in the prop's local frame.
+local function tube(
+	parent: Instance,
+	cf: CFrame,
+	a: Vector3,
+	b: Vector3,
+	diameter: number,
+	color: Color3,
+	name: string
+): Part
+	local p0 = (cf * CFrame.new(a)).Position
+	local p1 = (cf * CFrame.new(b)).Position
+	return Kit.cylinder(
+		parent,
+		(p1 - p0).Magnitude,
+		diameter,
+		CFrame.lookAt((p0 + p1) / 2, p1) * CFrame.Angles(0, math.pi / 2, 0),
+		color,
+		METAL,
+		decor(name)
+	)
+end
+
+-- Diamond-frame bicycle: round tubes, fork, stays, crank and pedals,
+-- saddle on its post, bars on the stem. Front toward -Z.
 function Props.bicycle(parent: Instance, cf: CFrame): Model
 	local model = Kit.model(parent, "Bicycle")
-	for _, z in { -1.3, 1.3 } do
-		Kit.cylinder(
+	local rear, front = Vector3.new(0, 1.1, 1.3), Vector3.new(0, 1.1, -1.3)
+	local crank = Vector3.new(0, 0.95, 0)
+	local seat = Vector3.new(0, 2.15, 0.37)
+	local headTop, headBottom = Vector3.new(0, 2.3, -0.92), Vector3.new(0, 1.9, -0.84)
+	-- tyre and rim caps sit 0.06 apart so they never flicker
+	for _, hub in { rear, front } do
+		Kit.cylinder(model, 0.1, 2.2, cf * CFrame.new(hub), W.Rubber, PLASTIC, decor("Tyre"))
+		Kit.cylinder(model, 0.22, 1.86, cf * CFrame.new(hub), W.Steel, METAL, decor("Rim"))
+	end
+	local frameColor = W.MutedBlue
+	tube(model, cf, seat, headTop, 0.11, frameColor, "TopTube")
+	tube(model, cf, crank, headBottom, 0.13, frameColor, "DownTube")
+	tube(model, cf, crank, seat + Vector3.new(0, 0.1, 0.03), 0.11, frameColor, "SeatTube")
+	tube(model, cf, headBottom, headTop, 0.15, frameColor, "HeadTube")
+	for _, side in { -1, 1 } do
+		local near, far = Vector3.new(side * 0.05, 0, 0), Vector3.new(side * 0.2, 0, 0)
+		tube(model, cf, crank + near, rear + far, 0.07, frameColor, "ChainStay")
+		tube(model, cf, seat + near, rear + far, 0.07, frameColor, "SeatStay")
+		tube(model, cf, headBottom + near, front + far, 0.08, W.Steel, "Fork")
+	end
+	-- saddle on its post; bars on the stem
+	tube(model, cf, seat, Vector3.new(0, 2.5, 0.47), 0.07, W.Steel, "SeatPost")
+	Kit.part(model, Vector3.new(0.42, 0.12, 0.72), cf * CFrame.new(0, 2.56, 0.5), W.Charcoal, FABRIC, decor("Saddle"))
+	tube(model, cf, headTop, Vector3.new(0, 2.62, -0.98), 0.08, W.Steel, "Stem")
+	tube(model, cf, Vector3.new(-0.75, 2.62, -1.02), Vector3.new(0.75, 2.62, -1.02), 0.08, W.Steel, "Handlebar")
+	-- chainring, crank arms, pedals and the chain's top run on the drive side
+	Kit.cylinder(model, 0.04, 0.46, cf * CFrame.new(crank + Vector3.new(0.3, 0, 0)), W.Steel, METAL, decor("Chainring"))
+	for _, side in { -1, 1 } do
+		local arm = Vector3.new(side * 0.36, -side * 0.34, side * 0.1)
+		tube(model, cf, crank + Vector3.new(side * 0.34, 0, 0), crank + arm, 0.06, W.SteelDark, "CrankArm")
+		Kit.part(
 			model,
-			0.15,
-			2.2,
-			cf * CFrame.new(0, 1.1, z) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(0, math.pi / 2, 0),
+			Vector3.new(0.26, 0.06, 0.16),
+			cf * CFrame.new(crank + arm + Vector3.new(side * 0.12, 0, 0)),
 			W.Rubber,
 			PLASTIC,
-			decor("Wheel")
+			decor("Pedal")
 		)
 	end
-	Kit.part(
-		model,
-		Vector3.new(0.15, 0.15, 2.8),
-		cf * CFrame.new(0, 1.9, 0) * CFrame.Angles(math.rad(8), 0, 0),
-		W.MutedBlue,
-		METAL,
-		decor("Frame")
-	)
-	Kit.part(model, Vector3.new(0.15, 1.4, 0.15), cf * CFrame.new(0, 1.6, 0.6), W.MutedBlue, METAL, decor("SeatTube"))
-	Kit.part(model, Vector3.new(0.5, 0.15, 0.8), cf * CFrame.new(0, 2.4, 0.7), W.Charcoal, FABRIC, decor("Saddle"))
-	Kit.part(model, Vector3.new(1.4, 0.12, 0.12), cf * CFrame.new(0, 2.6, -1.1), W.Steel, METAL, decor("Handlebar"))
+	tube(model, cf, crank + Vector3.new(0.3, 0.21, 0), rear + Vector3.new(0.3, 0.1, 0), 0.04, W.SteelDark, "Chain")
 	return model
 end
 

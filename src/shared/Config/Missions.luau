@@ -25,7 +25,7 @@ export type Mission = {
 local Missions = {}
 
 Missions.Groups = {
-	DAILY = { Title = "CURRENT OPERATIONS", Subtitle = "RESETS DAILY 00:00 UTC" },
+	DAILY = { Title = "CURRENT OPERATIONS", Subtitle = "RESETS DAILY 0000Z" },
 	ORIENTATION = { Title = "ORIENTATION ORDERS", Subtitle = "ONE-TIME · NEW COMMANDERS" },
 }
 

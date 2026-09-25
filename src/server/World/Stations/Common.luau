@@ -156,10 +156,11 @@ end
 -- Small lectern with a slanted placard facing +Z of `cf`.
 function Common.placard(parent: Instance, cf: CFrame, title: string, subtitle: string?, stripe: Color3?): Part
 	local model = Kit.model(parent, "Placard")
+	-- the stand starts on top of the base plate (no shared bottom face)
 	Kit.part(
 		model,
-		Vector3.new(0.5, 3.2, 0.5),
-		cf * CFrame.new(0, 1.6, 0),
+		Vector3.new(0.5, 3.0, 0.5),
+		cf * CFrame.new(0, 1.7, 0),
 		W.SteelDark,
 		Enum.Material.Metal,
 		{ Name = "Stand" }

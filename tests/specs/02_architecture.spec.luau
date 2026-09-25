@@ -9,6 +9,7 @@ local serde = require("@lune/serde")
 local Nav = require("../lib/Nav")
 local WorldChecks = require("../lib/WorldChecks")
 
+local CFrame = roblox.CFrame
 local Vector3 = roblox.Vector3
 
 local function hsv(color)
@@ -39,7 +40,8 @@ return function(test)
 		for name, value in stats do
 			t.metric(name, value)
 		end
-		t.le(stats.parts, 9000, "part count (Phase 4 detailing still to come)")
+		-- (pyramid-tier pines are 25 plates each; all decor, no collision)
+		t.le(stats.parts, 10500, "part count (Phase 4 detailing still to come)")
 		t.eq(stats.unanchored, 0, "no physics-simulated parts")
 		t.eq(stats.touchEnabled, 0, "CanTouch disabled on all static parts")
 		t.le(stats.transparentParts, 20, "semi-transparent parts kept rare")
@@ -153,6 +155,45 @@ return function(test)
 		nav = WorldChecks.navigation(runtime, root)
 		for _, dest in nav.destinations do
 			t.ok(dest.studs ~= nil, ("%s %s reachable"):format(dest.kind, dest.id))
+		end
+	end)
+
+	test("doorways: nothing collidable across any entrance", function(t)
+		-- rays through every entrance (centre and both sides, knee to head
+		-- height) from outside to inside; a plinth or rail running across a
+		-- doorway is caught here even when it is thinner than the nav grid
+		local Geometry = require("../lib/Geometry")
+		local grid = Geometry.index(root, function(p)
+			return p.CanCollide
+		end, 8)
+		-- (buildings only: the open zones' "entrances" are frontages, with a
+		-- notice board or a low wall behind them by design)
+		for _, zoneId in Layout.ZoneOrder do
+			local zone = Layout.Zones[zoneId]
+			local frame = Layout.frame(zone)
+			for i, entrance in if zone.Kind == "Building" then zone.Entrances else {} do
+				local blocked = {}
+				local side = math.max(entrance.Width / 2 - 1.5, 0)
+				for _, x in { -side, 0, side } do
+					for _, y in { 1.4, 2.5, 4 } do
+						local from = (frame * CFrame.new(entrance.Offset + x, y, 6)).Position
+						local to = (frame * CFrame.new(entrance.Offset + x, y, -6)).Position
+						local hit = Geometry.raycast(grid, from, to - from)
+						if hit then
+							table.insert(blocked, ("%s at x%+.1f y%.1f"):format(hit.Name, x, y))
+						end
+					end
+				end
+				t.eq(
+					#blocked,
+					0,
+					("%s entrance %d clear%s"):format(
+						zoneId,
+						i,
+						if #blocked > 0 then " (" .. table.concat(blocked, ", ") .. ")" else ""
+					)
+				)
+			end
 		end
 	end)
 

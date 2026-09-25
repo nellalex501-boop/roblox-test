@@ -19,9 +19,10 @@ local MissionBoard = {}
 local INK = Color3.fromRGB(40, 36, 32)
 local STAMP_RED = Color3.fromRGB(150, 50, 44)
 local CORK_FACE = -3.3 + 0.25 -- front face of the cork (zone-local z)
--- Every pinned layer sits further out than the one below it, so no two
--- items share a plane: orders, then clippings/photos/cards, then string.
-local LAYER_Z = { CORK_FACE + 0.03, CORK_FACE + 0.06, CORK_FACE + 0.09 }
+-- Every pinned layer sits 0.06 further out than the one below it (sheet
+-- fronts at +0.08, +0.14, +0.20 off the cork), so no two items or the cork
+-- share a plane: orders, then clippings/photos/cards, then notes.
+local LAYER_Z = { CORK_FACE + 0.07, CORK_FACE + 0.13, CORK_FACE + 0.19 }
 
 local function paper(
 	parent: Instance,
@@ -51,7 +52,7 @@ local function paper(
 end
 
 local function pin(parent: Instance, frame: CFrame, x: number, y: number, color: Color3): Vector3
-	local pos = (frame * CFrame.new(x, y, CORK_FACE + 0.14)).Position
+	local pos = (frame * CFrame.new(x, y, CORK_FACE + 0.24)).Position
 	Kit.ball(parent, 0.26, CFrame.new(pos), color, Enum.Material.SmoothPlastic, { Name = "Pin", Decor = true })
 	return pos
 end

@@ -37,11 +37,12 @@ local function dais(parent: Instance)
 			{ Name = "DaisStep" .. step }
 		)
 	end
-	-- dark granite ring inlay on the upper step
+	-- dark granite ring inlay on the upper step, the light centre disc 0.06
+	-- above it (each top 0.06 proud of the one below)
 	Kit.post(
 		parent,
 		base * CFrame.new(0, cfg.StepHeight * cfg.Steps, 0),
-		0.04,
+		0.06,
 		cfg.Radius * 2 - 6,
 		W.DarkGrey,
 		Enum.Material.Granite,
@@ -53,7 +54,7 @@ local function dais(parent: Instance)
 	Kit.post(
 		parent,
 		base * CFrame.new(0, cfg.StepHeight * cfg.Steps, 0),
-		0.06,
+		0.12,
 		cfg.Radius * 2 - 7.6,
 		W.ConcreteLight,
 		Enum.Material.Concrete,
@@ -68,7 +69,8 @@ local function mapTable(parent: Instance)
 	local model = Kit.model(parent, "TheaterMapTable")
 	local top = Plaza.tableFrame()
 	local size = Plaza.TableSize
-	local daisTop = Ground.PavedTop + Layout.Dais.StepHeight * Layout.Dais.Steps
+	-- legs stand on the centre disc (0.12 above the top step)
+	local daisTop = Ground.PavedTop + Layout.Dais.StepHeight * Layout.Dais.Steps + 0.12
 	local legH = Plaza.TableTopY - 1.1 - daisTop
 	for _, x in { -size.X / 2 + 1.2, 0, size.X / 2 - 1.2 } do
 		for _, z in { -size.Y / 2 + 1.2, size.Y / 2 - 1.2 } do
@@ -108,12 +110,16 @@ local function mapTable(parent: Instance)
 		}
 	)
 	surface:SetAttribute("MapSurface", "Theater")
+	-- rim: long sides take the corners, short sides fit between them
 	for _, seg in
 		{
 			{ Vector3.new(-size.X / 2, -0.3, -size.Y / 2), Vector3.new(size.X / 2, 0.35, -size.Y / 2 + 0.6) },
 			{ Vector3.new(-size.X / 2, -0.3, size.Y / 2 - 0.6), Vector3.new(size.X / 2, 0.35, size.Y / 2) },
-			{ Vector3.new(-size.X / 2, -0.3, -size.Y / 2), Vector3.new(-size.X / 2 + 0.6, 0.35, size.Y / 2) },
-			{ Vector3.new(size.X / 2 - 0.6, -0.3, -size.Y / 2), Vector3.new(size.X / 2, 0.35, size.Y / 2) },
+			{
+				Vector3.new(-size.X / 2, -0.3, -size.Y / 2 + 0.6),
+				Vector3.new(-size.X / 2 + 0.6, 0.35, size.Y / 2 - 0.6),
+			},
+			{ Vector3.new(size.X / 2 - 0.6, -0.3, -size.Y / 2 + 0.6), Vector3.new(size.X / 2, 0.35, size.Y / 2 - 0.6) },
 		}
 	do
 		Kit.box(model, top, seg[1], seg[2], W.Steel, Enum.Material.Metal, { Name = "Rim" })
@@ -228,10 +234,10 @@ local function assemblyPoint(root: Instance, parent: Instance)
 	local z0, z1 = cfg.Center.Z - cfg.ArcDepth - 4, cfg.Center.Z + 4
 	for _, seg in
 		{
-			{ Vector3.new(-halfSpan, y, z0), Vector3.new(halfSpan, y + 0.03, z0 + 0.5) },
-			{ Vector3.new(-halfSpan, y, z1 - 0.5), Vector3.new(halfSpan, y + 0.03, z1) },
-			{ Vector3.new(-halfSpan, y, z0), Vector3.new(-halfSpan + 0.5, y + 0.03, z1) },
-			{ Vector3.new(halfSpan - 0.5, y, z0), Vector3.new(halfSpan, y + 0.03, z1) },
+			{ Vector3.new(-halfSpan, y - 0.04, z0), Vector3.new(halfSpan, y + 0.06, z0 + 0.5) },
+			{ Vector3.new(-halfSpan, y - 0.04, z1 - 0.5), Vector3.new(halfSpan, y + 0.06, z1) },
+			{ Vector3.new(-halfSpan, y - 0.04, z0 + 0.5), Vector3.new(-halfSpan + 0.5, y + 0.06, z1 - 0.5) },
+			{ Vector3.new(halfSpan - 0.5, y - 0.04, z0 + 0.5), Vector3.new(halfSpan, y + 0.06, z1 - 0.5) },
 		}
 	do
 		Kit.box(parent, CFrame.new(), seg[1], seg[2], W.HazardYellow, nil, { Name = "AssemblyLine", Decor = true })
@@ -258,10 +264,10 @@ local function assemblyPoint(root: Instance, parent: Instance)
 		-- painted square border on each pad
 		for _, seg in
 			{
-				{ Vector3.new(-2, 0.1, -2), Vector3.new(2, 0.13, -1.6) },
-				{ Vector3.new(-2, 0.1, 1.6), Vector3.new(2, 0.13, 2) },
-				{ Vector3.new(-2, 0.1, -2), Vector3.new(-1.6, 0.13, 2) },
-				{ Vector3.new(1.6, 0.1, -2), Vector3.new(2, 0.13, 2) },
+				{ Vector3.new(-2, 0.1, -2), Vector3.new(2, 0.16, -1.6) },
+				{ Vector3.new(-2, 0.1, 1.6), Vector3.new(2, 0.16, 2) },
+				{ Vector3.new(-2, 0.1, -1.6), Vector3.new(-1.6, 0.16, 1.6) },
+				{ Vector3.new(1.6, 0.1, -1.6), Vector3.new(2, 0.16, 1.6) },
 			}
 		do
 			Kit.box(parent, CFrame.new(pos), seg[1], seg[2], W.HazardYellow, nil, { Name = "PadBorder", Decor = true })

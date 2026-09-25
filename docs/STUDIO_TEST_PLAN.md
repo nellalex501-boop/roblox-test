@@ -20,7 +20,7 @@ Legend: **Steps** → **Expected**. Tick each box as you go.
 ## 1. Blockout: movement and scale
 
 - [ ] **Spawn.** Press Play (Solo). → You spawn on one of the eight yellow-framed pads south of the dais, facing north toward the Operations Center tower and radome. You never spawn inside the dais or the map table.
-- [ ] **Steps and floors.** Walk onto the dais (two 0.6-stud steps), into every building entrance, and onto the Hall of Commanders slab and the HQ floor (1.2 studs). → No stepping snags or jumping needed.
+- [ ] **Steps and floors.** Walk onto the dais (two 0.6-stud steps), into every building entrance, and onto the Hall of Commanders slab and the HQ floor (1.2 studs). → No stepping snags or jumping needed. In particular the Map Room, Command HQ and Operations Center doors: nothing runs across the doorway at knee height.
 - [ ] **Walking times.** Walk from spawn to the Map Room entrance, the farthest building. → Takes about 9 s at the default WalkSpeed of 16.
 - [ ] **Camera.** Walk through each interior. → The camera (max zoom 55) stays inside rooms without clipping far into walls or ceilings, and doesn't get stuck under the Mission Board shelter roof.
 - [ ] **Boundary.** Try to leave the base through the fence or past the gate barrier. → You can't.
@@ -30,6 +30,9 @@ Legend: **Steps** → **Expected**. Tick each box as you go.
 - [ ] **Palette.** Look around. → Colours read as muted olive, concrete, brown and faded red and blue. Neon appears only on small lamp bulbs and fluorescent tubes.
 - [ ] **Lighting.** → A late-afternoon, slightly hazy look: ClockTime 15.6, shadows on, soft atmosphere. It is not too dark indoors. Tweak `World/LightingSetup.luau` if needed.
 - [ ] **Signs from spawn.** → OPERATIONS CENTER, MAP ROOM, COMMAND HQ, GARAGE and HALL OF COMMANDERS are readable from the spawn pads. Signpost arrows point to the named buildings.
+- [ ] **Plates and hanging signs.** → Every BLDG number plate sits on plain wall (not over a window, column or strut). Standing just inside the Operations Center door, the five terminal signs (PRIVATE, 1v1, QUICK MATCH, 2v2, 4v4) are all fully readable and none hides the command wall display.
+- [ ] **No flicker.** Walk the base and look closely at road markings, the Ops floor pads, rooflines, the Mission Board papers and the winter yard. → Nothing flickers (z-fighting). The headless detector reports zero visible coplanar overlaps.
+- [ ] **HQ materials.** → The Command HQ reads as a plastered German Kaserne with a clay-tile roof, dormers and a sandstone portal. Plaster, ClayRoofTiles and Sandstone are newer materials; if they look flat, check that the place uses the current material set.
 - [ ] **Fonts.** → Headers use Oswald, text uses Roboto Condensed and Roboto Mono, and documents use Special Elite. All glyphs render; watch for "·", "—", "★" and "ä/ü/ß".
 - [ ] **SurfaceGui culling.** Walk away from small signs and screens. → They fade out beyond their MaxDistance. Large landmark signs stay visible.
 - [ ] **Flags.** → Flag emblems are the compass, chevron and diamond designs, not mirrored. The design reads correctly from both sides.
@@ -49,10 +52,11 @@ Legend: **Steps** → **Expected**. Tick each box as you go.
   - the event briefing desk
 
   → The right panel and tab open each time.
-- [ ] **Closing.** → Esc, the CLOSE button and walking about 8 studs away each close the panel. Prompts are hidden while a panel is open.
+- [ ] **Closing.** → The ✕ button, the **X** key and walking about 8 studs away each close the panel. Esc opens the Roblox menu and must not be needed. Prompts are hidden while a panel is open.
 - [ ] **Gamepad (optional).** → **X** triggers, **B** closes, **LB/RB** switch tabs, and the first button is selected.
 - [ ] **Touch (Device emulator, e.g. iPhone).** → The prompt plate shows TAP, and tapping it opens the panel. Panels fit the screen below the top bar and text stays readable. The HUD commander card sits below the top bar and clear of the thumbstick.
-- [ ] **Vehicle inspection.** Press E at a Garage vehicle. → The sheet docks on the right and the camera eases into a slow orbit around that vehicle. Closing hands the camera back.
+- [ ] **Garage showroom.** Press E at the showroom console. → A full-screen viewer opens and the camera orbits the vehicle on the turntable. Pick another vehicle in the list. → It replaces the one on the turntable (for you only). Drag to turn the camera, use the wheel to zoom. → The camera never leaves the hall or ends up behind a pillar. Preview, buy and apply a camouflage. Close with ✕. → The camera returns to your character.
+- [ ] **Event unit inspection.** Press E at the T-80BV "Zima" in the winter yard. → The sheet docks on the right and the camera slowly orbits the tank. Closing hands the camera back.
 - [ ] **Registry and paint shop.** → The viewport previews show the selected vehicle turning slowly. Choosing a camo swatch repaints the preview.
 - [ ] **Theatre and map drawings.** → Map previews and the theatre map draw correctly: roads, rivers, sectors A–F, spawns and the landmark diamond.
 
@@ -73,10 +77,12 @@ Legend: **Steps** → **Expected**. Tick each box as you go.
 ## 4. Detailing: props, lights and effects
 
 - [ ] **Props.** Walk the base. → Benches, lamps, bins, picnic tables and vehicles sit on the ground (none float or sink) and nothing blocks doorways or terminals.
-- [ ] **Lights.** Set ClockTime to 20 to check. → Street lamps, courtyard string lights, fluorescent tubes in the Operations Center, Garage and canteen, and the floodlights give warm, soft light. There are 51 lights in total, none casting shadows.
-- [ ] **Effects.** → Smoke rises from the canteen chimney and the field kitchen. The smoke uses texture `rbxasset://textures/particles/smoke_main.dds`; swap in an uploaded texture if it doesn't show. The fire barrel and the Iron Winter brazier burn.
-- [ ] **Parked vehicles.** → The staff parking cars, the helipad helicopter and the motor pool trucks look plausible at 60 % scale.
-- [ ] **Performance (MicroProfiler, Ctrl+F6).** → Stable 60 FPS on a mid-range PC. On a phone, check with the Developer Console that frame time stays reasonable. There are about 5,400 parts and 182 SurfaceGuis. Consider `Workspace.StreamingEnabled` for low-end devices; the client code handles streaming.
+- [ ] **Lights.** Set ClockTime to 20 to check. → Street lamps, parking-lot lamps, fluorescent tubes in the Operations Center, Garage and canteen, and the floodlights give warm, soft light, and switch off again by day (ClockTime 15.6: no glowing lamp lenses). There are about 66 lights in total, none casting shadows.
+- [ ] **Effects.** → Smoke rises from the canteen chimney and the field kitchen. In the winter yard the fire barrel burns with particle flames, drifting embers and thin smoke, both snow guns blow a plume of snow, and light snow falls over the yard. Textures: `rbxasset://textures/particles/smoke_main.dds`, `fire_main.dds` and `fire_sparks_main.dds`; swap in uploaded textures if any don't show.
+- [ ] **Frost grade.** Walk into the winter yard. → Within about a second the picture turns slightly cooler and less saturated. Walk out. → It fades back.
+- [ ] **Parked vehicles.** → The staff parking cars stand inside their stalls against the wheel stops, the helipad helicopter and the motor pool trucks look plausible at 60 % scale.
+- [ ] **Map edge.** Look out through the gate and from the fence corners. → The public road bends away into the woods; hills and forest close the view on every side and the edge of the ground is never visible.
+- [ ] **Performance (MicroProfiler, Ctrl+F6).** → Stable 60 FPS on a mid-range PC. On a phone, check with the Developer Console that frame time stays reasonable. There are about 11,100 parts (most of the added ones are decor: no collision, no query, no shadow) and 250 SurfaceGuis. Consider `Workspace.StreamingEnabled` for low-end devices; the client code handles streaming.
 
 ## 5. Polish: animation, sound and UI
 

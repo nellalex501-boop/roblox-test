@@ -1,5 +1,5 @@
 --!strict
--- LEADERBOARDS — "Hall of Commanders": a paved court with a long steel
+-- HALL OF COMMANDERS (the leaderboards): a paved court with a long steel
 -- canopy sheltering the display boards along its back wall.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,11 +26,12 @@ function Leaderboards.build(parent: Instance): (Model, CFrame)
 	local shell = Kit.folder(model, "Architecture")
 	local halfW, depth = zone.Width / 2, zone.Depth
 
+	-- the court stops 0.1 inside the back and side walls
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(-halfW, 0, -depth),
-		Vector3.new(halfW, 0.3, 0),
+		Vector3.new(-halfW + 0.1, 0, -depth + 0.1),
+		Vector3.new(halfW - 0.1, 0.3, 0),
 		W.ConcreteLight,
 		Enum.Material.Pavement,
 		{
@@ -144,7 +145,7 @@ function Leaderboards.build(parent: Instance): (Model, CFrame)
 		shell,
 		Kit.facingOut(frame, Vector3.new(0, y + 1 + 1.8, -22.0)),
 		Vector2.new(46, 3.6),
-		"HALL OF COMMANDERS",
+		zone.DisplayName,
 		{ Background = W.Charcoal, TextColor = W.CrtAmber, Stripe = W.MutedRed, PixelsPerStud = 18 }
 	)
 	sign.Name = "EntranceSign"

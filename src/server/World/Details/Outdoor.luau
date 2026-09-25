@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local World = script.Parent.Parent
 local Effects = require(World.Effects)
 local Kit = require(World.Kit)
+local Nature = require(World.Nature)
 local Props = require(World.Props)
 local Vehicles = require(World.Vehicles)
 local Layout = require(ReplicatedStorage.Lobby.Config.Layout)
@@ -97,8 +98,9 @@ local function streets(parent: Instance)
 		-- every other lamp carries a real light (kept cheap)
 		grounded(Props.streetLamp(folder, at(x, SIDEWALK, z, facing), count % 2 == 1))
 	end
-	-- north road: lamps on the building side, heads over the road
-	for _, x in { -140, -120, -80, -45, 30, 60, 110, 150, 178 } do
+	-- north road: lamps on the building side, heads over the road (the last
+	-- one short of the guard booth's glass)
+	for _, x in { -140, -120, -80, -45, 36, 60, 110, 150, 166 } do
 		lamp(x, -65.5, FACE_SOUTH)
 	end
 	-- south road
@@ -109,12 +111,13 @@ local function streets(parent: Instance)
 	for _, z in { -44, -15, 11, 40 } do
 		lamp(-81.5, z, FACE_EAST)
 	end
-	for _, z in { -44, -5, 20, 44 } do
+	-- (clear of the HQ porch and its flagpoles at z -35 and -5)
+	for _, z in { -44, 6, 26, 46 } do
 		lamp(81.5, z, FACE_WEST)
 	end
 	local signs = Kit.folder(parent, "RoadSigns")
 	grounded(Props.roadSign(signs, at(185, GRASS, -49.5, FACE_EAST), "10", "KM/H · CAMP ROADS", "white"))
-	grounded(Props.roadSign(signs, at(63, SIDEWALK, 66.5, FACE_NORTH), "P", "STAFF PARKING", "info"))
+	grounded(Props.roadSign(signs, at(61, SIDEWALK, 66.5, FACE_NORTH), "P", "STAFF PARKING", "info"))
 end
 
 -- Utility line along the outside road ------------------------------------------
@@ -144,7 +147,7 @@ local function utilityLine(parent: Instance)
 	Kit.anchor(hum, "Sound", "DistantTraffic")
 end
 
--- Parking lot beside the canteen -------------------------------------------------
+-- Staff parking -------------------------------------------------------------------
 
 local CIVIL_COLORS = {
 	Color3.fromRGB(88, 104, 122),
@@ -154,43 +157,120 @@ local CIVIL_COLORS = {
 	Color3.fromRGB(140, 138, 128),
 }
 
+-- Car lengths (for nose-in parking against the wheel stops).
+local CAR_LENGTH = { CAR_SEDAN = 12.3, CAR_SMALL = 9.3, VAN = 12.7, JEEP = 9.8 }
+
 local function parking(parent: Instance)
 	local folder = Kit.folder(parent, "Parking")
-	local minZ = 70
-	local function stall(i: number): number
-		return minZ + 1 + i * 5 + 2.5
+	local P = Layout.Parking
+	local field = P.Field
+	local rng = Random.new(1979)
+	-- wheel stops at the head of every stall
+	local function stop(x: number, z: number)
+		Kit.box(
+			folder,
+			CFrame.new(x, ROAD, z),
+			Vector3.new(-2.1, 0, -0.35),
+			Vector3.new(2.1, 0.3, 0.35),
+			W.ConcreteLight,
+			Enum.Material.Concrete,
+			{ Name = "WheelStop" }
+		)
 	end
-	type Stall = { stall: number, key: string }
-	local west: { Stall } = {
-		{ stall = 1, key = "CAR_SEDAN" },
-		{ stall = 2, key = "JEEP" },
-		{ stall = 4, key = "CAR_SMALL" },
-		{ stall = 7, key = "VAN" },
-		{ stall = 9, key = "CAR_SEDAN" },
+	for k = 0, P.NorthStalls - 1 do
+		stop(P.NorthRowX + (k + 0.5) * P.StallWidth, field.MinZ + 1.4)
+	end
+	for k = 0, P.SouthStalls - 1 do
+		stop(P.SouthRowX + (k + 0.5) * P.StallWidth, field.MaxZ - 1.4)
+	end
+	-- parked cars, nose-in to the stops, a little off-centre and askew
+	type Stall = { row: string, stall: number, key: string, reversed: boolean? }
+	local cars: { Stall } = {
+		{ row = "north", stall = 0, key = "CAR_SEDAN" },
+		{ row = "north", stall = 1, key = "CAR_SEDAN" },
+		{ row = "north", stall = 3, key = "CAR_SMALL" },
+		{ row = "north", stall = 4, key = "JEEP" },
+		{ row = "south", stall = 0, key = "VAN" },
+		{ row = "south", stall = 2, key = "CAR_SEDAN" },
+		{ row = "south", stall = 3, key = "CAR_SMALL" },
+		{ row = "south", stall = 5, key = "CAR_SEDAN", reversed = true },
+		{ row = "south", stall = 7, key = "CAR_SMALL" },
 	}
-	local east: { Stall } = {
-		{ stall = 0, key = "CAR_SMALL" },
-		{ stall = 3, key = "CAR_SEDAN" },
-		{ stall = 5, key = "JEEP" },
-		{ stall = 8, key = "CAR_SMALL" },
-	}
-	local colorIndex = 0
-	local function park(x: number, z: number, facing: CFrame, key: string)
-		colorIndex += 1
-		local paint: Vehicles.Paint = if key == "JEEP"
+	for i, car in cars do
+		local north = car.row == "north"
+		local x = (if north then P.NorthRowX else P.SouthRowX) + (car.stall + 0.5) * P.StallWidth
+		local length = CAR_LENGTH[car.key]
+		local z = if north then field.MinZ + 1.9 + length / 2 else field.MaxZ - 1.9 - length / 2
+		local facing = if north then FACE_NORTH else FACE_SOUTH
+		if car.reversed then
+			facing = facing * CFrame.Angles(0, math.pi, 0)
+		end
+		local paint: Vehicles.Paint = if car.key == "JEEP"
 			then Vehicles.DefaultPaint.NATO
-			else { Base = CIVIL_COLORS[(colorIndex - 1) % #CIVIL_COLORS + 1], Accent = W.DarkGrey }
-		local car = Vehicles.spawn(folder, key, key, at(x, ROAD, z, facing), paint, Vector3.new(4.6, 6, 9.6))
-		grounded(car)
+			else { Base = CIVIL_COLORS[(i - 1) % #CIVIL_COLORS + 1], Accent = W.DarkGrey }
+		local cf = CFrame.new(x + rng:NextNumber(-0.35, 0.35), ROAD, z)
+			* facing
+			* CFrame.Angles(0, rng:NextNumber(-0.035, 0.035), 0)
+		grounded(Vehicles.spawn(folder, car.key, car.key, cf, paint, Vector3.new(6.8, 6, 12.8)))
 	end
-	for _, s in west do
-		park(45, stall(s.stall), FACE_WEST, s.key)
+	-- oil stains in the busy stalls
+	for _, spot in
+		{
+			{ north = true, stall = 2 },
+			{ north = true, stall = 5 },
+			{ north = false, stall = 1 },
+			{ north = false, stall = 4 },
+			{ north = false, stall = 6 },
+		}
+	do
+		local north = spot.north
+		local x = (if north then P.NorthRowX else P.SouthRowX) + (spot.stall + 0.5) * P.StallWidth
+		local z = if north then field.MinZ + 7 else field.MaxZ - 7
+		Kit.part(
+			folder,
+			Vector3.new(rng:NextNumber(1.6, 2.6), 0.04, rng:NextNumber(2.4, 3.6)),
+			CFrame.new(x + rng:NextNumber(-0.6, 0.6), ROAD + 0.02 + 0.03, z) * CFrame.Angles(0, rng:NextNumber(0, 3), 0),
+			Color3.fromRGB(58, 58, 56),
+			Enum.Material.Asphalt,
+			{ Name = "OilStain", Decor = true }
+		)
 	end
-	for _, s in east do
-		park(65, stall(s.stall), FACE_EAST, s.key)
+	-- lamps on the planting strips (never in the aisle), lit after dusk
+	for _, x in { 70, 88, 106 } do
+		grounded(Props.streetLamp(folder, at(x, GRASS, field.MinZ - 2.2, FACE_SOUTH), true, 15))
 	end
-	grounded(Props.streetLamp(folder, at(55, ROAD, 88, FACE_NORTH), true, 15))
-	grounded(Props.streetLamp(folder, at(55, ROAD, 118, FACE_SOUTH), false, 15))
+	for _, x in { 56, 90 } do
+		grounded(Props.streetLamp(folder, at(x, GRASS, field.MaxZ + 2.4, FACE_NORTH), true, 15))
+	end
+	grounded(Props.streetLamp(folder, at(P.Lane.MinX - 2.1, PAVED, 92, FACE_EAST), false, 13))
+	-- hedge screening the lot from the Hall of Commanders' back wall
+	Nature.hedge(folder, Vector3.new(60, GRASS, field.MinZ - 3.2), Vector3.new(110, GRASS, field.MinZ - 3.2), 2.2, 1.6)
+	-- reserved stalls by the lane, and the rules at the lane mouth
+	for k, title in { "RESERVED · CO", "RESERVED · XO", "RESERVED · CSM" } do
+		local x = P.NorthRowX + (k - 0.5) * P.StallWidth
+		local sign = Kit.model(folder, "ReservedSign")
+		Kit.post(sign, CFrame.new(x, GRASS, field.MinZ - 1.1), 3.4, 0.16, W.Steel, Enum.Material.Metal, {
+			Name = "Post",
+			Decor = true,
+		})
+		Kit.sign(sign, CFrame.new(x, 3, field.MinZ - 1.25) * FACE_SOUTH, Vector2.new(2.6, 1.1), title, {
+			Background = W.OffWhite,
+			TextColor = W.Charcoal,
+			Depth = 0.08,
+			PixelsPerStud = 40,
+			MaxDistance = 70,
+		})
+	end
+	grounded(
+		Props.roadSign(
+			folder,
+			at(P.Lane.MinX - 2.1, PAVED, Layout.Roads[2].MaxZ + 5, FACE_NORTH),
+			"STAFF PARKING",
+			"PRIVATE VEHICLES · 15 KM/H",
+			"white"
+		)
+	)
+	grounded(Props.trashBin(folder, at(P.Lane.MinX - 2.2, PAVED, field.MaxZ - 3)))
 end
 
 -- Helipad ----------------------------------------------------------------------
@@ -268,7 +348,9 @@ local function gate(parent: Instance)
 	local post = CFrame.new(g.X + 8, GRASS, g.Z - 12)
 	for i, angle in { -60, 0, 60 } do
 		local seg = post * CFrame.Angles(0, math.rad(angle), 0) * CFrame.new(0, 0, -3.2)
-		grounded(Props.sandbags(folder, seg, 4.6, if i == 2 then 3 else 2))
+		-- the middle run stacks 0.12 lower per course than its neighbours, so
+		-- the overlapping corner bags never share a top or bottom face
+		grounded(Props.sandbags(folder, seg, 4.6, if i == 2 then 3 else 2, if i == 2 then 0.52 else 0.64))
 	end
 	grounded(Props.jerseyBarrier(folder, at(g.X + 6, GRASS, g.Z + 9.5, FACE_WEST)))
 	grounded(
@@ -309,8 +391,11 @@ local function courtyard(parent: Instance)
 	for _, x in { -33, 33 } do
 		grounded(Props.bench(folder, local_(x, -4.4), 6))
 	end
+	-- a bike rack row: every other bike faces the other way and sits half
+	-- a length further on, so the handlebars never clash
 	for i = 0, 3 do
-		grounded(Props.bicycle(folder, local_(9 + i * 1.5, -42.2, (i % 2) * 0.08)))
+		local flip = i % 2 == 1
+		grounded(Props.bicycle(folder, local_(9 + i * 1.3, if flip then -41.6 else -42.2, if flip then math.pi else 0)))
 	end
 	grounded(Props.trashBin(folder, local_(6, -41)))
 	grounded(Props.trashBin(folder, local_(-37, -22)))
@@ -354,7 +439,8 @@ end
 -- Barracks fronts ------------------------------------------------------------------------
 
 -- Benches, a bin and bicycles in front of a barracks block. Positions are
--- along the facade (local X), chosen per block to stay clear of neighbours.
+-- along the facade (local X), chosen per block to stay clear of neighbours
+-- and of the three door steps (at 0 and +-length/4, 6 wide).
 type BarracksDressing = { benches: { number }, bin: number, bikes: number }
 
 local function barracksFront(parent: Instance, facade: Vector3, inward: Vector3, dressing: BarracksDressing)
@@ -365,8 +451,10 @@ local function barracksFront(parent: Instance, facade: Vector3, inward: Vector3,
 		grounded(Props.bench(folder, frame * CFrame.new(x, GRASS, 3.5) * FACE_SOUTH, 6))
 	end
 	grounded(Props.trashBin(folder, frame * CFrame.new(dressing.bin, GRASS, 3.6)))
+	-- nose-in to the wall, the front tyre just clear of it; 1.9 apart so
+	-- the handlebars (1.6 wide) never touch
 	for i = 0, 2 do
-		grounded(Props.bicycle(folder, frame * CFrame.new(dressing.bikes - i * 1.5, GRASS, 2.2)))
+		grounded(Props.bicycle(folder, frame * CFrame.new(dressing.bikes - i * 1.9, GRASS, 2.5)))
 	end
 end
 
@@ -385,16 +473,21 @@ function Outdoor.build(parent: Instance)
 		folder,
 		Vector3.new(150, 0, -8),
 		Vector3.new(1, 0, 0),
-		{ benches = { -27, 27 }, bin = -22.5, bikes = 21 }
+		{ benches = { -27, 27 }, bin = -22.5, bikes = 12 }
 	)
 	barracksFront(
 		folder,
 		Vector3.new(-164, 0, -12),
 		Vector3.new(-1, 0, 0),
-		{ benches = { -32, 32 }, bin = -27.5, bikes = 26 }
+		{ benches = { -32, 32 }, bin = -27.5, bikes = 12 }
 	)
 	-- the south block's north end faces the Hall of Commanders wall
-	barracksFront(folder, Vector3.new(150, 0, 124), Vector3.new(1, 0, 0), { benches = { 22, 8 }, bin = 15, bikes = -2 })
+	barracksFront(
+		folder,
+		Vector3.new(150, 0, 124),
+		Vector3.new(1, 0, 0),
+		{ benches = { 22, -7.5 }, bin = 7, bikes = -21 }
+	)
 end
 
 return Outdoor

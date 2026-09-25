@@ -15,13 +15,13 @@ brown and faded red and blue.
 | **Parade square** (spawn) | Central 3D theatre map of the Fulda sector, flags, live lobby status pylons, signposts, a notice board |
 | **Operations Center** | Matchmaking terminals: QUICK MATCH, 1v1, 2v2, 4v4 and PRIVATE (access codes, host picks size and map). A command wall with a live deployment board. Signals room and briefing room |
 | **Map Room** | Seven battle map displays (name, size, terrain, recommended players, landmark) and a planning table with a 3D miniature. Set your preferred map |
-| **Command HQ** | Commander file (rank, level, credits), service records, customisation (allegiance, title, insignia) and the Hall of Honour (achievements) |
-| **Garage** | Six vehicles you can inspect (the camera orbits them), the unit registry (collection and unlocks) and the paint shop (camouflage) |
+| **Command HQ** | A German-built Kaserne block (plaster, steep tile roof, dormers). Commander file (rank, level, credits), service records, customization (allegiance, title, insignia) and the trophy case (achievements) |
+| **Garage** | A showroom with one vehicle on a turntable: you pick which vehicle is on show, the camera orbits it, and a full-screen viewer shows its specs and history and lets you preview, buy and apply camouflage. The unit registry lists the collection and unlocks |
 | **Hall of Commanders** | Leaderboards: TOP COMMANDERS, MOST VICTORIES, MOST MATCHES, MOST TERRITORY CAPTURED, CURRENT SEASON |
-| **Event Area** | A replaceable seasonal operation (currently OPERATION IRON WINTER, 23 days left on the test date) with challenges, a reward track and a limited unit |
+| **Event Area** | A replaceable seasonal operation (currently OPERATION IRON WINTER, 23 days left on the test date) with challenges, a reward track and a limited unit. For Iron Winter the fenced yard is a winter warfare training area kept white by two snow guns: snow cover and drifts, falling snow, snowy pines, a fire barrel and a frost grade while you are inside |
 | **Mission Board** | Daily orders ("Capture 10 sectors", "Win 3 matches", "Play 5 different maps", "Complete a team battle") and orientation orders for new players |
-| **Canteen** | A social courtyard with picnic tables, string lights and a fire barrel |
-| **Around the base** | Gate checkpoint, guard towers, barracks, motor pool, comms compound, helipad with a parked helicopter, staff parking, a village beyond the fence |
+| **Canteen** | A social courtyard with picnic tables, benches and a bike rack |
+| **Around the base** | Gate checkpoint, guard towers, barracks, motor pool, comms compound, helipad with a parked helicopter, a staff parking lot (access lane, 14 stalls, reserved spaces), and beyond the fence woods, rings of hills, a village and the public road bending away into the trees |
 
 The layout is compact. In the headless navigation test every entrance is
 within **8.7 s** of spawn at walking speed, and every interaction within
@@ -141,8 +141,10 @@ scripts removed so no game logic from the RTS runs in the lobby.
 
 ## Controls
 - **Keyboard / mouse:** walk up to a station and press **E** (or click the
-  prompt). **Esc** closes a panel, and walking away also closes it. **L**
-  toggles the locator.
+  prompt). **X** or the **✕** button closes a panel (Roblox keeps Esc for its
+  own menu), and walking away also closes it. **L** toggles the locator. In
+  the Garage viewer, drag to turn the camera around the vehicle and use the
+  wheel to zoom.
 - **Gamepad:** **X** interacts, **B** closes, **LB/RB** switch tabs,
   **D-pad down** toggles the locator.
 - **Touch:** tap the prompt plate; panels have a CLOSE button.
@@ -168,7 +170,7 @@ tools        bake.luau (dist place + insert kit), kit.luau, render/ (preview ren
 Everything below runs headlessly in [Lune](https://lune-org.github.io/docs):
 ```
 ./scripts/check.sh              # rojo build + luau-lsp strict type check + stylua
-lune run tests/run.luau         # 83 test cases → build/test-report.md
+lune run tests/run.luau         # 90 test cases → build/test-report.md
 lune run tools/bake.luau        # rebuild dist/ColdWarLobby.rbxl and dist/InsertKit
 node tools/render/render.mjs build/render/detailing.json build/previews/p overview
 ```
@@ -187,6 +189,12 @@ the remotes. The specs cover:
 - ambient animation, sound and flyby, and UI feedback
 - code hygiene, and that the baked place and the insert kit match the source
   and boot, including a kit inserted at an offset into a Baseplate place
+- the visual review (`09_visual`): no z-fighting anywhere (an exact
+  coplanar-face detector over every part), building plates and entrance signs
+  not covered and plates on solid wall, street lamps clear of doorways,
+  windows and flagpoles, theatre-map labels that never overlap, and terminal
+  signs in the Operations Center that never hide each other or the wall
+  display from the doorway; doorways free of anything collidable
 
 The preview images in `docs/previews` come from an approximate three.js
 renderer. They are not Roblox renders.
@@ -203,3 +211,5 @@ test to run:
 - teleport to the RTS place
 - performance on phones
 - streaming
+- particles (fire, embers, snow guns, snowfall) and the frost grade
+- the newer materials on the HQ (Plaster, ClayRoofTiles, Sandstone)

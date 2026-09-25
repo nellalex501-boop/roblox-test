@@ -94,7 +94,7 @@ local function office(parent: Instance, frame: CFrame)
 		Kit.part(
 			model,
 			Vector3.new(0.8, 0.5, 0.04),
-			base * CFrame.new(0.42, 1.15, 0),
+			base * CFrame.new(0.44, 1.15, 0),
 			color,
 			Enum.Material.Fabric,
 			{ Name = "DeskFlag", Decor = true }
@@ -111,7 +111,7 @@ local function office(parent: Instance, frame: CFrame)
 	)
 	Kit.part(
 		model,
-		Vector3.new(2.4, 3, 0.5),
+		Vector3.new(2.2, 3, 0.5),
 		deskFrame * CFrame.new(0, 3.3, -4.5),
 		W.BrownDark,
 		Enum.Material.Fabric,
@@ -126,7 +126,7 @@ local function office(parent: Instance, frame: CFrame)
 		Enum.Material.SmoothPlastic,
 		{ Name = "OfficeMap" }
 	)
-	local gui = Kit.surface(mapPart, Enum.NormalId.Front, 22, 0.4, 100)
+	local gui = Kit.surface(mapPart, Enum.NormalId.Front, 22, 1, 100)
 	MapDraw.theater(gui, 12 * 22, 7 * 22)
 	-- filing cabinets and a radio set along the side wall
 	for i = 0, 2 do
@@ -188,7 +188,7 @@ local function lockers(parent: Instance, frame: CFrame)
 			Kit.part(
 				model,
 				Vector3.new(1, 0.1, 0.05),
-				base * CFrame.new(i * 1.8, 6 - s * 0.35, 0.92),
+				base * CFrame.new(i * 1.8, 6 - s * 0.35, 0.95),
 				W.Charcoal,
 				nil,
 				{ Name = "Vent", Decor = true }

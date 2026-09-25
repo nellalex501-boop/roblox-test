@@ -105,19 +105,21 @@ local function theaterMap(parent: Instance)
 			}
 		)
 	end
+	-- map layers stacked 0.06 apart (tops): relief 0.12, rivers 0.18,
+	-- autobahns 0.24, border 0.30, NATO front 0.36, Pact axes 0.42
 	for _, river in t.Rivers do
 		strips(model, top, river, 0.26, 0.15, MapDraw.Colors.Water)
 	end
 	for _, road in t.Highways do
-		strips(model, top, road, 0.22, 0.17, MapDraw.Colors.Highway)
+		strips(model, top, road, 0.22, 0.21, MapDraw.Colors.Highway)
 	end
-	strips(model, top, t.Border, 0.16, 0.19, MapDraw.Colors.Border, true)
-	strips(model, top, t.FrontNato, 0.22, 0.21, MapDraw.Colors.Nato)
+	strips(model, top, t.Border, 0.16, 0.27, MapDraw.Colors.Border, true)
+	strips(model, top, t.FrontNato, 0.22, 0.33, MapDraw.Colors.Nato)
 	for _, axis in t.AxesPact do
-		strips(model, top, axis, 0.3, 0.21, MapDraw.Colors.Pact)
+		strips(model, top, axis, 0.3, 0.39, MapDraw.Colors.Pact)
 		local last, prev = axis[#axis], axis[#axis - 1]
-		local tip = mapToTable(top, last[1], last[2], 0.24).Position
-		local from = mapToTable(top, prev[1], prev[2], 0.24).Position
+		local tip = mapToTable(top, last[1], last[2], 0.39).Position
+		local from = mapToTable(top, prev[1], prev[2], 0.39).Position
 		-- arrowhead: two wedges rolled flat form a triangle pointing forward
 		local base = CFrame.lookAt(tip, tip + (tip - from).Unit)
 		for _, side in { -1, 1 } do
@@ -134,8 +136,8 @@ local function theaterMap(parent: Instance)
 	for _, town in t.Towns do
 		Kit.part(
 			model,
-			Vector3.new(0.55, 0.35, 0.55),
-			mapToTable(top, town.x, town.y, 0.3),
+			Vector3.new(0.55, 0.5, 0.55),
+			mapToTable(top, town.x, town.y, 0.37),
 			MapDraw.Colors.Urban,
 			Enum.Material.Concrete,
 			{
@@ -152,8 +154,8 @@ local function theaterMap(parent: Instance)
 		local v = rng:NextNumber(0.08, 0.92)
 		Kit.part(
 			model,
-			Vector3.new(0.7, 0.2, 0.7),
-			mapToTable(top, u, v, 0.3),
+			Vector3.new(0.7, 0.44, 0.7),
+			mapToTable(top, u, v, 0.34),
 			if nato then MapDraw.Colors.Nato else MapDraw.Colors.Pact,
 			Enum.Material.SmoothPlastic,
 			{
@@ -162,14 +164,15 @@ local function theaterMap(parent: Instance)
 			}
 		)
 	end
-	-- numbered battle map markers (flag pins)
+	-- numbered battle map markers (flag pins); the marker blocks rise to
+	-- 0.80, clear of every layer below (hills 0.70, towns 0.62, forests 0.50)
 	for i, id in Maps.Order do
 		local info = Maps.List[id]
 		local base = mapToTable(top, info.TheaterPos[1], info.TheaterPos[2], 0.12)
 		Kit.part(
 			model,
-			Vector3.new(0.9, 0.12, 0.9),
-			base * CFrame.new(0, 0.06, 0),
+			Vector3.new(0.9, 0.68, 0.9),
+			base * CFrame.new(0, 0.34, 0),
 			Theme.UI.Accent,
 			Enum.Material.SmoothPlastic,
 			{
@@ -180,7 +183,7 @@ local function theaterMap(parent: Instance)
 		Kit.part(
 			model,
 			Vector3.new(0.08, 1.8, 0.08),
-			base * CFrame.new(0, 0.9, 0),
+			base * CFrame.new(0, 1.2, 0),
 			W.Steel,
 			Enum.Material.Metal,
 			{ Name = "FlagPin", Decor = true }
@@ -188,7 +191,7 @@ local function theaterMap(parent: Instance)
 		local tab = Kit.part(
 			model,
 			Vector3.new(0.9, 0.6, 0.04),
-			base * CFrame.new(0.45, 1.5, 0) * CFrame.Angles(0, math.pi, 0),
+			base * CFrame.new(0.49, 1.8, 0) * CFrame.Angles(0, math.pi, 0),
 			Theme.UI.Accent,
 			Enum.Material.SmoothPlastic,
 			{
@@ -196,7 +199,7 @@ local function theaterMap(parent: Instance)
 				Decor = true,
 			}
 		)
-		local gui = Kit.surface(tab, Enum.NormalId.Front, 60, 0.4, 70)
+		local gui = Kit.surface(tab, Enum.NormalId.Front, 60, 1, 70)
 		Kit.text(gui, { Text = tostring(i), Color = W.Charcoal, Font = Theme.font("Header", Enum.FontWeight.Bold) })
 		tab:SetAttribute("MapId", id)
 	end
@@ -214,7 +217,7 @@ local function theaterMap(parent: Instance)
 			Enum.Material.SmoothPlastic,
 			{ Name = name, Decor = true }
 		)
-		local gui = Kit.surface(p, Enum.NormalId.Front, 50, 0.3, 90)
+		local gui = Kit.surface(p, Enum.NormalId.Front, 50, 1, 90)
 		return p, gui
 	end
 	local titleOffset = PlazaZone.TableSize.X / 2 - 3.6

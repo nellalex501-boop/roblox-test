@@ -28,11 +28,14 @@ function Garage.build(parent: Instance): (Model, CFrame)
 	local floorY, eaveY = Garage.FloorY, Garage.EaveY
 	local metal = W.Olive
 
+	-- the slab stops 0.1 inside the side and back walls and stands 0.1
+	-- proud of the facade as a threshold lip, so its edges never lie in
+	-- the same plane as a wall face
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(-halfW, 0, -depth),
-		Vector3.new(halfW, floorY, 0),
+		Vector3.new(-halfW + 0.1, 0, -depth + 0.1),
+		Vector3.new(halfW - 0.1, floorY, 0.1),
 		Color3.fromRGB(168, 166, 156),
 		Enum.Material.Concrete,
 		{ Name = "Floor" }
@@ -237,8 +240,9 @@ function Garage.build(parent: Instance): (Model, CFrame)
 	-- main sign over the centre door
 	local sign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, floorY + 18 + 3.2, 0.2)),
-		Vector2.new(24, 5.4),
+		-- below the roof's front overhang
+		Kit.facingOut(frame, Vector3.new(0, floorY + 18 + 2.6, 0.2)),
+		Vector2.new(24, 4.8),
 		zone.DisplayName,
 		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.HazardYellow, PixelsPerStud = 18 }
 	)

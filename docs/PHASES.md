@@ -100,3 +100,35 @@ The checks are headless; the real-Roblox checks are in
   - The server reuses the baked lobby instead of rebuilding it, and a client starts its UI on it.
   - The kit, inserted into a fresh Baseplate place with the lobby shifted by 40 studs, boots: the template is moved aside, the lobby returns to the origin with its spawn pads at their baked positions, a commander joins, and the camera limit applies.
 - **Fix.** A mutation check (snap-back and zoom limit removed, then rebaked) made the kit tests fail as expected. Restored and rebaked.
+
+## Review pass (41 findings)
+A review listed 41 problems in four groups, plus requests for more detail, a
+realistic parking lot and a single-vehicle Garage. Each fix follows the same
+loop, and the new `09_visual` spec keeps the visual ones fixed.
+
+- **Flicker (#1–#8).**
+  - An exact coplanar-face detector (`tests/lib/Geometry.luau`) checks every pair of same-facing faces within 0.045 studs that overlap and are not buried in a third part.
+  - Visible overlaps went from 1,563 to 0. Fixes include: Ops pads and edges raised and inset; parapets proud of the roof slabs; decorations 0.05+ off their base; road markings at +0.06; butt-jointed roads, kerbs, plinths and accent bands; Mission Board layers 0.06 apart; theatre-map layers stacked; floor slabs inset under walls with a front lip; sandbag runs stacked at different course heights; pine plates outside their face planes.
+  - The detector itself measured gaps with a rounded shared normal; it now measures the true plane gap at each overlap.
+  - #9: CRTs restore their own brightness. #10: signs render to 250+ studs, flags animate every frame, fire light uses smooth noise.
+- **Placement (#11–#22).**
+  - Status-board posts moved outside the boards; leaderboards centred between the canopy columns.
+  - The vehicle camera clamps its distance with a ray so it never ends up behind a wall.
+  - Mission Board items moved to empty cork.
+  - Building plates moved to measured solid wall (between windows, columns, struts and porch pillars); the Garage sign dropped below the roof overhang; the HQ name moved onto a portal entablature.
+  - Operations hall signs hang at two heights and the hall lights hang above them, so from the doorway no sign hides another or the wall display.
+  - Street lamps moved off the guard booth's glass and away from flagpoles.
+  - The public road bends away into the woods at both ends; two rings of irregular hills and a 2048-stud ground hide the map edge.
+  - Theatre-map labels are placed greedily so none covers another label or a marker.
+  - Clipping: parked cars (parking redesign), the typewriter inside the monitor, the guy anchor, doubled fence posts, bikes on door steps.
+  - **Found on the way:** the stone plinths of the Map Room, Command HQ and Operations Center ran across their doorways at knee height (1.6–2.2 studs), so players had to jump in. The navigation test missed it because it sampled a 1-stud grid and the plinths were 0.4 deep. The plinths now stop at the door frames, the navigation grid samples thin parts on a 4×4 sub-grid (6 destinations became unreachable with the old plinths), and a doorway ray test was added.
+- **Theme (#23–#31).**
+  - The regiment flag is an 11th ACR cavalry pennant, the Pact flag is gone, the NATO flag has the real compass rose, and flags read correctly from both sides.
+  - The Event Area is a bounded winter warfare training yard kept white by two snow guns: one snow cover cut around the walkway and tent, soft drifts, snow on the tent roof, falling snow, snowy pines, and a cool frost grade that fades in while the camera is inside (client, tested).
+  - Lamps switch with the time of day; string lights removed; the fire barrel is in the winter yard and burns with particle flames, embers and smoke.
+  - Chain-link fences with one post per corner.
+  - The Command HQ is a German-built Kaserne block: plaster, steep clay-tile roof with dormers, sandstone portal.
+  - Wording: American spelling, Zulu time, one name per place (HALL OF COMMANDERS), matching terminal numbers.
+- **Looks and UI (#32–#41).** Brighter interiors and ShadowMap lighting; pyramid-tier pines in clusters; ridges of several hills with rock outcrops; flags of 6+ segments; windows set into the walls with frames; painted signs lit by the scene; panels close with ✕ or X instead of Esc. Still open at this checkpoint: #39 (smallest world texts) and #40 (the Matchmaking panel's empty right half).
+- **Detail.** A realistic staff parking lot (access lane, 14 stalls sized for the cars, wheel stops, lamps on the planting strips, reserved spaces, oil stains, footpath); detailed bicycles; a snow-gun carriage with hose and hydrant; a pulk and skis; the briefing desk rebuilt.
+- **Budgets.** Parts 9,000 → 12,000 and particles 20 → 60 per second: the added parts are nearly all decor, and the particles are the fire, two snow guns and the snowfall.

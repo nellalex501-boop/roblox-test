@@ -82,7 +82,8 @@ end
 local function wheel(ctx: Ctx, pos: Vector3, diameter: number, width: number, hub: Color3?)
 	local cf = ctx.frame * CFrame.new(pos)
 	Kit.cylinder(ctx.model, width, diameter, cf, BLACK, Enum.Material.SmoothPlastic, { Name = "Wheel" })
-	Kit.cylinder(ctx.model, width + 0.06, diameter * 0.55, cf, hub or ctx.paint.Accent, Enum.Material.SmoothPlastic, {
+	-- hub caps stand 0.06 proud of the tyre on both sides
+	Kit.cylinder(ctx.model, width + 0.12, diameter * 0.55, cf, hub or ctx.paint.Accent, Enum.Material.SmoothPlastic, {
 		Name = "Hub",
 		Decor = true,
 	})
@@ -122,9 +123,10 @@ local function tracks(
 		"Track"
 	)
 	for _, z in { -(length / 2 - height * 0.45), length / 2 - height * 0.45 } do
+		-- sprocket and idler faces 0.05 outside the belt
 		Kit.cylinder(
 			ctx.model,
-			width,
+			width + 0.1,
 			height * 0.8,
 			ctx.frame * CFrame.new(x, height * 0.5, z),
 			BLACK,
@@ -137,11 +139,12 @@ local function tracks(
 	local span = length - height * 1.5
 	for i = 0, wheels - 1 do
 		local z = -span / 2 + span * (i / math.max(wheels - 1, 1))
+		-- road wheel faces 0.15 outside the belt (0.1 beyond the sprockets)
 		Kit.cylinder(
 			ctx.model,
-			width + 0.1,
+			width + 0.3,
 			height * 0.62,
-			ctx.frame * CFrame.new(x + side * 0.05, height * 0.4, z),
+			ctx.frame * CFrame.new(x, height * 0.4, z),
 			ctx.paint.Accent,
 			Enum.Material.SmoothPlastic,
 			{
@@ -154,7 +157,7 @@ local function tracks(
 		box(
 			ctx,
 			Vector3.new(0.25, height * 0.45, length * 0.94),
-			Vector3.new(side * (halfWidth + 0.1), height * 0.78, 0),
+			Vector3.new(side * (halfWidth + 0.2), height * 0.78, 0),
 			ctx.paint.Base,
 			nil,
 			"Skirt"
@@ -186,9 +189,9 @@ Builders.MBT_WEST = function(ctx)
 	tracks(ctx, 1, 19, 2.4, 2.6, 6.2, 7, true)
 	box(ctx, Vector3.new(7.4, 2, 17), Vector3.new(0, 2.6, 0.6), p.Base)
 	box(ctx, Vector3.new(12.4, 0.6, 17.4), Vector3.new(0, 3.3, 0.4), p.Base, nil, "Deck")
-	wedge(ctx, Vector3.new(12.4, 1.1, 2.6), Vector3.new(0, 3.1, -9.4), -1, p.Base)
+	wedge(ctx, Vector3.new(12.3, 1.1, 2.6), Vector3.new(0, 3.1, -9.4), -1, p.Base)
 	wedgeUnder(ctx, Vector3.new(7.4, 1.4, 1.8), Vector3.new(0, 1.9, -8.9), -1, p.Base)
-	box(ctx, Vector3.new(12.4, 1.4, 1.2), Vector3.new(0, 3.1, 8.9), p.Accent, nil, "Rear")
+	box(ctx, Vector3.new(12.2, 1.4, 1.2), Vector3.new(0, 3.1, 8.9), p.Accent, nil, "Rear")
 	-- flat angular turret
 	box(ctx, Vector3.new(8.6, 2.1, 9.6), Vector3.new(0, 4.65, 1.2), p.Base, nil, "Turret")
 	wedge(ctx, Vector3.new(8.6, 2.1, 2.6), Vector3.new(0, 4.65, -4.8), -1, p.Base, "TurretFront")
@@ -438,7 +441,7 @@ local function truck(ctx: Ctx, cabRound: boolean)
 			{ Name = "HoodNose" }
 		)
 	else
-		box(ctx, Vector3.new(5, 2.4, 0.4), Vector3.new(0, 4, -9.5), W.Charcoal, nil, "Grille")
+		box(ctx, Vector3.new(5, 2.3, 0.4), Vector3.new(0, 4.05, -9.5), W.Charcoal, nil, "Grille")
 	end
 	for _, side in { -1, 1 } do
 		box(ctx, Vector3.new(1.6, 0.4, 3.8), Vector3.new(side * 3.4, 3.4, -5.6), p.Accent, nil, "Fender")
@@ -453,9 +456,10 @@ local function truck(ctx: Ctx, cabRound: boolean)
 		Enum.Material.Fabric,
 		"Canvas"
 	)
+	-- roof ends 0.05 inside the canvas box ends
 	Kit.cylinder(
 		ctx.model,
-		10.4,
+		10.3,
 		7.4,
 		ctx.frame * CFrame.new(0, 7.6, 4.4) * CFrame.Angles(0, math.pi / 2, 0),
 		p.Base:Lerp(W.Beige, 0.15),
@@ -558,10 +562,11 @@ Builders.HELICOPTER = function(ctx)
 		{ Name = "RotorHub" }
 	)
 	rotor.PrimaryPart = hub
+	-- the blade sits well below the hub's top (no shared plane)
 	Kit.part(
 		rotor,
 		Vector3.new(30, 0.15, 1.2),
-		ctx.frame * CFrame.new(0, 9.5, 0),
+		ctx.frame * CFrame.new(0, 9.4, 0),
 		W.Charcoal,
 		Enum.Material.SmoothPlastic,
 		{

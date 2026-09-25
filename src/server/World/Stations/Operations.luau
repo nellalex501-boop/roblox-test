@@ -21,6 +21,9 @@ Operations.FloorY = 0.6
 Operations.CeilingY = 22.6
 
 -- Terminal positions in the Operations Center frame (see Layout).
+-- sign centre heights above the hall floor, per terminal
+Operations.SignHeights = { ["1V1"] = 10.4, ["2V2"] = 10.4, PRIVATE = 16.8, ["4V4"] = 16.8, QUICK = 16.4 }
+
 Operations.Stations = {
 	PRIVATE = Vector3.new(-26, 0, -30),
 	["1V1"] = Vector3.new(-13, 0, -26),
@@ -169,11 +172,15 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 		Kit.anchor(lamp, if i == 2 then "BlinkFast" else "BlinkSlow")
 	end
 
-	-- overhead sign
-	local signW = if big then 14 else 10
-	Common.hangingSign(
+	-- overhead sign. Seen from the doorway the terminals stand in an arc,
+	-- so the signs hang at two heights: the inner pair (1V1, 2V2) low, the
+	-- outer pair and QUICK MATCH high, clear above the inner signs and the
+	-- command wall's display
+	local signW = if big then 12 else 8.5
+	local signY = Operations.SignHeights[modeId] or 12.6
+	local overhead = Common.hangingSign(
 		model,
-		frame * CFrame.new(0, 12.6, -1),
+		frame * CFrame.new(0, signY, -1),
 		Vector2.new(signW, 3.4),
 		Operations.CeilingY,
 		mode.SignText,
@@ -185,6 +192,7 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 			PixelsPerStud = 30,
 		}
 	)
+	overhead.Name = "OverheadSign"
 	return model
 end
 

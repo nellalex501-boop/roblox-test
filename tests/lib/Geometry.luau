@@ -218,25 +218,37 @@ function Geometry.coplanar(root, options)
 		table.sort(faces, function(a, b)
 			return a.d < b.d
 		end)
+		-- a face's offset along the bucket normal at (cu, cv): faces in one
+		-- bucket differ by up to ~1 degree, so plane gaps are measured at the
+		-- overlap, not from the bucket-normal sort key
+		local function offsetAt(face, cu: number, cv: number): number
+			local nf = face.normal
+			local q = u * cu + v * cv
+			return (nf:Dot(face.points[1]) - nf:Dot(q)) / nf:Dot(n)
+		end
 		for i = 1, #faces do
 			local fa = faces[i]
 			local j = i + 1
-			while j <= #faces and faces[j].d - fa.d < tol do
+			while j <= #faces and faces[j].d - fa.d < tol + 0.2 do
 				local fb = faces[j]
 				if fb.part ~= fa.part and fa.normal:Dot(fb.normal) > 0.9995 then
 					local ba, bb = fa.box, fb.box
 					if ba[1] < bb[2] and bb[1] < ba[2] and ba[3] < bb[4] and bb[3] < ba[4] then
 						local inter = clip(fa.poly, fb.poly)
 						local area = if #inter >= 3 then math.abs(signedArea(inter)) else 0
+						local cu, cv = 0, 0
+						for _, q in inter do
+							cu += q[1]
+							cv += q[2]
+						end
+						cu, cv = cu / math.max(#inter, 1), cv / math.max(#inter, 1)
+						local ta, tb = 0, 0
 						if area >= minArea then
+							ta, tb = offsetAt(fa, cu, cv), offsetAt(fb, cu, cv)
+						end
+						if area >= minArea and math.abs(tb - ta) < tol then
 							-- sample the overlap just in front of the outer face
-							local cu, cv = 0, 0
-							for _, q in inter do
-								cu += q[1]
-								cv += q[2]
-							end
-							cu, cv = cu / #inter, cv / #inter
-							local front = fb.d + 0.03
+							local front = math.max(ta, tb) + 0.03
 							local samples = { u * cu + v * cv + n * front }
 							local stride = math.max(1, #inter // 4)
 							for k = 1, #inter, stride do
@@ -264,7 +276,7 @@ function Geometry.coplanar(root, options)
 									b = fb.part,
 									faceA = fa.name,
 									faceB = fb.name,
-									gap = fb.d - fa.d,
+									gap = math.abs(tb - ta),
 									area = area,
 									sameLook = sameLook(fa.part, fb.part),
 									point = samples[1],

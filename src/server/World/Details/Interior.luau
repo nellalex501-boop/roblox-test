@@ -80,16 +80,19 @@ local function operationsCenter(parent: Instance)
 	local frame = Layout.frame(Layout.Zones.OperationsCenter)
 	local floor = 0.65
 	local ceiling = 22.6
-	-- light fittings on drop cords: a 3 x 3 grid over the whole hall, all lit
+	-- light fittings on short drop cords: a 3 x 3 grid over the whole hall,
+	-- all lit, hung above the terminal signs' top edge (19.1) so they never
+	-- come between the doorway and a sign
+	local hang = 20.5
 	for _, x in { -22, 0, 22 } do
 		for _, z in { -12, -30, -48 } do
-			local fitting = frame * CFrame.new(x, 17, z)
-			Props.ceilingLight(folder, fitting, true, 6, 24)
+			local fitting = frame * CFrame.new(x, hang, z)
+			Props.ceilingLight(folder, fitting, true, 6, 26)
 			for _, dx in { -2.4, 2.4 } do
 				Kit.part(
 					folder,
-					Vector3.new(0.08, ceiling - 17, 0.08),
-					fitting * CFrame.new(dx, (ceiling - 17) / 2, 0),
+					Vector3.new(0.08, ceiling - hang, 0.08),
+					fitting * CFrame.new(dx, (ceiling - hang) / 2, 0),
 					W.Charcoal,
 					nil,
 					{ Name = "Cord", Decor = true }

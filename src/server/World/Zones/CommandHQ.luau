@@ -1,7 +1,9 @@
 --!strict
 -- COMMAND HQ — the player's personal headquarters (profile, records,
--- customisation, achievements). Two-storey brick Kaserne building with a
--- slate gable roof, white-framed windows and a columned entrance porch.
+-- customisation, achievements). A German-built Kaserne block, as the US
+-- Army took them over in the 1950s: two plastered storeys on a stone
+-- plinth, a steep clay-tile roof with dormers, white-framed windows and a
+-- flat-topped sandstone portal.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -34,8 +36,9 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 	local floorY, eaveY = CommandHQ.FloorY, CommandHQ.EaveY
 	local t = 1.2
 	local door = zone.Entrances[1]
-	local brick = W.Brick
-	local trim = W.OffWhite
+	local plaster = Color3.fromRGB(212, 196, 160)
+	local trim = Color3.fromRGB(184, 164, 128) -- sandstone
+	local frameWhite = W.OffWhite
 
 	-- raised floor with front steps (two 0.45 steps up from the forecourt)
 	Kit.box(
@@ -87,19 +90,30 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		{ Name = "Step" }
 	)
 
-	-- stone plinth
+	-- stone plinth; the front run stops at the door jambs
+	Architecture.boxRun(
+		shell,
+		frame,
+		Vector3.new(-halfW - 0.3, 0, -0.1),
+		Vector3.new(halfW + 0.3, 2.2, 0.3),
+		-- ends tucked 0.1 into the door-frame jambs (clear of the reveal)
+		{ { door.Offset - door.Width / 2 - 0.1, door.Offset + door.Width / 2 + 0.1 } },
+		W.ConcreteDark,
+		Enum.Material.Slate,
+		{ Name = "Plinth" }
+	)
 	for _, seg in
 		{
-			{ Vector3.new(-halfW - 0.3, 0, -0.1), Vector3.new(halfW + 0.3, 2.2, 0.3) },
 			{ Vector3.new(-halfW - 0.3, 0, -depth - 0.3), Vector3.new(halfW + 0.3, 2.2, -depth + 0.1) },
-			{ Vector3.new(-halfW - 0.3, 0, -depth), Vector3.new(-halfW + 0.1, 2.2, 0) },
-			{ Vector3.new(halfW - 0.1, 0, -depth), Vector3.new(halfW + 0.3, 2.2, 0) },
+			-- the sides butt against the front and back runs (no overlap)
+			{ Vector3.new(-halfW - 0.3, 0, -depth + 0.1), Vector3.new(-halfW + 0.1, 2.2, -0.1) },
+			{ Vector3.new(halfW - 0.1, 0, -depth + 0.1), Vector3.new(halfW + 0.3, 2.2, -0.1) },
 		}
 	do
 		Kit.box(shell, frame, seg[1], seg[2], W.ConcreteDark, Enum.Material.Slate, { Name = "Plinth" })
 	end
 
-	-- brick walls
+	-- plastered walls
 	local opening = { Center = halfW + door.Offset, Width = door.Width, Bottom = 0, Top = floorY + door.Height }
 	Kit.wall(
 		shell,
@@ -109,8 +123,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		0,
 		eaveY,
 		t,
-		brick,
-		Enum.Material.Brick,
+		plaster,
+		Enum.Material.Plaster,
 		{ opening }
 	)
 	Kit.wall(
@@ -121,8 +135,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		0,
 		eaveY,
 		t,
-		brick,
-		Enum.Material.Brick
+		plaster,
+		Enum.Material.Plaster
 	)
 	Kit.wall(
 		shell,
@@ -132,8 +146,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		0,
 		eaveY,
 		t,
-		brick,
-		Enum.Material.Brick
+		plaster,
+		Enum.Material.Plaster
 	)
 	Kit.wall(
 		shell,
@@ -143,8 +157,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		0,
 		eaveY,
 		t,
-		brick,
-		Enum.Material.Brick
+		plaster,
+		Enum.Material.Plaster
 	)
 
 	-- string course between the storeys + cornice
@@ -225,7 +239,7 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 	)
 
 	-- white-framed windows on both storeys
-	local style: Architecture.WindowStyle = { Frame = trim, Sill = trim }
+	local style: Architecture.WindowStyle = { Frame = frameWhite, Sill = trim }
 	for _, row in { { 4.6, 9.4 }, { 12.4, 16.2 } } do
 		Architecture.windowRow(shell, frame, -halfW + 1, -8, 0, 1, row[1], row[2], 3, 3, style)
 		Architecture.windowRow(shell, frame, 8, halfW - 1, 0, 1, row[1], row[2], 3, 3, style)
@@ -233,9 +247,10 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		Architecture.windowColumn(shell, frame, -depth + 2, -2, halfW, 1, row[1], row[2], 5, 3, style)
 	end
 	-- upper window above the porch
-	Architecture.windowRow(shell, frame, -3, 3, 0, 1, 12.4, 16.2, 1, 3.4, style)
+	Architecture.windowRow(shell, frame, -3, 3, 0, 1, 12.9, 16.5, 1, 3.4, style)
 
-	-- slate gable roof with two chimneys
+	-- steep clay-tile roof (about 35 degrees) with dormers and two chimneys
+	local rise = 16
 	Architecture.gableRoof(
 		shell,
 		frame,
@@ -244,21 +259,70 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		-depth - 0.4,
 		0.4,
 		eaveY,
-		9,
+		rise,
 		1.6,
-		W.Roof,
-		brick,
-		Enum.Material.Slate,
-		Enum.Material.Brick
+		Color3.fromRGB(128, 64, 50),
+		plaster,
+		Enum.Material.ClayRoofTiles,
+		Enum.Material.Plaster
 	)
+	-- gabled dormers on the front slope: the plastered box and its small
+	-- tiled gable run back until they disappear into the main roof (box
+	-- top 4.2 and ridge 5.8 above its base), a window in front
+	local roofHalf = (depth + 0.8) / 2
+	local function roofTop(z: number): number
+		-- top surface of the front slope at zone-local z (0.9 roof planes)
+		local angle = math.atan2(rise, roofHalf)
+		return eaveY + rise * ((0.4 - z) / roofHalf) + 0.9 / math.cos(angle)
+	end
+	for _, x in { -14, 0, 14 } do
+		local zFront = -4
+		local base = roofTop(zFront) - 0.6
+		local dormer = frame * CFrame.new(x, base, zFront)
+		Kit.box(
+			shell,
+			dormer,
+			Vector3.new(-2, 0, -9.6),
+			Vector3.new(2, 4.2, 0),
+			plaster,
+			Enum.Material.Plaster,
+			{ Name = "Dormer" }
+		)
+		for _, side in { -1, 1 } do
+			Kit.wedge(
+				shell,
+				Vector3.new(11.8, 1.6, 2.3),
+				dormer * CFrame.new(side * 1.15, 4.2 + 0.8, -5.6) * CFrame.Angles(0, -side * math.pi / 2, 0),
+				Color3.fromRGB(128, 64, 50),
+				Enum.Material.ClayRoofTiles,
+				{ Name = "DormerRoof" }
+			)
+		end
+		Kit.part(
+			shell,
+			Vector3.new(1.8, 2, 0.1),
+			dormer * CFrame.new(0, 2.5, 0.1),
+			W.Glass,
+			Enum.Material.Glass,
+			{ Name = "DormerWindow", Reflectance = 0.15, Decor = true }
+		)
+		Kit.part(
+			shell,
+			Vector3.new(2.3, 0.2, 0.4),
+			dormer * CFrame.new(0, 1.4, 0.2),
+			trim,
+			Enum.Material.Sandstone,
+			{ Name = "DormerSill", Decor = true }
+		)
+	end
 	for _, pos in { Vector3.new(-14, 0, -30), Vector3.new(14, 0, -30) } do
 		Kit.box(
 			shell,
 			frame,
 			Vector3.new(pos.X - 1.3, eaveY + 3, pos.Z - 1.3),
-			Vector3.new(pos.X + 1.3, eaveY + 10.5, pos.Z + 1.3),
-			W.BrickDark,
-			Enum.Material.Brick,
+			Vector3.new(pos.X + 1.3, eaveY + 14, pos.Z + 1.3),
+			plaster,
+			Enum.Material.Plaster,
 			{
 				Name = "Chimney",
 			}
@@ -266,8 +330,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		Kit.box(
 			shell,
 			frame,
-			Vector3.new(pos.X - 1.6, eaveY + 10.5, pos.Z - 1.6),
-			Vector3.new(pos.X + 1.6, eaveY + 11, pos.Z + 1.6),
+			Vector3.new(pos.X - 1.6, eaveY + 14, pos.Z - 1.6),
+			Vector3.new(pos.X + 1.6, eaveY + 14.5, pos.Z + 1.6),
 			W.ConcreteDark,
 			Enum.Material.Concrete,
 			{
@@ -276,54 +340,53 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		)
 	end
 
-	-- entrance porch: two columns carrying a small pediment
+	-- entrance portal: two square sandstone pillars carrying a deep, flat
+	-- entablature (the name is carved on its front) under a cornice cap
+	local porchY = floorY + door.Height + 0.5
 	for _, x in { -6.2, 6.2 } do
-		Kit.post(
+		Kit.box(
 			shell,
-			frame * CFrame.new(x, 0.3, 4),
-			floorY + door.Height + 0.2,
-			1.3,
+			frame,
+			Vector3.new(x - 0.6, 0.3, 3.4),
+			Vector3.new(x + 0.6, porchY, 4.6),
 			trim,
-			Enum.Material.Concrete,
+			Enum.Material.Sandstone,
 			{ Name = "PorchColumn" }
 		)
 	end
-	local porchY = floorY + door.Height + 0.5
 	Kit.box(
 		shell,
 		frame,
 		Vector3.new(-7.6, porchY, -0.2),
-		Vector3.new(7.6, porchY + 0.9, 5.2),
+		Vector3.new(7.6, porchY + 1.9, 5.2),
 		trim,
-		Enum.Material.Concrete,
+		Enum.Material.Sandstone,
 		{ Name = "PorchRoof" }
 	)
-	for _, side in { -1, 1 } do
-		Kit.wedge(
-			shell,
-			Vector3.new(0.9, 2.8, 7.6),
-			frame
-				* CFrame.new(side * 3.8, porchY + 2.3, 4.7)
-				* CFrame.Angles(0, if side < 0 then math.pi / 2 else -math.pi / 2, 0),
-			trim,
-			Enum.Material.Concrete,
-			{ Name = "Pediment" }
-		)
-	end
+	Kit.box(
+		shell,
+		frame,
+		Vector3.new(-7.9, porchY + 1.9, -0.2),
+		Vector3.new(7.9, porchY + 2.2, 5.5),
+		trim,
+		Enum.Material.Sandstone,
+		{ Name = "PorchCornice" }
+	)
 	local sign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, porchY - 1.6, 0.3)),
-		Vector2.new(12, 2.2),
+		Kit.facingOut(frame, Vector3.new(0, porchY + 0.95, 5.2 + 0.05 + 0.1)),
+		Vector2.new(12.6, 1.6),
 		zone.DisplayName,
-		{ Background = W.BrownDark, TextColor = Color3.fromRGB(214, 190, 120), PixelsPerStud = 40, Depth = 0.25 }
+		{ Background = W.BrownDark, TextColor = Color3.fromRGB(214, 190, 120), PixelsPerStud = 40, Depth = 0.2 }
 	)
 	sign.Name = "EntranceSign"
 	Architecture.doorFrame(shell, frame, door.Offset, 0, door.Width, door.Height, floorY, trim)
 	Architecture.openDoors(shell, frame, door.Offset, -t, door.Width, door.Height, floorY, W.BrownDark)
 	local plate = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(-9.5, 6, 0.3)),
-		Vector2.new(3, 2),
+		-- on the solid wall between the window row and the porch column
+		Kit.facingOut(frame, Vector3.new(-8, 6, 0.3)),
+		Vector2.new(2.2, 1.6),
 		"BLDG 103",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }
 	)

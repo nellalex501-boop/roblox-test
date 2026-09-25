@@ -9,6 +9,8 @@
 --               own brightness afterwards)
 --   Fire        smooth fire-light flicker (layered noise, no strobing)
 --   NightLamp   street, bollard and flood lamps: lit after dusk, dark by day
+--   FrostZone   a box (the winter yard): while the camera is inside it, a
+--               cool frost grade fades in (ColorCorrection under the camera)
 -- Everything runs locally from one Heartbeat connection and skips anchors
 -- far from the camera. Streaming-safe: anchors are tracked with
 -- CollectionService added/removed signals.
@@ -40,12 +42,18 @@ type FireLight = { light: PointLight, base: number, range: number, seed: number 
 type Screen = { gui: SurfaceGui, base: number, dimmed: boolean }
 type NightLamp = { lens: BasePart, light: Light?, dayColor: Color3, nightColor: Color3, dayMaterial: Enum.Material }
 
+AmbientAnimator.FrostTint = Color3.fromRGB(222, 236, 255)
+AmbientAnimator.FrostFade = 1.4 -- per second (about 0.7 s in or out)
+
 local radars: { [BasePart]: Radar } = {}
 local flags: { [BasePart]: Flag } = {}
 local blinkers: { [BasePart]: Blinker } = {}
 local screens: { [BasePart]: Screen } = {}
 local fires: { [BasePart]: FireLight } = {}
 local lamps: { [BasePart]: NightLamp } = {}
+local frostZones: { [BasePart]: boolean } = {}
+local frostWeight = 0
+local frostEffect: ColorCorrectionEffect? = nil
 local lampsLit: boolean? = nil
 local connection: RBXScriptConnection? = nil
 local rng = Random.new(1984)
@@ -127,6 +135,8 @@ local function track(part: Instance)
 		if lampsLit ~= nil then
 			light(lamp, lampsLit)
 		end
+	elseif role == "FrostZone" then
+		frostZones[part] = true
 	elseif role == "Fire" then
 		local light = part:FindFirstChildOfClass("PointLight")
 		if light then
@@ -148,7 +158,54 @@ local function untrack(part: Instance)
 		screens[part] = nil
 		fires[part] = nil
 		lamps[part] = nil
+		frostZones[part] = nil
 	end
+end
+
+-- True when `point` lies inside any frost zone box.
+function AmbientAnimator.inFrost(point: Vector3): boolean
+	for zone in frostZones do
+		local lp = zone.CFrame:PointToObjectSpace(point)
+		local half = zone.Size / 2
+		if math.abs(lp.X) <= half.X and math.abs(lp.Y) <= half.Y and math.abs(lp.Z) <= half.Z then
+			return true
+		end
+	end
+	return false
+end
+
+-- Blends the frost grade toward `target` (0..1) and applies it.
+local function stepFrost(dt: number, target: number)
+	local rate = AmbientAnimator.FrostFade * dt
+	frostWeight = if target > frostWeight
+		then math.min(target, frostWeight + rate)
+		else math.max(target, frostWeight - rate)
+	if frostWeight <= 0 and not frostEffect then
+		return
+	end
+	local effect = frostEffect
+	if not effect then
+		local created = Instance.new("ColorCorrectionEffect")
+		created.Name = "LobbyFrostTint"
+		frostEffect = created
+		effect = created
+	end
+	local camera = workspace.CurrentCamera
+	if effect then
+		if camera and effect.Parent ~= camera then
+			effect.Parent = camera
+		end
+		local w = frostWeight
+		effect.Enabled = w > 0
+		effect.TintColor = Color3.new(1, 1, 1):Lerp(AmbientAnimator.FrostTint, w)
+		effect.Saturation = -0.18 * w
+		effect.Contrast = 0.04 * w
+		effect.Brightness = 0.02 * w
+	end
+end
+
+function AmbientAnimator.frost(): number
+	return frostWeight
 end
 
 -- Positions a flag's segments along a travelling wave: each joint bends a
@@ -196,6 +253,10 @@ function AmbientAnimator.step(dt: number)
 		if (flag.pole.Position - eye).Magnitude < AmbientAnimator.FlagRange then
 			AmbientAnimator.waveFlag(flag, clock)
 		end
+	end
+	-- frost grade while the camera is in the winter yard
+	if next(frostZones) or frostWeight > 0 then
+		stepFrost(dt, if AmbientAnimator.inFrost(eye) then 1 else 0)
 	end
 	-- fire light: every frame, smooth
 	for _, f in fires do
@@ -260,6 +321,7 @@ function AmbientAnimator.counts(): { [string]: number }
 		screens = size(screens),
 		fires = size(fires),
 		lamps = size(lamps),
+		frostZones = size(frostZones),
 	}
 end
 

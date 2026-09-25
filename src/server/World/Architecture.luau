@@ -12,14 +12,223 @@ local Architecture = {}
 
 export type WindowStyle = {
 	Glass: Color3?,
-	Frame: Color3?,
+	Frame: Color3?, -- glazing bars (frame and mullions)
 	Sill: Color3?,
-	Depth: number?,
+	Depth: number?, -- (unused, kept for callers)
 	Lit: boolean?,
+	Inset: number?, -- glass set back from the wall face (default 0.4)
+	Mullions: number?, -- vertical glazing bars (default 1)
+	Transom: boolean?, -- horizontal bar at two thirds of the height
 }
+
+-- Walls no thicker than this are cut through; thicker solid blocks get a
+-- protruding surround with the glass recessed inside it instead.
+local CUT_MAX_THICKNESS = 1.6
+
+local function axisVectors(cf: CFrame): { Vector3 }
+	return { cf.XVector, cf.YVector, cf.ZVector }
+end
+
+local function vec(t: { number }): Vector3
+	return Vector3.new(t[1], t[2], t[3])
+end
+
+-- The wall block among `root`'s children containing `point`, and its
+-- thickness along `normal`.
+local function wallAt(root: Instance, point: Vector3, normal: Vector3): (Part?, number)
+	for _, child in root:GetChildren() do
+		if child:IsA("Part") and child.Shape == Enum.PartType.Block and child.CanCollide then
+			local lp = child.CFrame:PointToObjectSpace(point)
+			local h = child.Size / 2
+			if math.abs(lp.X) <= h.X and math.abs(lp.Y) <= h.Y and math.abs(lp.Z) <= h.Z then
+				local ln = child.CFrame:VectorToObjectSpace(normal)
+				local thickness = math.abs(ln.X) * child.Size.X
+					+ math.abs(ln.Y) * child.Size.Y
+					+ math.abs(ln.Z) * child.Size.Z
+				return child, thickness
+			end
+		end
+	end
+	return nil, 0
+end
+
+-- Cuts a rectangular opening (width along the wall, height up) through a
+-- wall block along `normal`: the block is replaced by the pieces around
+-- the opening, with the same look. Butt-jointed, so no faces overlap.
+function Architecture.cutOpening(wall: Part, center: Vector3, normal: Vector3, width: number, height: number)
+	local cf, size = wall.CFrame, wall.Size
+	local vectors = axisVectors(cf)
+	local sizes = { size.X, size.Y, size.Z }
+	local through, bestT = 1, -1
+	for i, v in vectors do
+		local d = math.abs(v:Dot(normal))
+		if d > bestT then
+			through, bestT = i, d
+		end
+	end
+	local up, bestU = 0, -1
+	for i, v in vectors do
+		if i ~= through then
+			local d = math.abs(v.Y)
+			if d > bestU then
+				up, bestU = i, d
+			end
+		end
+	end
+	local along = 6 - through - up
+	local lp = cf:PointToObjectSpace(center)
+	local comps = { lp.X, lp.Y, lp.Z }
+	local a0, u0 = comps[along], comps[up]
+	local halfA, halfU = sizes[along] / 2, sizes[up] / 2
+	local wa, hu = width / 2, height / 2
+	local left, right = math.max(a0 - wa, -halfA), math.min(a0 + wa, halfA)
+	local pieces = {
+		{ -halfA, left, -halfU, halfU },
+		{ right, halfA, -halfU, halfU },
+		{ left, right, -halfU, math.max(u0 - hu, -halfU) },
+		{ left, right, math.min(u0 + hu, halfU), halfU },
+	}
+	for _, piece in pieces do
+		local pa0, pa1, pu0, pu1 = piece[1], piece[2], piece[3], piece[4]
+		if pa1 - pa0 > 0.05 and pu1 - pu0 > 0.05 then
+			local sz = { 0, 0, 0 }
+			local ct = { 0, 0, 0 }
+			sz[along], sz[up], sz[through] = pa1 - pa0, pu1 - pu0, sizes[through]
+			ct[along], ct[up] = (pa0 + pa1) / 2, (pu0 + pu1) / 2
+			local part = Instance.new("Part")
+			part.Name = wall.Name
+			part.Anchored = true
+			part.Color = wall.Color
+			part.Material = wall.Material
+			part.Transparency = wall.Transparency
+			part.Reflectance = wall.Reflectance
+			part.CastShadow = wall.CastShadow
+			part.CanCollide = wall.CanCollide
+			part.CanQuery = wall.CanQuery
+			part.CanTouch = wall.CanTouch
+			part.TopSurface = Enum.SurfaceType.Smooth
+			part.BottomSurface = Enum.SurfaceType.Smooth
+			part.Size = vec(sz)
+			part.CFrame = cf * CFrame.new(vec(ct))
+			part.Parent = wall.Parent
+		end
+	end
+	wall:Destroy()
+end
+
+-- Glazing inside a window of width w and height h, glass front at local
+-- z = glassZ (window frame: +Z out of the wall, origin at the centre).
+-- A box from a to b (frame-local corners) split along local X around
+-- `gaps` ({ from, to } in local X), e.g. a plinth band that stops at the
+-- door jambs instead of running across the doorway.
+function Architecture.boxRun(
+	parent: Instance,
+	frame: CFrame,
+	a: Vector3,
+	b: Vector3,
+	gaps: { { number } },
+	color: Color3,
+	material: Enum.Material,
+	opts: Kit.Opts?
+): { Part }
+	local x0, x1 = math.min(a.X, b.X), math.max(a.X, b.X)
+	local sorted = table.clone(gaps)
+	table.sort(sorted, function(l, r)
+		return l[1] < r[1]
+	end)
+	local parts = {}
+	local cursor = x0
+	local function piece(from: number, to: number)
+		if to - from > 0.05 then
+			table.insert(
+				parts,
+				Kit.box(parent, frame, Vector3.new(from, a.Y, a.Z), Vector3.new(to, b.Y, b.Z), color, material, opts)
+			)
+		end
+	end
+	for _, gap in sorted do
+		piece(cursor, math.min(gap[1], x1))
+		cursor = math.max(cursor, gap[2])
+	end
+	piece(cursor, x1)
+	return parts
+end
+
+local function glazing(parent: Instance, wf: CFrame, w: number, h: number, glassZ: number, s: WindowStyle)
+	local glass = s.Glass or W.Glass
+	local bars = s.Frame or W.DarkGrey
+	Kit.part(
+		parent,
+		Vector3.new(w, h, 0.1),
+		wf * CFrame.new(0, 0, glassZ - 0.05),
+		if s.Lit then W.GlassLit else glass,
+		Enum.Material.Glass,
+		{ Name = "Window", Reflectance = 0.15, Shadow = false, Query = false }
+	)
+	-- frame: head and foot full width, jambs between them; 0.12 proud of
+	-- the glass
+	local fb = 0.18
+	local frameZ = glassZ + 0.06
+	for _, y in { h / 2 - fb / 2, -h / 2 + fb / 2 } do
+		Kit.part(parent, Vector3.new(w, fb, 0.12), wf * CFrame.new(0, y, frameZ), bars, Enum.Material.SmoothPlastic, {
+			Name = "WindowFrame",
+			Decor = true,
+		})
+	end
+	for _, x in { -w / 2 + fb / 2, w / 2 - fb / 2 } do
+		Kit.part(
+			parent,
+			Vector3.new(fb, h - 2 * fb, 0.12),
+			wf * CFrame.new(x, 0, frameZ),
+			bars,
+			Enum.Material.SmoothPlastic,
+			{ Name = "WindowFrame", Decor = true }
+		)
+	end
+	-- mullions and transom segments between them: 0.08 proud of the glass,
+	-- butt-jointed so no two bars share a face
+	local inner = w - 2 * fb
+	local count = s.Mullions or 1
+	local mw = 0.14
+	local barZ = glassZ + 0.04
+	local xs = { -inner / 2 }
+	for i = 1, count do
+		local x = -inner / 2 + inner * i / (count + 1)
+		table.insert(xs, x)
+		Kit.part(
+			parent,
+			Vector3.new(mw, h - 2 * fb, 0.08),
+			wf * CFrame.new(x, 0, barZ),
+			bars,
+			Enum.Material.SmoothPlastic,
+			{ Name = "Mullion", Decor = true }
+		)
+	end
+	table.insert(xs, inner / 2)
+	if s.Transom or (s.Transom == nil and h > 3.6) then
+		local y = h / 2 - fb - (h - 2 * fb) / 3
+		for i = 1, #xs - 1 do
+			local a = xs[i] + (if i > 1 then mw / 2 else 0)
+			local b = xs[i + 1] - (if i < #xs - 1 then mw / 2 else 0)
+			if b - a > 0.1 then
+				Kit.part(
+					parent,
+					Vector3.new(b - a, mw, 0.08),
+					wf * CFrame.new((a + b) / 2, y, barZ),
+					bars,
+					Enum.Material.SmoothPlastic,
+					{ Name = "Transom", Decor = true }
+				)
+			end
+		end
+	end
+end
 
 -- A row of windows on a wall face. The wall runs along local X at depth z,
 -- with its outer face toward +Z (outward = 1) or -Z (outward = -1).
+-- Thin walls get real openings with the glass set back (Inset) inside the
+-- reveal, a frame, mullions, a sill and a lintel; solid blocks get a
+-- protruding surround with the glass recessed 0.3 inside it.
 function Architecture.windowRow(
 	parent: Instance,
 	frame: CFrame,
@@ -34,41 +243,57 @@ function Architecture.windowRow(
 	style: WindowStyle?
 )
 	local s: WindowStyle = style or {}
-	local glass = s.Glass or W.Glass
-	local sill = s.Sill or W.ConcreteLight
-	local depth = s.Depth or 0.3
+	local sillColor = s.Sill or W.ConcreteLight
+	local inset = s.Inset or 0.4
 	local span = x1 - x0
 	local gap = (span - count * windowWidth) / (count + 1)
+	local w, h = windowWidth, y1 - y0
+	local overhang = math.clamp(gap / 2 - 0.08, 0.05, 0.3)
+	local turn = if outward > 0 then CFrame.identity else CFrame.Angles(0, math.pi, 0)
 	for i = 1, count do
 		local cx = x0 + gap * i + windowWidth * (i - 0.5)
-		local cz = z + outward * depth / 2
+		local wf = frame * CFrame.new(cx, (y0 + y1) / 2, z) * turn
+		local normal = wf.ZVector
+		local probe = (wf * CFrame.new(0, 0, -0.1)).Position
+		local wall, thickness = wallAt(parent, probe, normal)
+		if wall and thickness <= CUT_MAX_THICKNESS then
+			Architecture.cutOpening(wall, wf.Position, normal, w, h)
+			glazing(parent, wf, w, h, -inset, s)
+			Kit.part(
+				parent,
+				Vector3.new(w + overhang * 2, 0.3, 0.12),
+				wf * CFrame.new(0, h / 2 + 0.15, 0.06),
+				sillColor,
+				Enum.Material.Concrete,
+				{ Name = "Lintel", Shadow = false }
+			)
+		else
+			-- surround protruding 0.38, glass 0.3 behind its face
+			local sw = 0.3
+			local depth = 0.38
+			local pieces = {
+				{ Vector3.new(w + 2 * sw, sw, depth), Vector3.new(0, h / 2 + sw / 2, depth / 2) },
+				{ Vector3.new(w + 2 * sw, sw, depth), Vector3.new(0, -h / 2 - sw / 2, depth / 2) },
+				{ Vector3.new(sw, h, depth), Vector3.new(-w / 2 - sw / 2, 0, depth / 2) },
+				{ Vector3.new(sw, h, depth), Vector3.new(w / 2 + sw / 2, 0, depth / 2) },
+			}
+			for _, piece in pieces do
+				Kit.part(parent, piece[1], wf * CFrame.new(piece[2]), sillColor, Enum.Material.Concrete, {
+					Name = "Surround",
+				})
+			end
+			glazing(parent, wf, w, h, depth - 0.3, s)
+		end
+		-- sill below the opening, clear of its neighbours
+		local sillY = -h / 2 - (if wall and thickness <= CUT_MAX_THICKNESS then 0 else 0.3)
 		Kit.part(
 			parent,
-			Vector3.new(windowWidth, y1 - y0, depth),
-			frame * CFrame.new(cx, (y0 + y1) / 2, cz),
-			if s.Lit then W.GlassLit else glass,
-			Enum.Material.Glass,
-			{ Name = "Window", Reflectance = 0.08, Shadow = false, Query = false }
-		)
-		Kit.part(
-			parent,
-			Vector3.new(windowWidth + 0.8, 0.35, depth + 0.5),
-			frame * CFrame.new(cx, y0 - 0.175, z + outward * (depth + 0.5) / 2),
-			sill,
+			Vector3.new(w + overhang * 2 + 0.1, 0.22, 0.5),
+			wf * CFrame.new(0, sillY - 0.11, 0.25),
+			sillColor,
 			Enum.Material.Concrete,
 			{ Name = "Sill", Shadow = false, Collide = false, Query = false }
 		)
-		if s.Frame then
-			-- mullion splitting the pane
-			Kit.part(
-				parent,
-				Vector3.new(0.3, y1 - y0, depth + 0.1),
-				frame * CFrame.new(cx, (y0 + y1) / 2, z + outward * (depth + 0.1) / 2),
-				s.Frame,
-				Enum.Material.SmoothPlastic,
-				{ Name = "Mullion", Decor = true }
-			)
-		end
 	end
 end
 
@@ -438,10 +663,24 @@ Architecture.FlagPixelsPerStud = 20
 
 -- Painter for one segment face: shapes outside the segment's slice of the
 -- canvas are skipped, so each segment only carries what it shows.
-local function painter(canvas: Frame, aspect: number, pixelHeight: number, x0: number, x1: number): FlagPainter
+-- Draws in design space (x from 0 at the hoist to `aspect` at the fly);
+-- only the slice x0..x1 is drawn. `mirror` flips positions left-right (the
+-- glyphs of text still read normally).
+local function painter(
+	canvas: Frame,
+	aspect: number,
+	pixelHeight: number,
+	x0: number,
+	x1: number,
+	mirror: boolean?
+): FlagPainter
 	local function visible(a: number, b: number): boolean
 		return b > x0 - 0.001 and a < x1 + 0.001
 	end
+	local function mx(x: number): number
+		return if mirror then aspect - x else x
+	end
+	local turn = if mirror then -1 else 1
 	local function frame(cx: number, cy: number, w: number, h: number, color: Color3): Frame
 		local f = Instance.new("Frame")
 		f.BorderSizePixel = 0
@@ -456,19 +695,19 @@ local function painter(canvas: Frame, aspect: number, pixelHeight: number, x0: n
 		Aspect = aspect,
 		rect = function(ax, ay, bx, by, color)
 			if visible(ax, bx) then
-				frame((ax + bx) / 2, (ay + by) / 2, bx - ax, by - ay, color)
+				frame(mx((ax + bx) / 2), (ay + by) / 2, bx - ax, by - ay, color)
 			end
 		end,
 		bar = function(cx, cy, length, thickness, degrees, color)
 			local reach = length / 2 + thickness
 			if visible(cx - reach, cx + reach) then
-				local f = frame(cx, cy, thickness, length, color)
-				f.Rotation = degrees
+				local f = frame(mx(cx), cy, thickness, length, color)
+				f.Rotation = degrees * turn
 			end
 		end,
 		ring = function(cx, cy, radius, thickness, color)
 			if visible(cx - radius, cx + radius) then
-				local f = frame(cx, cy, radius * 2, radius * 2, color)
+				local f = frame(mx(cx), cy, radius * 2, radius * 2, color)
 				f.BackgroundTransparency = 1
 				local corner = Instance.new("UICorner")
 				corner.CornerRadius = UDim.new(0.5, 0)
@@ -484,7 +723,7 @@ local function painter(canvas: Frame, aspect: number, pixelHeight: number, x0: n
 				local label = Instance.new("TextLabel")
 				label.BackgroundTransparency = 1
 				label.AnchorPoint = Vector2.new(0.5, 0.5)
-				label.Position = UDim2.fromScale(cx / aspect, cy)
+				label.Position = UDim2.fromScale(mx(cx) / aspect, cy)
 				label.Size = UDim2.fromScale(w / aspect, h)
 				label.Text = text
 				label.TextColor3 = color
@@ -527,13 +766,18 @@ function Architecture.flag(
 			canvas.BorderSizePixel = 0
 			canvas.BackgroundColor3 = design.Field
 			canvas.Size = UDim2.new(n, 0, 1, 0)
-			-- the back face is mirrored, so walk the canvas the other way
-			local index = if face == Enum.NormalId.Front then i else (n - 1 - i)
+			-- segments run from the pole along +X. On the Back face the GUI's
+			-- x runs toward the fly, so segment i shows slice i; on the Front
+			-- face it runs toward the pole, so the design is drawn mirrored
+			-- and segment i shows slice n-1-i. Both sides then read correctly
+			-- with the hoist at the pole, like a double-sided flag.
+			local front = face == Enum.NormalId.Front
+			local index = if front then (n - 1 - i) else i
 			canvas.Position = UDim2.new(-index, 0, 0, 0)
 			canvas.Parent = gui
 			if design.Draw then
-				local x0 = index / n * aspect
-				design.Draw(painter(canvas, aspect, height * pixelsPerStud, x0, x0 + aspect / n))
+				local x0 = i / n * aspect
+				design.Draw(painter(canvas, aspect, height * pixelsPerStud, x0, x0 + aspect / n, front))
 			end
 		end
 	end

@@ -140,7 +140,10 @@ local function worldBounds(part)
 end
 Nav.worldBounds = worldBounds
 
-function Nav.build(root, bounds)
+-- options.thin = false samples thin parts at cell centres only (for
+-- overlap tests, where a conservative footprint reports false clashes).
+function Nav.build(root, bounds, options)
+	local sampleThin = not (options and options.thin == false)
 	local cell = Nav.CELL
 	local minX, maxX, minZ, maxZ = bounds.MinX, bounds.MaxX, bounds.MinZ, bounds.MaxZ
 	local cols = math.floor((maxX - minX) / cell)
@@ -160,11 +163,24 @@ function Nav.build(root, bounds)
 		local c1 = math.min(cols - 1, math.floor((pmaxX - minX) / cell))
 		local r0 = math.max(0, math.floor((pminZ - minZ) / cell))
 		local r1 = math.min(rows - 1, math.floor((pmaxZ - minZ) / cell))
+		-- parts thinner than a cell (plinth bands, rails, posts) can fall
+		-- between cell centres: sample those on a 4x4 sub-grid per cell
+		local thin = sampleThin and math.min(pmaxX - pminX, pmaxZ - pminZ) < cell * 1.01
 		for c = c0, c1 do
 			local x = minX + (c + 0.5) * cell
 			for r = r0, r1 do
 				local z = minZ + (r + 0.5) * cell
 				local bottom, top = verticalSpan(part, x, z)
+				if not bottom and thin then
+					for i = 0, 15 do
+						local sx = minX + (c + ((i % 4) + 0.5) / 4) * cell
+						local sz = minZ + (r + ((i // 4) + 0.5) / 4) * cell
+						bottom, top = verticalSpan(part, sx, sz)
+						if bottom then
+							break
+						end
+					end
+				end
 				if bottom then
 					local idx = r * cols + c + 1
 					local list = spans[idx]

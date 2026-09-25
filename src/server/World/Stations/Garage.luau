@@ -309,9 +309,16 @@ local function tarpedVehicle(parent: Instance, cf: CFrame)
 	end
 	for _, x in { -3.2, 3.2 } do
 		for _, z in { -5.6, 5.6 } do
-			Kit.part(model, Vector3.new(0.6, 0.8, 0.9), cf * CFrame.new(x, 0.4, z), W.Charcoal, Enum.Material.Rubber, {
-				Name = "TrackEnd",
-			})
+			Kit.part(
+				model,
+				Vector3.new(0.6, 0.8, 0.9),
+				cf * CFrame.new(x * 1.03, 0.4, z),
+				W.Charcoal,
+				Enum.Material.Rubber,
+				{
+					Name = "TrackEnd",
+				}
+			)
 		end
 	end
 	return model
@@ -324,10 +331,12 @@ local function engineHoist(parent: Instance, cf: CFrame)
 	for _, x in { -3.6, 3.6 } do
 		for _, z in { -1.4, 1.4 } do
 			local lean = if z < 0 then -0.2 else 0.2
+			-- the two legs of each A-frame stand side by side
+			local lx = x + (if z < 0 then 0 else -math.sign(x) * 0.4)
 			Kit.part(
 				model,
 				Vector3.new(0.35, 9.2, 0.35),
-				cf * CFrame.new(x, 4.5, z * 0.5) * CFrame.Angles(lean, 0, 0),
+				cf * CFrame.new(lx, 4.5, z * 0.5) * CFrame.Angles(lean, 0, 0),
 				steel,
 				Enum.Material.Metal,
 				{ Name = "HoistLeg" }
@@ -428,7 +437,7 @@ local function partsShelf(parent: Instance, cf: CFrame)
 		local y = 0.6 + level * 2.1
 		Kit.part(
 			model,
-			Vector3.new(7, 0.15, 2),
+			Vector3.new(6.7, 0.15, 1.7),
 			cf * CFrame.new(0, y, 0),
 			steel,
 			Enum.Material.Metal,

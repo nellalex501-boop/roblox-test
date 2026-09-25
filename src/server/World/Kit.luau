@@ -275,7 +275,8 @@ function Kit.surface(
 	gui.Face = face
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = pixelsPerStud or 40
-	gui.LightInfluence = lightInfluence or 0.35
+	-- painted surfaces take the scene lighting (1); screens pass 0
+	gui.LightInfluence = lightInfluence or 1
 	gui.ClipsDescendants = true
 	-- stop rendering small labels when far away (0 = always render)
 	gui.MaxDistance = maxDistance or 0
@@ -350,9 +351,13 @@ function Kit.sign(parent: Instance, cf: CFrame, size: Vector2, title: string, st
 		Enum.Material.SmoothPlastic,
 		{ Name = "Sign" }
 	)
-	-- small signs stop rendering beyond ~40x their height
-	local maxDistance = s.MaxDistance or (if size.Y < 3 then math.max(60, size.Y * 45) else 0)
-	local gui = Kit.surface(board, Enum.NormalId.Front, s.PixelsPerStud or 40, 0.25, maxDistance)
+	-- landmark signs (3+ studs tall) always render; entrance and bay signs
+	-- reach 250+ studs (well past the spawn); small plates are culled only
+	-- where they are too small to read anyway
+	local maxDistance = s.MaxDistance
+		or (if size.Y >= 3 then 0 elseif size.Y >= 1.2 then math.max(250, size.Y * 120) else math.max(80, size.Y * 90))
+	-- painted: lit by the scene like the board it is painted on
+	local gui = Kit.surface(board, Enum.NormalId.Front, s.PixelsPerStud or 40, 1, maxDistance)
 	local border = s.Border
 	if border then
 		local stroke = Kit.frame(gui, UDim2.new(0, 6, 0, 6), UDim2.new(1, -12, 1, -12), background, 1)

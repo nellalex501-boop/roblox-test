@@ -49,7 +49,8 @@ return function(test)
 		t.ge(counts.flags, 8, "flags tracked")
 		t.ge(counts.blinkers, 10, "equipment / obstruction lamps tracked")
 		t.ge(counts.screens, 5, "CRT screens tracked")
-		t.ge(counts.fires, 2, "fires tracked (courtyard barrel, event brazier)")
+		t.ge(counts.fires, 1, "fires tracked (the winter yard's fire barrel)")
+		t.ge(counts.frostZones, 1, "frost zone tracked (the winter yard)")
 		lookFrom(ctx, Vector3.new(0, 20, 30))
 		local radar = anchors(ctx, "RadarSpin")[1]
 		local model = radar.Parent
@@ -127,6 +128,42 @@ return function(test)
 			end
 		end
 		t.ok(restored, "every CRT is back at its own brightness after flickering")
+		t.noRuntimeErrors()
+	end)
+
+	test("winter yard: frost grade fades in inside the yard and out again", function(t)
+		local ctx = Bridge.boot()
+		local Animator = ctx.module("Ambient.AmbientAnimator")
+		local zone = anchors(ctx, "FrostZone")[1]
+		t.ok(zone ~= nil, "frost zone in the yard")
+		local camera = ctx.client.workspace.CurrentCamera
+		-- outside: nothing applied
+		lookFrom(ctx, Vector3.new(0, 20, 30))
+		ctx.client:step(0.5)
+		t.le(Animator.frost(), 0, "no frost on the parade square")
+		-- inside the yard: fades in within about a second, not instantly
+		lookFrom(ctx, zone.CFrame.Position + Vector3.new(0, -8, 0))
+		ctx.client:step(0.2)
+		local partial = Animator.frost()
+		t.ok(partial > 0 and partial < 1, ("fading in (%.2f after 0.2 s)"):format(partial))
+		for _ = 1, 60 do
+			ctx.client:step(1 / 60)
+		end
+		t.ge(Animator.frost(), 0.99, "fully in after 1.2 s")
+		local effect = camera:FindFirstChild("LobbyFrostTint")
+		t.ok(effect and effect:IsA("ColorCorrectionEffect"), "frost grade on the camera (local only)")
+		if effect then
+			t.ok(effect.Enabled, "frost grade on")
+			t.le(effect.TintColor.R, effect.TintColor.B - 0.05, "cool (blue) tint")
+			t.le(effect.Saturation, -0.1, "desaturated")
+		end
+		-- leaving: fades back out and switches off
+		lookFrom(ctx, Vector3.new(0, 20, 30))
+		for _ = 1, 72 do
+			ctx.client:step(1 / 60)
+		end
+		t.le(Animator.frost(), 0, "gone after leaving")
+		t.ok(effect and not effect.Enabled, "frost grade off outside")
 		t.noRuntimeErrors()
 	end)
 

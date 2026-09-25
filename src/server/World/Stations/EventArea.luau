@@ -60,15 +60,44 @@ local function briefingDesk(parent: Instance, frame: CFrame)
 		{ Name = "RadioAntenna", Decor = true }
 	)
 	Kit.anchor(radio, "Sound", "RadioChatter")
+	-- typewriter at the front edge between the radio and the monitor:
+	-- body, key bank, platen roller and a sheet of paper in it
+	local typewriter = base * CFrame.new(-0.3, 3.2, 0.55)
 	Kit.part(
 		model,
-		Vector3.new(2, 0.8, 1.6),
-		base * CFrame.new(1.4, 3.6, 0.4),
+		Vector3.new(1.9, 0.7, 1.3),
+		typewriter * CFrame.new(0, 0.35, 0),
 		W.Charcoal,
 		Enum.Material.Metal,
 		{ Name = "Typewriter", Decor = true }
 	)
-	local screen = Common.crt(model, base * CFrame.new(1.6, 3.2, -0.9), 2.4, "Event")
+	Kit.part(
+		model,
+		Vector3.new(1.6, 0.08, 0.5),
+		typewriter * CFrame.new(0, 0.74, 0.3),
+		Color3.fromRGB(38, 38, 36),
+		Enum.Material.SmoothPlastic,
+		{ Name = "Keys", Decor = true }
+	)
+	Kit.cylinder(
+		model,
+		2.1,
+		0.28,
+		typewriter * CFrame.new(0, 0.84, -0.45),
+		Color3.fromRGB(30, 30, 30),
+		Enum.Material.SmoothPlastic,
+		{ Name = "Platen", Decor = true }
+	)
+	Kit.part(
+		model,
+		Vector3.new(1.2, 0.9, 0.02),
+		typewriter * CFrame.new(0, 1.32, -0.5) * CFrame.Angles(math.rad(-12), 0, 0),
+		W.Paper,
+		Enum.Material.SmoothPlastic,
+		{ Name = "Sheet", Decor = true }
+	)
+	-- the monitor at the right, well back from the front edge
+	local screen = Common.crt(model, base * CFrame.new(2.4, 3.2, -0.8), 2.4, "Event")
 	local _, content = Common.screen(screen, "EventScreen", 70)
 	Common.line(content, "Header", "OPERATIONS CHANNEL", 0, 0.16, Common.Phosphor)
 	Common.line(content, "Title", "BRIEFING", 0.3, 0.22, Common.Amber, nil, Enum.TextXAlignment.Center)
@@ -94,7 +123,7 @@ function EventArea.apply(zoneModel: Instance, frame: CFrame, event: Events.Event
 		if old then
 			old:Destroy()
 		end
-		local gui = Kit.surface(billboard, Enum.NormalId.Front, 24, 0.2)
+		local gui = Kit.surface(billboard, Enum.NormalId.Front, 24, 1)
 		gui.Name = "EventBillboard"
 		local bg = Kit.frame(gui, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), W.Charcoal)
 		local band = Kit.frame(bg, UDim2.fromScale(0, 0), UDim2.fromScale(0.035, 1), event.Palette.Primary)

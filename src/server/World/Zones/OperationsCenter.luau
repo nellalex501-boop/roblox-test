@@ -61,13 +61,16 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 		Shadow = false,
 	})
 
-	-- plinth band (slightly proud of the walls)
+	-- plinth band (slightly proud of the walls); the front run stops at the
+	-- door jambs
 	local plinth = W.ConcreteDark
-	Kit.box(
+	Architecture.boxRun(
 		shell,
 		frame,
 		Vector3.new(-halfW - 0.4, 0, -0.1),
 		Vector3.new(halfW + 0.4, 1.8, 0.4),
+		-- ends tucked 0.1 into the door-frame jambs (clear of the reveal)
+		{ { door.Offset - door.Width / 2 - 0.1, door.Offset + door.Width / 2 + 0.1 } },
 		plinth,
 		Enum.Material.Concrete,
 		{ Name = "Plinth" }
@@ -416,7 +419,8 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	Architecture.openDoors(shell, frame, door.Offset, -t, door.Width, door.Height, floorY, W.MutedBlue)
 	local plate = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(door.Offset + door.Width / 2 + 2.6, 6, 0.3)),
+		-- between the portico columns at 9 and 15
+		Kit.facingOut(frame, Vector3.new(12, 6, 0.3)),
 		Vector2.new(3, 2),
 		"BLDG 101",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }

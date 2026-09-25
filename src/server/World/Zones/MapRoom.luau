@@ -28,11 +28,12 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 	local t = 1
 	local door = zone.Entrances[1]
 
+	-- inset under the side and back walls, 0.1 proud of the front
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(-halfW, 0, -depth),
-		Vector3.new(halfW, floorY, 0),
+		Vector3.new(-halfW + 0.1, 0, -depth + 0.1),
+		Vector3.new(halfW - 0.1, floorY, 0.1),
 		W.ConcreteDark,
 		Enum.Material.Concrete,
 		{
@@ -110,37 +111,39 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 		Enum.Material.Concrete
 	)
 
-	-- plinth + beige accent band (the Map Room's colour key)
+	-- plinth + beige accent band (the Map Room's colour key); the front run
+	-- stops at the door jambs
+	Architecture.boxRun(
+		shell,
+		frame,
+		Vector3.new(-halfW - 0.3, 0, -0.1),
+		Vector3.new(halfW + 0.3, 1.6, 0.3),
+		-- ends tucked 0.1 into the door-frame jambs (clear of the reveal)
+		{ { door.Offset - door.Width / 2 - 0.1, door.Offset + door.Width / 2 + 0.1 } },
+		W.ConcreteDark,
+		Enum.Material.Concrete,
+		{ Name = "Plinth" }
+	)
 	for _, seg in
 		{
-			{ Vector3.new(-halfW - 0.3, 0, -0.1), Vector3.new(halfW + 0.3, 1.6, 0.3) },
-			{ Vector3.new(-halfW - 0.3, 0, -depth - 0.3), Vector3.new(-halfW + 0.1, 1.6, 0) },
-			{ Vector3.new(halfW - 0.1, 0, -depth - 0.3), Vector3.new(halfW + 0.3, 1.6, 0) },
+			-- back run; the sides butt against the front and back (no overlap)
+			{ Vector3.new(-halfW - 0.3, 0, -depth - 0.3), Vector3.new(halfW + 0.3, 1.6, -depth + 0.1) },
+			{ Vector3.new(-halfW - 0.3, 0, -depth + 0.1), Vector3.new(-halfW + 0.1, 1.6, -0.1) },
+			{ Vector3.new(halfW - 0.1, 0, -depth + 0.1), Vector3.new(halfW + 0.3, 1.6, -0.1) },
 		}
 	do
 		Kit.box(shell, frame, seg[1], seg[2], W.ConcreteDark, Enum.Material.Concrete, { Name = "Plinth" })
 	end
-	Kit.box(
-		shell,
-		frame,
-		Vector3.new(-halfW - 0.25, 11, -0.1),
-		Vector3.new(halfW + 0.25, 12.6, 0.3),
-		W.Beige,
-		Enum.Material.Concrete,
+	-- the band wraps all four walls, butt-jointed at the corners
+	for _, seg in
 		{
-			Name = "AccentBand",
+			{ Vector3.new(-halfW - 0.25, 11, -0.1), Vector3.new(halfW + 0.25, 12.6, 0.3) },
+			{ Vector3.new(-halfW - 0.25, 11, -depth - 0.25), Vector3.new(halfW + 0.25, 12.6, -depth + 0.15) },
+			{ Vector3.new(-halfW - 0.25, 11, -depth + 0.15), Vector3.new(-halfW + 0.15, 12.6, -0.1) },
+			{ Vector3.new(halfW - 0.15, 11, -depth + 0.15), Vector3.new(halfW + 0.25, 12.6, -0.1) },
 		}
-	)
-	for _, x in { -halfW - 0.25, halfW - 0.15 } do
-		Kit.box(
-			shell,
-			frame,
-			Vector3.new(x, 11, -depth),
-			Vector3.new(x + 0.4, 12.6, 0),
-			W.Beige,
-			Enum.Material.Concrete,
-			{ Name = "AccentBand" }
-		)
+	do
+		Kit.box(shell, frame, seg[1], seg[2], W.Beige, Enum.Material.Concrete, { Name = "AccentBand" })
 	end
 
 	-- windows: two beside the door, clerestory strips along the sides
@@ -221,8 +224,9 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 	Architecture.openDoors(shell, frame, door.Offset, -t, door.Width, door.Height, floorY, W.BeigeDark)
 	local plate = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(door.Width / 2 + 2.4, 6, 0.3)),
-		Vector2.new(3, 2),
+		-- between the canopy strut and the first window
+		Kit.facingOut(frame, Vector3.new(9.6, 6, 0.3)),
+		Vector2.new(2, 1.4),
 		"BLDG 102",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }
 	)

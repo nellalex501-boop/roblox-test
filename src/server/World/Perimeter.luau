@@ -43,61 +43,72 @@ local function beam(
 end
 Perimeter.beam = beam
 
--- Security fence between two ground points: concrete posts, wire rails,
--- barbed-wire outriggers and a tall invisible collider.
-local function fenceRun(parent: Instance, a: Vector3, b: Vector3, spacing: number)
+-- Chain-link security fence between two ground points: round steel posts,
+-- a woven mesh panel with a top rail and bottom tension wire, outriggers
+-- leaning outward with three strands of barbed wire, and a tall invisible
+-- collider. `skipFirst` / `skipLast` leave out the posts a neighbouring run
+-- already stands at the corners (no doubled corner posts).
+local function fenceRun(
+	parent: Instance,
+	a: Vector3,
+	b: Vector3,
+	spacing: number,
+	skipFirst: boolean?,
+	skipLast: boolean?
+)
 	local delta = b - a
 	local length = delta.Magnitude
 	if length < 1 then
 		return
 	end
 	local dir = delta.Unit
+	local mid = (a + b) / 2
+	-- outriggers lean away from the base
+	local outward = Vector3.new(-dir.Z, 0, dir.X)
+	if outward:Dot(Vector3.new(mid.X, 0, mid.Z)) < 0 then
+		outward = -outward
+	end
 	local count = math.max(1, math.floor(length / spacing))
-	for i = 0, count do
+	for i = if skipFirst then 1 else 0, if skipLast then count - 1 else count do
 		local p = a + delta * (i / count)
-		Kit.box(
+		Kit.post(parent, CFrame.new(p), 8.4, 0.45, W.Steel, Enum.Material.Metal, { Name = "FencePost" })
+		local arm = beam(
 			parent,
-			CFrame.new(p),
-			Vector3.new(-0.4, 0, -0.4),
-			Vector3.new(0.4, 9, 0.4),
-			W.ConcreteLight,
-			Enum.Material.Concrete,
-			{
-				Name = "FencePost",
-			}
-		)
-		local arm = Kit.part(
-			parent,
-			Vector3.new(0.25, 2.2, 0.25),
-			CFrame.lookAt(p + Vector3.new(0, 9.6, 0), p + Vector3.new(0, 9.6, 0) + dir)
-				* CFrame.Angles(0, 0, math.rad(35)),
+			p + Vector3.new(0, 8.2, 0),
+			p + Vector3.new(0, 8.2, 0) + outward * 1.5 + Vector3.new(0, 1.5, 0),
+			0.16,
 			W.SteelDark,
 			Enum.Material.Metal,
 			{ Name = "Outrigger", Decor = true }
 		)
 		arm.CastShadow = false
 	end
-	for _, y in { 2, 4.5, 7, 8.8 } do
-		beam(
-			parent,
-			a + Vector3.new(0, y, 0),
-			b + Vector3.new(0, y, 0),
-			0.14,
-			W.SteelDark,
-			Enum.Material.Metal,
-			{ Name = "Wire", Decor = true }
-		)
-	end
-	beam(
+	local along = CFrame.fromMatrix(mid, dir, UP)
+	local mesh = Kit.part(
 		parent,
-		a + Vector3.new(0, 10.4, 0),
-		b + Vector3.new(0, 10.4, 0),
-		0.3,
-		W.Steel,
-		Enum.Material.Metal,
-		{ Name = "Barbed", Decor = true }
+		Vector3.new(length, 7.8, 0.08),
+		along * CFrame.new(0, 4, 0),
+		Color3.fromRGB(150, 152, 146),
+		Enum.Material.Fabric,
+		{ Name = "ChainLink", Transparency = 0.55, Collide = false, Query = false, Shadow = false }
 	)
-	local mid = (a + b) / 2
+	mesh:SetAttribute("ChainLink", true)
+	Kit.cylinder(parent, length, 0.18, along * CFrame.new(0, 7.9, 0), W.Steel, Enum.Material.Metal, {
+		Name = "TopRail",
+		Decor = true,
+	})
+	local low = Vector3.new(0, 0.3, 0) + outward * 0.12
+	beam(parent, a + low, b + low, 0.06, W.SteelDark, Enum.Material.Metal, {
+		Name = "TensionWire",
+		Decor = true,
+	})
+	for k = 1, 3 do
+		local offset = Vector3.new(0, 8.2 + k * 0.45, 0) + outward * (k * 0.45)
+		beam(parent, a + offset, b + offset, 0.06, W.SteelDark, Enum.Material.Metal, {
+			Name = "Barbed",
+			Decor = true,
+		})
+	end
 	local collider = Kit.part(
 		parent,
 		Vector3.new(length, 34, 1),
@@ -119,10 +130,10 @@ local function fence(parent: Instance)
 	local se = Vector3.new(p.MaxX, y, p.MaxZ)
 	local sw = Vector3.new(p.MinX, y, p.MaxZ)
 	fenceRun(folder, nw, ne, 10)
-	fenceRun(folder, ne, Vector3.new(p.MaxX, y, gate.Center.Z - gate.Width / 2 - 2), 10)
+	fenceRun(folder, ne, Vector3.new(p.MaxX, y, gate.Center.Z - gate.Width / 2 - 2), 10, true)
 	fenceRun(folder, Vector3.new(p.MaxX, y, gate.Center.Z + gate.Width / 2 + 2), se, 10)
-	fenceRun(folder, se, sw, 10)
-	fenceRun(folder, sw, nw, 10)
+	fenceRun(folder, se, sw, 10, true)
+	fenceRun(folder, sw, nw, 10, true, true)
 	-- invisible barrier across the gate so players stay in the lobby
 	local barrier = Kit.part(
 		folder,
@@ -147,7 +158,7 @@ local function gate(parent: Instance)
 			folder,
 			CFrame.new(x - 3, 0, z),
 			Vector3.new(-0.8, 0, -0.8),
-			Vector3.new(0.8, 13, 0.8),
+			Vector3.new(0.8, 12.9, 0.8),
 			W.SteelDark,
 			Enum.Material.Metal,
 			{
@@ -166,13 +177,29 @@ local function gate(parent: Instance)
 			Name = "ArchBeam",
 		}
 	)
-	local signCf = CFrame.lookAt(Vector3.new(x - 3.8, 9.6, g.Center.Z), Vector3.new(x - 10, 9.6, g.Center.Z))
-	Kit.sign(folder, signCf, Vector2.new(17, 3.4), Perimeter.GameTitle, {
-		Background = W.SignGreen,
-		Subtitle = Perimeter.BaseName,
-		Stripe = W.MutedRed,
-		PixelsPerStud = 30,
-	})
+	-- the name hangs under the arch, readable from both sides: one board
+	-- faces the base, a second faces arriving traffic
+	for _, side in { -1, 1 } do
+		local sx = x - 3 + side * 0.8
+		local signCf = CFrame.lookAt(Vector3.new(sx, 9.6, g.Center.Z), Vector3.new(sx + side * 10, 9.6, g.Center.Z))
+		Kit.sign(folder, signCf, Vector2.new(17, 3.4), Perimeter.GameTitle, {
+			Background = W.SignGreen,
+			Subtitle = if side > 0 then "VISITORS REPORT TO THE GUARD" else Perimeter.BaseName,
+			Stripe = W.MutedRed,
+			PixelsPerStud = 30,
+		})
+	end
+	for _, dz in { -6, 6 } do
+		Kit.box(
+			folder,
+			CFrame.new(x - 3, 0, g.Center.Z + dz),
+			Vector3.new(-1.1, 11.3, -0.1),
+			Vector3.new(1.1, 11.6, 0.1),
+			W.SteelDark,
+			Enum.Material.Metal,
+			{ Name = "SignHanger", Decor = true }
+		)
+	end
 
 	-- guard booth north of the road
 	local booth = CFrame.new(x - 10, 0, roadMinZ - 8)
@@ -259,12 +286,14 @@ local function gate(parent: Instance)
 			}
 		)
 	end
+	-- HALT stands outside the gate, facing the traffic arriving from the
+	-- public road
 	local plaque = Kit.model(folder, "HaltSign")
-	local pp = Vector3.new(x - 14, 0, roadMaxZ + 2.5)
+	local pp = Vector3.new(x + 7, 0, roadMaxZ + 2.5)
 	Kit.post(plaque, CFrame.new(pp), 6.4, 0.35, W.Steel, Enum.Material.Metal, { Name = "Post" })
 	Kit.sign(
 		plaque,
-		CFrame.lookAt(pp + Vector3.new(-0.3, 5.2, 0), pp + Vector3.new(-5, 5.2, 0)),
+		CFrame.lookAt(pp + Vector3.new(0.4, 5.2, 0), pp + Vector3.new(5, 5.2, 0)),
 		Vector2.new(4, 2.4),
 		"HALT",
 		{
@@ -292,10 +321,12 @@ local function guardTower(parent: Instance, position: Vector3, facing: number)
 		)
 	end
 	for _, y in { 5, 10.5 } do
+		-- the X braces sit 0.45 above the Z braces so they never share faces
+		local yz = y + 0.45
 		for _, seg in
 			{
-				{ Vector3.new(-s, y, -s), Vector3.new(s, y, -s) },
-				{ Vector3.new(-s, y, s), Vector3.new(s, y, s) },
+				{ Vector3.new(-s, yz, -s), Vector3.new(s, yz, -s) },
+				{ Vector3.new(-s, yz, s), Vector3.new(s, yz, s) },
 				{ Vector3.new(-s, y, -s), Vector3.new(-s, y, s) },
 				{ Vector3.new(s, y, -s), Vector3.new(s, y, s) },
 			}
@@ -327,8 +358,8 @@ local function guardTower(parent: Instance, position: Vector3, facing: number)
 		{
 			{ Vector3.new(-4.4, h + 0.6, -4.4), Vector3.new(4.4, h + 3, -4) },
 			{ Vector3.new(-4.4, h + 0.6, 4), Vector3.new(4.4, h + 3, 4.4) },
-			{ Vector3.new(-4.4, h + 0.6, -4.4), Vector3.new(-4, h + 3, 4.4) },
-			{ Vector3.new(4, h + 0.6, -4.4), Vector3.new(4.4, h + 3, 4.4) },
+			{ Vector3.new(-4.4, h + 0.6, -4), Vector3.new(-4, h + 3, 4) },
+			{ Vector3.new(4, h + 0.6, -4), Vector3.new(4.4, h + 3, 4) },
 		}
 	do
 		Kit.box(model, base, seg[1], seg[2], W.OliveDark, Enum.Material.WoodPlanks, { Name = "Parapet" })
@@ -446,7 +477,25 @@ local function barracks(
 	)
 	local style: Architecture.WindowStyle = { Frame = W.OffWhite, Sill = W.OffWhite }
 	local count = math.floor(length / 7)
-	Architecture.windowRow(model, frame, -halfL + 1, halfL - 1, 0, 1, 3.6, 7.4, count, 2.8, style)
+	-- ground floor: window runs between the three doors (and their canopies)
+	local doors = { -halfL / 2, 0, halfL / 2 }
+	local edges = {
+		-halfL + 1,
+		doors[1] - 3.6,
+		doors[1] + 3.6,
+		doors[2] - 3.6,
+		doors[2] + 3.6,
+		doors[3] - 3.6,
+		doors[3] + 3.6,
+		halfL - 1,
+	}
+	for i = 1, #edges, 2 do
+		local a, b = edges[i], edges[i + 1]
+		local n = math.floor((b - a) / 7)
+		if n > 0 then
+			Architecture.windowRow(model, frame, a, b, 0, 1, 3.6, 7.4, n, 2.8, style)
+		end
+	end
 	Architecture.windowRow(model, frame, -halfL + 1, halfL - 1, 0, 1, 9.6, 13.2, count, 2.8, style)
 	Architecture.windowRow(model, frame, -halfL + 1, halfL - 1, -depth, -1, 9.6, 13.2, count, 2.8, style)
 	for _, x in { -halfL / 2, 0, halfL / 2 } do
@@ -478,12 +527,27 @@ local function barracks(
 			{ Name = "DoorStep" }
 		)
 	end
-	Kit.sign(model, Kit.facingOut(frame, Vector3.new(-halfL + 4, 6, 0.25)), Vector2.new(3.4, 2), number, {
-		Background = W.OffWhite,
-		TextColor = W.Charcoal,
-		Depth = 0.15,
-		PixelsPerStud = 40,
-	})
+	-- the number plate on the solid wall between the corner and the first
+	-- ground-floor window (the run laid out above: 2.8 wide windows with
+	-- 0.3 surrounds)
+	local runSpan = edges[2] - edges[1]
+	local runCount = math.floor(runSpan / 7)
+	local firstWindow = if runCount > 0 then edges[1] + (runSpan - runCount * 2.8) / (runCount + 1) - 0.3 else edges[2]
+	local left, right = -halfL + 0.5, firstWindow - 0.2
+	local plateW = math.min(3.4, right - left)
+	local plate = Kit.sign(
+		model,
+		Kit.facingOut(frame, Vector3.new((left + right) / 2, 6, 0.25)),
+		Vector2.new(plateW, plateW * 0.6),
+		number,
+		{
+			Background = W.OffWhite,
+			TextColor = W.Charcoal,
+			Depth = 0.15,
+			PixelsPerStud = 40,
+		}
+	)
+	plate.Name = "BuildingNumber"
 	return model
 end
 
@@ -693,25 +757,29 @@ local function commsCompound(parent: Instance)
 	)
 	-- low fence with a gate toward the north road
 	local fenceFolder = Kit.folder(folder, "Fence")
-	local function run(a: Vector3, b: Vector3)
+	-- 6-stud chain-link runs; skipFirst / skipLast leave out the posts a
+	-- neighbouring run already stands at the corners
+	local function run(a: Vector3, b: Vector3, skipFirst: boolean?, skipLast: boolean?)
 		local delta = b - a
 		local count = math.max(1, math.floor(delta.Magnitude / 8))
-		for i = 0, count do
+		for i = if skipFirst then 1 else 0, if skipLast then count - 1 else count do
 			local p = a + delta * (i / count)
-			Kit.post(fenceFolder, CFrame.new(p), 6, 0.4, W.Steel, Enum.Material.Metal, { Name = "Post" })
-		end
-		for _, y in { 2, 4, 5.8 } do
-			beam(
-				fenceFolder,
-				a + Vector3.new(0, y, 0),
-				b + Vector3.new(0, y, 0),
-				0.14,
-				W.SteelDark,
-				Enum.Material.Metal,
-				{ Name = "Wire", Decor = true }
-			)
+			Kit.post(fenceFolder, CFrame.new(p), 6.2, 0.4, W.Steel, Enum.Material.Metal, { Name = "Post" })
 		end
 		local mid = (a + b) / 2
+		local along = CFrame.fromMatrix(mid, delta.Unit, UP)
+		Kit.part(
+			fenceFolder,
+			Vector3.new(delta.Magnitude, 5.6, 0.08),
+			along * CFrame.new(0, 3.05, 0),
+			Color3.fromRGB(150, 152, 146),
+			Enum.Material.Fabric,
+			{ Name = "ChainLink", Transparency = 0.55, Collide = false, Query = false, Shadow = false }
+		)
+		Kit.cylinder(fenceFolder, delta.Magnitude, 0.16, along * CFrame.new(0, 5.9, 0), W.Steel, Enum.Material.Metal, {
+			Name = "TopRail",
+			Decor = true,
+		})
 		Kit.part(
 			fenceFolder,
 			Vector3.new(delta.Magnitude, 7, 0.4),
@@ -723,9 +791,9 @@ local function commsCompound(parent: Instance)
 	end
 	run(Vector3.new(x0, 0, z1), Vector3.new(118, 0, z1))
 	run(Vector3.new(126, 0, z1), Vector3.new(x1, 0, z1))
-	run(Vector3.new(x1, 0, z1), Vector3.new(x1, 0, z0))
-	run(Vector3.new(x1, 0, z0), Vector3.new(x0, 0, z0))
-	run(Vector3.new(x0, 0, z0), Vector3.new(x0, 0, z1))
+	run(Vector3.new(x1, 0, z1), Vector3.new(x1, 0, z0), true)
+	run(Vector3.new(x1, 0, z0), Vector3.new(x0, 0, z0), true)
+	run(Vector3.new(x0, 0, z0), Vector3.new(x0, 0, z1), true, true)
 
 	-- comms shack
 	local shack = CFrame.lookAt(Vector3.new(108, 0, -92), Vector3.new(108, 0, -93))
@@ -748,7 +816,9 @@ local function commsCompound(parent: Instance)
 		{ Name = "Shack" }
 	)
 	Architecture.flatRoof(folder, shack, -8, 8, -12, 0, 9, 0.8, W.OliveLight)
-	Architecture.windowRow(folder, shack, -7, 7, 0, 1, 4, 7, 3, 2.6, { Frame = W.DarkGrey })
+	-- one window each side of the door
+	Architecture.windowRow(folder, shack, -7, -2.4, 0, 1, 4, 7, 1, 2.6, { Frame = W.DarkGrey })
+	Architecture.windowRow(folder, shack, 2.4, 7, 0, 1, 4, 7, 1, 2.6, { Frame = W.DarkGrey })
 	Kit.box(
 		folder,
 		shack,
@@ -812,7 +882,8 @@ local function commsCompound(parent: Instance)
 		Enum.Material.Metal,
 		{ Name = "TopWhip" }
 	)
-	for _, a in { 0, 2.094, 4.189 } do
+	-- three guy anchors, placed clear of the shack and the dish footings
+	for _, a in { -0.35, 1.744, 3.3 } do
 		local anchor = mastBase + Vector3.new(math.cos(a) * 22, 0.2, math.sin(a) * 22)
 		for _, h in { 32, 60 } do
 			beam(
@@ -845,30 +916,23 @@ local function helipad(parent: Instance)
 	local folder = Kit.folder(parent, "Helipad")
 	local c = Vector3.new(118, 0, 29)
 	Kit.post(folder, CFrame.new(c), 0.35, 34, W.Concrete, Enum.Material.Concrete, { Name = "Pad" })
+	-- painted ring and H, each layer 0.06 above the one below
+	Kit.post(folder, CFrame.new(c + Vector3.new(0, 0.3, 0)), 0.11, 29, W.OffWhite, nil, { Name = "Ring", Decor = true })
 	Kit.post(
 		folder,
-		CFrame.new(c + Vector3.new(0, 0.35, 0)),
-		0.02,
-		29,
-		W.OffWhite,
-		nil,
-		{ Name = "Ring", Decor = true }
-	)
-	Kit.post(
-		folder,
-		CFrame.new(c + Vector3.new(0, 0.35, 0)),
-		0.04,
+		CFrame.new(c + Vector3.new(0, 0.3, 0)),
+		0.17,
 		27.4,
 		W.Concrete,
 		Enum.Material.Concrete,
 		{ Name = "RingInner", Decor = true }
 	)
-	local y = 0.39
+	local y = 0.43
 	Kit.box(
 		folder,
 		CFrame.new(c),
 		Vector3.new(-5, y, -6),
-		Vector3.new(-3, y + 0.03, 6),
+		Vector3.new(-3, y + 0.1, 6),
 		W.OffWhite,
 		nil,
 		{ Name = "H", Decor = true }
@@ -877,7 +941,7 @@ local function helipad(parent: Instance)
 		folder,
 		CFrame.new(c),
 		Vector3.new(3, y, -6),
-		Vector3.new(5, y + 0.03, 6),
+		Vector3.new(5, y + 0.1, 6),
 		W.OffWhite,
 		nil,
 		{ Name = "H", Decor = true }
@@ -886,7 +950,7 @@ local function helipad(parent: Instance)
 		folder,
 		CFrame.new(c),
 		Vector3.new(-3, y, -1),
-		Vector3.new(3, y + 0.03, 1),
+		Vector3.new(3, y + 0.1, 1),
 		W.OffWhite,
 		nil,
 		{ Name = "H", Decor = true }
@@ -909,13 +973,120 @@ local function helipad(parent: Instance)
 	return folder
 end
 
+-- The public road beyond the gate: the straight stretch past the gate
+-- (Layout "OutsideRoad") bends east at both ends and runs off into the
+-- woods, instead of stopping in the grass. Returns the centre lines.
+local function publicRoad(parent: Instance): { { Vector3 } }
+	local folder = Kit.folder(parent, "PublicRoad")
+	local straight = Layout.Roads[#Layout.Roads]
+	local x = (straight.MinX + straight.MaxX) / 2
+	local width = straight.MaxX - straight.MinX
+	-- (a wide bend: the north branch passes south of the village hill)
+	local radius = 200
+	local lines: { { Vector3 } } = { { Vector3.new(x, 0, straight.MinZ), Vector3.new(x, 0, straight.MaxZ) } }
+	for _, dir in { -1, 1 } do
+		local z0 = if dir < 0 then straight.MinZ else straight.MaxZ
+		local center = Vector3.new(x + radius, 0, z0)
+		local points: { Vector3 } = {}
+		local steps = 9
+		for i = 0, steps do
+			-- from the road end (pointing away from the gate) round to east
+			local a = math.pi - (i / steps) * (math.pi / 2)
+			table.insert(points, center + Vector3.new(math.cos(a), 0, dir * math.sin(a)) * radius)
+		end
+		table.insert(points, points[#points] + Vector3.new(480, 0, 0))
+		for i = 1, #points - 1 do
+			local a, b = points[i], points[i + 1]
+			-- consecutive slabs overlap a little at the bends and alternate
+			-- 0.06 in height, so no two share a top face
+			local top = if i % 2 == 0 then 0.1 else 0.16
+			local mid = (a + b) / 2
+			Kit.part(
+				folder,
+				Vector3.new(width, top, (b - a).Magnitude + 1.2),
+				CFrame.lookAt(Vector3.new(mid.X, top / 2, mid.Z), Vector3.new(b.X, top / 2, b.Z)),
+				W.Asphalt,
+				Enum.Material.Asphalt,
+				{ Name = "Road", Collide = false, Query = false, Shadow = false }
+			)
+		end
+		table.insert(lines, points)
+	end
+	return lines
+end
+
+-- Shortest distance from (x, z) to any of the road centre lines.
+local function distanceToRoad(lines: { { Vector3 } }, x: number, z: number): number
+	local best = math.huge
+	local p = Vector3.new(x, 0, z)
+	for _, line in lines do
+		for i = 1, #line - 1 do
+			local a, b = line[i], line[i + 1]
+			local ab = b - a
+			local t = math.clamp((p - a):Dot(ab) / ab:Dot(ab), 0, 1)
+			best = math.min(best, (a + ab * t - p).Magnitude)
+		end
+	end
+	return best
+end
+
+-- Trees along the public road's bends and the first stretch beyond, on
+-- alternating sides, so the road disappears into the woods (the far
+-- stretches are behind the hills).
+local function roadsideWoods(parent: Instance, lines: { { Vector3 } }, rng: Random)
+	local folder = Kit.folder(parent, "RoadsideWoods")
+	for index, line in lines do
+		-- (the straight stretch past the gate stays open)
+		if index > 1 then
+			local travelled = 0
+			local side = 1
+			for i = 1, #line - 1 do
+				local a, b = line[i], line[i + 1]
+				local ab = b - a
+				local len = math.min(ab.Magnitude, 140)
+				local dir = ab.Unit
+				local across = Vector3.new(-dir.Z, 0, dir.X)
+				local d = 0
+				while d < len do
+					d += rng:NextNumber(18, 30)
+					side = -side
+					local p = a + dir * math.min(d, len) + across * side * rng:NextNumber(13, 30)
+					travelled += 1
+					if distanceToRoad(lines, p.X, p.Z) > 11 then
+						local base = CFrame.new(p.X, 0, p.Z)
+						if rng:NextNumber() < 0.8 then
+							Nature.pine(folder, base, rng:NextNumber(16, 30), rng)
+						else
+							Nature.leafy(folder, base, rng:NextNumber(15, 22), rng)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 local function village(parent: Instance)
 	local folder = Kit.folder(parent, "DistantVillage")
 	local rng = Random.new(1961)
 	local center = Vector3.new(360, 0, -330)
 	Nature.hill(folder, center.X, center.Z, 150, 26, W.Grass)
-	for i = 1, 9 do
+	local placed: { Vector3 } = { center + Vector3.new(10, 22, 2) } -- the church
+	for _ = 1, 9 do
 		local p = center + Vector3.new(rng:NextNumber(-60, 60), 22, rng:NextNumber(-40, 40))
+		for _ = 1, 20 do
+			local clear = true
+			for _, q in placed do
+				if (q - p).Magnitude < 24 then
+					clear = false
+				end
+			end
+			if clear then
+				break
+			end
+			p = center + Vector3.new(rng:NextNumber(-60, 60), 22, rng:NextNumber(-40, 40))
+		end
+		table.insert(placed, p)
 		local house = CFrame.new(p) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0)
 		local w, d, h = rng:NextNumber(10, 16), rng:NextNumber(10, 14), rng:NextNumber(8, 12)
 		Kit.box(
@@ -1032,13 +1203,24 @@ function Perimeter.build(root: Instance)
 	-- landscape outside the fence
 	local rng = Random.new(1983)
 	local nature = Kit.folder(folder, "Landscape")
-	Nature.forest(nature, Layout.Perimeter, 70, 170, {
+	local road = publicRoad(nature)
+	Nature.forest(nature, Layout.Perimeter, 55, 125, {
 		{ MinX = 196, MaxX = 224, MinZ = -400, MaxZ = 400 },
 	}, rng)
-	for i = 0, 11 do
-		local a = i * math.pi / 6 + 0.2
-		local r = rng:NextNumber(360, 430)
-		Nature.hill(nature, math.cos(a) * r, math.sin(a) * r, rng:NextNumber(90, 150), rng:NextNumber(18, 34))
+	roadsideWoods(nature, road, rng)
+	-- two rings of irregular hills close the view on every side (the ground
+	-- plane's edge stays hidden behind them), kept clear of the road
+	for ring, spec in { { 0, 12, 360, 430, 90, 140, 18, 32 }, { 1, 16, 560, 700, 120, 190, 30, 55 } } do
+		local count = spec[2]
+		for i = 0, count - 1 do
+			local a = (i + ring * 0.5) * math.pi * 2 / count + 0.2
+			local r = rng:NextNumber(spec[3], spec[4])
+			local radius = rng:NextNumber(spec[5], spec[6])
+			local x, z = math.cos(a) * r, math.sin(a) * r
+			if distanceToRoad(road, x, z) > radius + 30 then
+				Nature.ridge(nature, x, z, radius, rng:NextNumber(spec[7], spec[8]), rng)
+			end
+		end
 	end
 	village(folder)
 	return folder

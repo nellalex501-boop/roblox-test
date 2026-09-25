@@ -58,12 +58,28 @@ Layout.SidewalkWidth = 3
 
 -- Paved roads as axis-aligned rectangles (drawn in this order).
 Layout.Roads = {
-	{ Name = "NorthRoad", MinX = -150, MaxX = 196, MinZ = -64, MaxZ = -52 },
+	-- the north road runs out through the main gate to the public road
+	{ Name = "NorthRoad", MinX = -150, MaxX = 204, MinZ = -64, MaxZ = -52 },
 	{ Name = "SouthRoad", MinX = -150, MaxX = 150, MinZ = 52, MaxZ = 64 },
 	{ Name = "WestRoad", MinX = -80, MaxX = -68, MinZ = -64, MaxZ = 64 },
 	{ Name = "EastRoad", MinX = 68, MaxX = 80, MinZ = -64, MaxZ = 64 },
 	{ Name = "OutsideRoad", MinX = 204, MaxX = 216, MinZ = -260, MaxZ = 260 },
 } :: { Rect & { Name: string } }
+
+-- Staff parking (privately owned vehicles) south of the Hall of
+-- Commanders: a two-way access lane off the south road and a double-loaded
+-- field (stalls 8.5 x 16 for cars ~6.5 x 12, an 18-stud two-way aisle).
+Layout.Parking = {
+	Lane = { MinX = 40, MaxX = 58, MinZ = 64, MaxZ = 112 } :: Rect,
+	Field = { MinX = 40, MaxX = 112, MinZ = 112, MaxZ = 162 } :: Rect,
+	StallWidth = 8.5,
+	StallDepth = 16,
+	-- first stall line of each row (the north row starts past the lane)
+	NorthRowX = 58.5,
+	SouthRowX = 40.5,
+	NorthStalls = 6,
+	SouthStalls = 8,
+}
 
 Layout.Perimeter = { MinX = -190, MaxX = 192, MinZ = -172, MaxZ = 176 } :: Rect
 
@@ -132,8 +148,8 @@ Layout.Zones = {
 	},
 	Leaderboards = {
 		Id = "Leaderboards",
-		DisplayName = "LEADERBOARDS",
-		Subtitle = "HALL OF COMMANDERS",
+		DisplayName = "HALL OF COMMANDERS",
+		Subtitle = "SEASON RANKINGS",
 		Kind = "Open",
 		Facade = Vector3.new(110, 0, 68),
 		Inward = Vector3.new(0, 0, 1),

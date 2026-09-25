@@ -32,6 +32,8 @@ Sounds.Ambient = {
 	Canteen = { Id = asset(9112862413), Volume = 0.22, Looped = true, RollOffMin = 12, RollOffMax = 50 },
 	DistantTraffic = { Id = asset(9112771906), Volume = 0.3, Looped = true, RollOffMin = 30, RollOffMax = 160 },
 	Flags = { Id = asset(9114461215), Volume = 0.16, Looped = true, RollOffMin = 8, RollOffMax = 50 },
+	-- the snow gun's fan: the wind loop, faster and close up
+	SnowGun = { Id = asset(9113286969), Volume = 0.32, Looped = true, RollOffMin = 6, RollOffMax = 45, Speed = 1.35 },
 } :: { [string]: SoundDef }
 
 -- Occasional distant helicopter pass over the base.

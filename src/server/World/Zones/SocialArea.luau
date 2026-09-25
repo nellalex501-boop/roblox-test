@@ -69,11 +69,12 @@ function SocialArea.build(parent: Instance): (Model, CFrame)
 	local floorY, eaveY = c.FloorY, c.EaveY
 	local canteenFrame = frame * CFrame.new(0, 0, c.MaxZ)
 	local halfW, depth = (c.MaxX - c.MinX) / 2, c.MaxZ - c.MinZ
+	-- inset under the side and back walls, 0.1 proud of the front
 	Kit.box(
 		shell,
 		canteenFrame,
-		Vector3.new(-halfW, 0, -depth),
-		Vector3.new(halfW, floorY, 0),
+		Vector3.new(-halfW + 0.1, 0, -depth + 0.1),
+		Vector3.new(halfW - 0.1, floorY, 0.1),
 		W.ConcreteDark,
 		Enum.Material.Concrete,
 		{ Name = "Floor" }
@@ -216,8 +217,9 @@ function SocialArea.build(parent: Instance): (Model, CFrame)
 	Architecture.openDoors(shell, canteenFrame, 0, -t, 10, 9, floorY, W.Wood)
 	local plate = Kit.sign(
 		shell,
-		Kit.facingOut(canteenFrame, Vector3.new(-8.2, 6, 0.3)),
-		Vector2.new(3, 2),
+		-- at the corner, clear of the window row
+		Kit.facingOut(canteenFrame, Vector3.new(-halfW + 0.85, 6, 0.3)),
+		Vector2.new(1.5, 1.1),
 		"BLDG 110",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }
 	)
