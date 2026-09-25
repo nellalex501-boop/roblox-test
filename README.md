@@ -25,7 +25,7 @@ brown and faded red and blue.
 
 The layout is compact. In the headless navigation test every entrance is
 within **8.7 s** of spawn at walking speed, and every interaction within
-**11.6 s**.
+**11.8 s**.
 
 ## Put it into your place (Place1)
 
@@ -74,6 +74,10 @@ Then press **Play**.
 Copying the same five containers from an open `ColdWarLobby.rbxl` into
 Place1 (copy, then paste into the same service) works as well.
 
+A German step-by-step guide with every caveat (what the scripts change at
+start, updating from an older kit, teleport requirements, what was and was
+not verified) is in [`dist/InsertKit/LIESMICH.md`](dist/InsertKit/LIESMICH.md).
+
 ### Option C: sync with Rojo (for development)
 1. Install [Rojo](https://rojo.space) 7.x and its Studio plugin.
 2. Run `rojo serve` in this folder, open Place1 in Studio and click
@@ -103,15 +107,21 @@ when you provide them:
    (`MBT_WEST`, `TRUCK_EAST`…). The ids are in
    `src/shared/Config/Units.luau`.
 
-The Garage showcase, the event unit, the registry previews, the motor pool and
-the parking lot then use the copy. It is scaled to fit, anchored, and has its
-scripts removed so no game logic from the RTS runs in the lobby.
+The Garage turntable and the registry previews use the copy from the next
+Play on: the server builds those models at every start. The vehicles built
+into the baked lobby (motor pool, parking lot, helipad, the event unit in the
+winter yard) only change after a rebuild: run
+`require(game.ServerScriptService.LobbyServer.World.Builder).Build()` in the
+command bar, or delete `Workspace.ColdWarLobby` so the server builds it at
+start. A copy is scaled down to fit (never up; the helipad helicopter is not
+scaled), anchored, and has its scripts removed so no game logic from the RTS
+runs in the lobby.
 
 ## Configuration (all in `src/shared/Config`)
 
 | What | Where |
 |---|---|
-| Teleport to the RTS place | `GameModes.luau` → `Settings.TargetPlaceId`. While it is 0, or when running in Studio, deployment is simulated in the lobby. Otherwise the match is teleported to a reserved server with teleport data `{ source, mode, map, teams = { {userIds}, {userIds} }, private }` |
+| Teleport to the RTS place | `GameModes.luau` → `Settings.TargetPlaceId`. While it is 0, or when running in Studio, deployment is simulated in the lobby. Otherwise the match is teleported to a reserved server with teleport data `{ source, mode, map, teams = { {userIds}, {userIds} }, private }`. Reserved servers need a place you control; the safe setup is the RTS place as a place of the lobby's own experience (not verified in a live game) |
 | Modes, queue sizes, countdown | `GameModes.luau` |
 | Maps (texts + top-down previews + theatre positions) | `Maps.luau` |
 | Units, camouflage schemes, unlock prices/levels | `Units.luau` |
