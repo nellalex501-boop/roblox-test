@@ -1,8 +1,9 @@
 --!strict
 -- Operations Center terminal: queue for the terminal's mode (Quick, 1v1,
 -- 2v2, 4v4) or run a private lobby (create / join by code / host options
--- / start). The queue persists while the player walks around the base;
--- the HUD shows it everywhere else.
+-- / start). Under the queue controls a briefing shows the mode's rules of
+-- engagement and the likely battlefield. The queue persists while the
+-- player walks around the base; the HUD shows it everywhere else.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,6 +13,7 @@ local GameModes = require(Config:WaitForChild("GameModes"))
 local Maps = require(Config:WaitForChild("Maps"))
 local Theme = require(Config:WaitForChild("Theme"))
 local Format = require(Lobby:WaitForChild("Util"):WaitForChild("Format"))
+local MapDraw = require(Lobby:WaitForChild("Util"):WaitForChild("MapDraw"))
 local Errors = require(script.Parent.Parent.Errors)
 local Kit = require(script.Parent.Parent.Kit)
 local Sound = require(script.Parent.Parent.Sound)
@@ -228,6 +230,84 @@ local function teamsBlock(card: Frame, match: { [string]: any }, order: number)
 	end
 end
 
+-- The map this terminal's battle would most likely use: the preferred map
+-- when it suits the mode, otherwise the first map recommended for it.
+-- Returns the map, whether it is the preferred one, and the pool size.
+local function battlefield(modeId: string): (Maps.MapInfo?, boolean, number)
+	local any = modeId == "QUICK" or modeId == "PRIVATE"
+	local pool: { string } = {}
+	for _, id in Maps.Order do
+		local map = Maps.List[id]
+		if any or table.find(map.Recommended, modeId) then
+			table.insert(pool, id)
+		end
+	end
+	local profile = State.profile
+	local preferred = profile and profile.preferredMap
+	if preferred and table.find(pool, preferred) then
+		return Maps.List[preferred], true, #pool
+	end
+	return if pool[1] then Maps.List[pool[1]] else nil, false, #pool
+end
+
+-- Briefing under the queue controls: rules of engagement on the left, the
+-- likely battlefield drawn on the right. `compact` (while queued, when the
+-- card also holds the timer) draws a shorter map.
+local function briefing(card: Frame, order: number, compact: boolean?)
+	local mode = GameModes.Modes[refs.mode]
+	local mapH = if compact then 96 else 140
+	local block = Kit.box(card, { Name = "Briefing", Size = UDim2.new(1, 0, 0, mapH + 80), LayoutOrder = order })
+	local rules = Kit.box(block, { Name = "Rules", Size = UDim2.new(0.5, -10, 1, 0) })
+	Kit.list(rules, Enum.FillDirection.Vertical, 6)
+	Kit.heading(rules, "RULES OF ENGAGEMENT", 1)
+	for i, rule in mode.Rules do
+		Kit.text(rules, {
+			Name = "Rule" .. i,
+			Text = "▸ " .. rule,
+			TextColor3 = UI.TextDim,
+			Size = UDim2.new(1, 0, 0, 22),
+			LayoutOrder = 1 + i,
+		})
+	end
+	Kit.field(rules, "MATCH LENGTH", mode.MatchLength, 10)
+	local map, isPreferred, poolSize = battlefield(refs.mode)
+	local field = Kit.box(block, {
+		Name = "Battlefield",
+		Position = UDim2.new(0.5, 10, 0, 0),
+		Size = UDim2.new(0.5, -10, 1, 0),
+	})
+	Kit.list(field, Enum.FillDirection.Vertical, 6)
+	Kit.heading(field, if isPreferred then "YOUR PREFERRED MAP" else "LIKELY BATTLEFIELD", 1)
+	if map then
+		local holder = Kit.frame(field, {
+			Name = "MapHolder",
+			BackgroundColor3 = UI.Panel,
+			Size = UDim2.fromOffset(222, mapH),
+			LayoutOrder = 2,
+		})
+		holder.ClipsDescendants = true
+		Kit.stroke(holder, UI.BorderDim)
+		MapDraw.preview(holder, map, 222, mapH, { labels = false })
+		Kit.text(field, {
+			Name = "BattlefieldName",
+			Text = ("%s · %s"):format(map.Name, map.Size),
+			FontFace = Kit.Fonts.MonoBold,
+			TextSize = Kit.Text.Small,
+			Size = UDim2.new(1, 0, 0, 16),
+			LayoutOrder = 3,
+		})
+		Kit.text(field, {
+			Name = "BattlefieldPool",
+			Text = ("POOL · %d MAPS"):format(poolSize),
+			FontFace = Kit.Fonts.Mono,
+			TextSize = Kit.Text.Small,
+			TextColor3 = UI.TextFaint,
+			Size = UDim2.new(1, 0, 0, 16),
+			LayoutOrder = 4,
+		})
+	end
+end
+
 -- States -------------------------------------------------------------------
 
 local function renderQueueIdle(card: Frame)
@@ -247,6 +327,7 @@ local function renderQueueIdle(card: Frame)
 	end)
 	join.Name = "JoinQueue"
 	join.Size = UDim2.fromOffset(220, 40)
+	briefing(card, 10)
 end
 
 local function renderQueued(card: Frame, state: { [string]: any })
@@ -298,6 +379,9 @@ local function renderQueued(card: Frame, state: { [string]: any })
 	end)
 	leave.Name = "LeaveQueue"
 	leave.Size = UDim2.fromOffset(180, 40)
+	if here then
+		briefing(card, 10, true)
+	end
 end
 
 local function renderDeploy(card: Frame, state: { [string]: any })

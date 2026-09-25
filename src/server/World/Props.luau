@@ -408,7 +408,9 @@ function Props.roadSign(parent: Instance, cf: CFrame, title: string, subtitle: s
 		white = { bg = W.OffWhite, fg = W.Charcoal },
 	}
 	local c = colors[style or "info"] or colors.info
-	Kit.sign(model, cf * CFrame.new(0, 6.2, -0.2), Vector2.new(3.6, 2.2), title, {
+	-- wide enough for the subtitle to read at a quarter stud
+	local width = math.max(3.6, (utf8.len(subtitle or "") or 0) * 0.55 * 0.27 / 0.9)
+	Kit.sign(model, cf * CFrame.new(0, 6.2, -0.2), Vector2.new(width, 2.2), title, {
 		Background = c.bg,
 		TextColor = c.fg,
 		Subtitle = subtitle,
@@ -514,7 +516,7 @@ function Props.fuelTank(parent: Instance, cf: CFrame): Model
 		Kit.part(model, Vector3.new(0.8, 2, 3.4), cf * CFrame.new(x, 1, 0), W.ConcreteDark, CONCRETE, solid("Cradle"))
 	end
 	Kit.cylinder(model, 10, 4.4, cf * CFrame.new(0, 3.9, 0), W.OliveDark, METAL, solid("Tank"))
-	Kit.sign(model, cf * CFrame.new(0, 3.9, -2.25), Vector2.new(3.2, 1.2), "DIESEL", {
+	Kit.sign(model, cf * CFrame.new(0, 3.9, -2.25), Vector2.new(5, 1.4), "DIESEL", {
 		Background = W.OliveDark,
 		TextColor = W.OffWhite,
 		Subtitle = "FLAMMABLE · FEUERGEFÄHRLICH",

@@ -149,9 +149,9 @@ function MapDraw.preview(
 	map: Maps.MapInfo,
 	w: number,
 	h: number,
-	options: { labels: boolean?, spawns: boolean? }?
+	options: { labels: boolean?, spawns: boolean?, markSize: number? }?
 )
-	local opts: { labels: boolean?, spawns: boolean? } = options or {}
+	local opts: { labels: boolean?, spawns: boolean?, markSize: number? } = options or {}
 	local p = map.Preview
 	local water: { Maps.Box } = p.Water or {}
 	local rivers: { Maps.Polyline } = p.Rivers or {}
@@ -184,7 +184,7 @@ function MapDraw.preview(
 	for _, box in p.Urban do
 		frame(canvas, "Urban", box[1] * w, box[2] * h, box[3] * w, box[4] * h, C.Urban, 5)
 	end
-	local markSize = math.max(10, w * 0.045)
+	local markSize = opts.markSize or math.max(10, w * 0.045)
 	for i, s in p.Sectors do
 		local m = frame(
 			canvas,

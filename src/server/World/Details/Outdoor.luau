@@ -77,11 +77,11 @@ local function plaza(parent: Instance)
 		grounded(Props.loudspeakerPole(folder, at(x, PAVED, -44)))
 	end
 	grounded(Props.noticeBoard(folder, at(-28.5, PAVED, 26, FACE_EAST), "CAMP FULDA · STANDING ORDERS", {
-		"OPERATIONS CENTER — MATCHMAKING (N)",
+		"OPS CENTER — MATCHMAKING (N)",
 		"MAP ROOM — BATTLE MAPS (NW)",
 		"GARAGE — UNITS & PAINT (W)",
 		"COMMAND HQ — YOUR FILE (E)",
-		"MISSION BOARD — DAILY ORDERS (S)",
+		"MISSION BOARD — ORDERS (S)",
 	}))
 	-- a bench and bin by the mission board shelter
 	grounded(Props.bench(folder, at(-19, PAVED, 41), 6))

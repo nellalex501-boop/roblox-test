@@ -11,6 +11,8 @@ export type Mode = {
 	ColorKey: string,
 	Description: string,
 	TerminalLabel: string,
+	Rules: { string }, -- rules of engagement on the terminal panel (one short line each)
+	MatchLength: string,
 }
 
 local GameModes = {}
@@ -28,6 +30,12 @@ GameModes.Modes = {
 		ColorKey = "QUICK",
 		Description = "Joins the first battle that can start: fills open 4v4, 2v2 or 1v1 queues, otherwise pairs you with other quick-match commanders.",
 		TerminalLabel = "QUICK MATCH TERMINAL",
+		Rules = {
+			"Joins the first battle ready",
+			"Capture and hold sectors",
+			"Preferred map when it fits",
+		},
+		MatchLength = "15–35 MIN",
 	},
 	["1V1"] = {
 		Id = "1V1",
@@ -39,6 +47,12 @@ GameModes.Modes = {
 		ColorKey = "DUEL",
 		Description = "Head-to-head battle on small and medium maps. You control the whole battlegroup.",
 		TerminalLabel = "1v1 DUEL TERMINAL",
+		Rules = {
+			"You command the battlegroup",
+			"Capture and hold sectors",
+			"Small and medium maps",
+		},
+		MatchLength = "15–20 MIN",
 	},
 	["2V2"] = {
 		Id = "2V2",
@@ -50,6 +64,12 @@ GameModes.Modes = {
 		ColorKey = "TEAM",
 		Description = "Coordinate with an allied commander to hold the line across a shared front.",
 		TerminalLabel = "2v2 TEAM MATCH TERMINAL",
+		Rules = {
+			"Two commanders, one front",
+			"Capture and hold sectors",
+			"Medium and large maps",
+		},
+		MatchLength = "20–25 MIN",
 	},
 	["4V4"] = {
 		Id = "4V4",
@@ -61,6 +81,12 @@ GameModes.Modes = {
 		ColorKey = "LARGE",
 		Description = "Large-scale combined arms battle on the biggest maps of the Fulda sector.",
 		TerminalLabel = "4v4 LARGE BATTLE TERMINAL",
+		Rules = {
+			"Each commander holds a sector",
+			"Capture and hold sectors",
+			"The largest maps",
+		},
+		MatchLength = "25–35 MIN",
 	},
 	PRIVATE = {
 		Id = "PRIVATE",
@@ -72,6 +98,12 @@ GameModes.Modes = {
 		ColorKey = "PRIVATE",
 		Description = "Create a sealed operation with an access code, choose size and map, and deploy when your group is ready.",
 		TerminalLabel = "PRIVATE MATCH TERMINAL",
+		Rules = {
+			"Share the access code",
+			"The host picks size and map",
+			"Deploy when everyone is ready",
+		},
+		MatchLength = "HOST'S CHOICE",
 	},
 } :: { [string]: Mode }
 

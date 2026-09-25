@@ -99,9 +99,9 @@ local function briefingDesk(parent: Instance, frame: CFrame)
 	-- the monitor at the right, well back from the front edge
 	local screen = Common.crt(model, base * CFrame.new(2.4, 3.2, -0.8), 2.4, "Event")
 	local _, content = Common.screen(screen, "EventScreen", 70)
-	Common.line(content, "Header", "OPERATIONS CHANNEL", 0, 0.16, Common.Phosphor)
-	Common.line(content, "Title", "BRIEFING", 0.3, 0.22, Common.Amber, nil, Enum.TextXAlignment.Center)
-	Common.line(content, "Hint", "[E] READ", 0.72, 0.16, Common.Phosphor, nil, Enum.TextXAlignment.Center)
+	Common.line(content, "Header", "OPS CHANNEL", 0, 0.21, Common.Phosphor)
+	Common.line(content, "Title", "BRIEFING", 0.32, 0.24, Common.Amber, nil, Enum.TextXAlignment.Center)
+	Common.line(content, "Hint", "[E] READ", 0.74, 0.21, Common.Phosphor, nil, Enum.TextXAlignment.Center)
 	Interactions.attach(desk, "Event", "CURRENT", "OPERATION BRIEFING")
 	return model
 end

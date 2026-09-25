@@ -294,7 +294,7 @@ local function gate(parent: Instance)
 	Kit.sign(
 		plaque,
 		CFrame.lookAt(pp + Vector3.new(0.4, 5.2, 0), pp + Vector3.new(5, 5.2, 0)),
-		Vector2.new(4, 2.4),
+		Vector2.new(5.4, 2.4),
 		"HALT",
 		{
 			Background = W.MutedRed,

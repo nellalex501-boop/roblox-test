@@ -52,6 +52,7 @@ Legend: **Steps** → **Expected**. Tick each box as you go.
   - the event briefing desk
 
   → The right panel and tab open each time.
+- [ ] **Matchmaking briefing.** Press E at the 4v4 terminal. → Beside the queue controls a briefing lists three rules of engagement and the match length, and draws RIVER CROSSING as the likely battlefield. Set TRAIN STATION as your preferred map in the Map Room, then open the 1v1 terminal. → The briefing reads YOUR PREFERRED MAP and draws TRAIN STATION. Join the queue. → The briefing stays.
 - [ ] **Closing.** → The ✕ button, the **X** key and walking about 8 studs away each close the panel. Esc opens the Roblox menu and must not be needed. Prompts are hidden while a panel is open.
 - [ ] **Gamepad (optional).** → **X** triggers, **B** closes, **LB/RB** switch tabs, and the first button is selected.
 - [ ] **Touch (Device emulator, e.g. iPhone).** → The prompt plate shows TAP, and tapping it opens the panel. Panels fit the screen below the top bar and text stays readable. The HUD commander card sits below the top bar and clear of the thumbstick.
@@ -77,12 +78,13 @@ Legend: **Steps** → **Expected**. Tick each box as you go.
 ## 4. Detailing: props, lights and effects
 
 - [ ] **Props.** Walk the base. → Benches, lamps, bins, picnic tables and vehicles sit on the ground (none float or sink) and nothing blocks doorways or terminals.
-- [ ] **Lights.** Set ClockTime to 20 to check. → Street lamps, parking-lot lamps, fluorescent tubes in the Operations Center, Garage and canteen, and the floodlights give warm, soft light, and switch off again by day (ClockTime 15.6: no glowing lamp lenses). There are about 66 lights in total, none casting shadows.
+- [ ] **Lights.** Set ClockTime to 20 to check. → Street lamps, parking-lot lamps, fluorescent tubes in the Operations Center, Garage and canteen, and the floodlights give warm, soft light, and switch off again by day (ClockTime 15.6: no glowing lamp lenses). There are about 70 lights in total, none casting shadows.
 - [ ] **Effects.** → Smoke rises from the canteen chimney and the field kitchen. In the winter yard the fire barrel burns with particle flames, drifting embers and thin smoke, both snow guns blow a plume of snow, and light snow falls over the yard. Textures: `rbxasset://textures/particles/smoke_main.dds`, `fire_main.dds` and `fire_sparks_main.dds`; swap in uploaded textures if any don't show.
 - [ ] **Frost grade.** Walk into the winter yard. → Within about a second the picture turns slightly cooler and less saturated. Walk out. → It fades back.
 - [ ] **Parked vehicles.** → The staff parking cars stand inside their stalls against the wheel stops, the helipad helicopter and the motor pool trucks look plausible at 60 % scale.
+- [ ] **Recreation grounds.** Walk to the softball diamond south of the winter yard and to the assault course behind the Map Room. → The bleachers, dugouts, backstop and scoreboard stand on the grass; the course's obstacles line its dirt track, and the numbered markers 1–7 and the ASSAULT COURSE sign face you as you come from the Map Room. Nothing floats or flickers where the dirt meets the grass.
 - [ ] **Map edge.** Look out through the gate and from the fence corners. → The public road bends away into the woods; hills and forest close the view on every side and the edge of the ground is never visible.
-- [ ] **Performance (MicroProfiler, Ctrl+F6).** → Stable 60 FPS on a mid-range PC. On a phone, check with the Developer Console that frame time stays reasonable. There are about 11,100 parts (most of the added ones are decor: no collision, no query, no shadow) and 250 SurfaceGuis. Consider `Workspace.StreamingEnabled` for low-end devices; the client code handles streaming.
+- [ ] **Performance (MicroProfiler, Ctrl+F6).** → Stable 60 FPS on a mid-range PC. On a phone, check with the Developer Console that frame time stays reasonable. There are about 11,300 parts (most of the added ones are decor: no collision, no query, no shadow) and 260 SurfaceGuis. Consider `Workspace.StreamingEnabled` for low-end devices; the client code handles streaming.
 
 ## 5. Polish: animation, sound and UI
 

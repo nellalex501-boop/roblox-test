@@ -37,17 +37,19 @@ function MissionBoardView.lineFor(id: string, view: { [string]: any }?): string
 	if not mission then
 		return ""
 	end
+	-- the printed orders use the short board wording
+	local text = mission.Board or mission.Text
 	if not view then
-		return "[ ] " .. mission.Text
+		return "[ ] " .. text
 	end
 	if view.claimed then
-		return "[X] " .. mission.Text .. " — DONE"
+		return "[X] " .. text .. " DONE"
 	elseif view.complete then
-		return "[X] " .. mission.Text
+		return "[X] " .. text
 	elseif (view.progress or 0) > 0 and (view.target or 1) > 1 then
-		return ("[ ] %s (%d/%d)"):format(mission.Text, view.progress, view.target)
+		return ("[ ] %s (%d/%d)"):format(text, view.progress, view.target)
 	end
-	return "[ ] " .. mission.Text
+	return "[ ] " .. text
 end
 
 function MissionBoardView.apply()

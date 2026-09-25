@@ -63,5 +63,9 @@ export const VIEW_SETS = {
     { name: "parking-row", label: "STAFF PARKING — NORTH ROW", eye: [100, 7, 140], target: [66, 2, 118], fov: 65 },
     { name: "hq-kaserne", label: "COMMAND HQ — KASERNE FRONT", eye: [44, 14, -2], target: [96, 16, -22], fov: 65 },
     { name: "ops-signs", label: "OPERATIONS CENTER — SIGNS FROM THE DOOR", eye: [0, 7, -76], target: [0, 11, -110], fov: 72 },
+    { name: "softball", label: "SOFTBALL DIAMOND — FROM BEHIND HOME PLATE", eye: [-118, 12, 186], target: [-118, 0, 140], fov: 70 },
+    { name: "softball-aerial", label: "SOFTBALL DIAMOND — AERIAL", eye: [-60, 60, 200], target: [-118, 0, 150], fov: 55 },
+    { name: "assault-course", label: "ASSAULT COURSE BEHIND THE MAP ROOM", eye: [-160, 8, -146], target: [-100, 2, -160], fov: 65 },
+    { name: "assault-aerial", label: "ASSAULT COURSE — AERIAL", eye: [-70, 55, -105], target: [-118, 0, -158], fov: 55 },
   ],
 };

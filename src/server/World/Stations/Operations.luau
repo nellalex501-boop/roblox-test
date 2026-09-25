@@ -37,12 +37,13 @@ local function terminalScreen(screen: Part, mode: GameModes.Mode, number: string
 	gui:SetAttribute("ModeId", mode.Id)
 	gui:SetAttribute("TerminalNumber", number)
 	local phosphor = Common.Phosphor
-	Common.line(content, "Header", "C3-NET // OPS TERMINAL " .. number, 0, 0.12, phosphor, Theme.font("Mono"))
+	-- five lines, each tall enough to read at a quarter stud or more
+	Common.line(content, "Header", "OPS TERMINAL " .. number, 0, 0.15, phosphor, Theme.font("Mono"))
 	Common.line(
 		content,
 		"Title",
 		mode.Title,
-		0.14,
+		0.16,
 		0.24,
 		phosphor,
 		Theme.font("Mono", Enum.FontWeight.Bold),
@@ -52,8 +53,8 @@ local function terminalScreen(screen: Part, mode: GameModes.Mode, number: string
 		content,
 		"Players",
 		mode.PlayersLabel,
-		0.4,
-		0.13,
+		0.42,
+		0.15,
 		phosphor,
 		Theme.font("Mono"),
 		Enum.TextXAlignment.Center
@@ -62,22 +63,14 @@ local function terminalScreen(screen: Part, mode: GameModes.Mode, number: string
 		content,
 		"QueueCount",
 		"IN QUEUE: --",
-		0.58,
-		0.15,
+		0.6,
+		0.16,
 		Common.Amber,
 		Theme.font("Mono", Enum.FontWeight.Bold),
 		Enum.TextXAlignment.Center
 	)
-	local hint = Common.line(
-		content,
-		"Hint",
-		"[E] ACCESS TERMINAL",
-		0.82,
-		0.13,
-		phosphor,
-		Theme.font("Mono"),
-		Enum.TextXAlignment.Center
-	)
+	local hint =
+		Common.line(content, "Hint", "[E] ACCESS", 0.82, 0.16, phosphor, Theme.font("Mono"), Enum.TextXAlignment.Center)
 	hint:SetAttribute("Blink", true)
 end
 

@@ -89,6 +89,72 @@ return function(test)
 		t.ge(checked, 14, "signs checked")
 	end)
 
+	test("world text: every label on a surface renders at least a quarter stud tall", function(t)
+		-- a label's text height in pixels (TextScaled: limited by its box
+		-- height per line and by its width for the longest line, ~0.55 em
+		-- per glyph; otherwise TextSize), divided by the SurfaceGui's pixels
+		-- per stud
+		local FACES = { Front = "XY", Back = "XY", Left = "ZY", Right = "ZY", Top = "XZ", Bottom = "XZ" }
+		local function textPixels(label, w, h)
+			local text = label.Text
+			if text == "" then
+				return nil
+			end
+			local lines, longest = 0, 0
+			for line in (text .. "\n"):gmatch("(.-)\n") do
+				lines += 1
+				longest = math.max(longest, utf8.len(line) or #line)
+			end
+			if not label.TextScaled then
+				return label.TextSize
+			end
+			local size = math.min(h / lines, if longest > 0 then w / (longest * 0.55) else h)
+			local cap = label:FindFirstChildOfClass("UITextSizeConstraint")
+			if cap then
+				size = math.min(size, cap.MaxTextSize)
+			end
+			return math.min(size, 100)
+		end
+		local small, total = {}, 0
+		local function walk(inst, w, h, pps, where)
+			for _, child in inst:GetChildren() do
+				if child:IsA("GuiObject") then
+					local cw = w * child.Size.X.Scale + child.Size.X.Offset
+					local ch = h * child.Size.Y.Scale + child.Size.Y.Offset
+					if child:IsA("TextLabel") or child:IsA("TextButton") then
+						local px = textPixels(child, cw, ch)
+						if px then
+							total += 1
+							if px / pps < 0.25 then
+								table.insert(
+									small,
+									("%s > %s [%s] %.2f"):format(where, child.Name, child.Text, px / pps)
+								)
+							end
+						end
+					end
+					walk(child, cw, ch, pps, where)
+				end
+			end
+		end
+		for _, gui in root:GetDescendants() do
+			if gui:IsA("SurfaceGui") and gui.Parent and gui.Parent:IsA("BasePart") then
+				local part = gui.Parent
+				local dims = FACES[gui.Face.Name]
+				local w = if dims == "ZY" then part.Size.Z else part.Size.X
+				local h = if dims == "XZ" then part.Size.Z else part.Size.Y
+				local where = part:GetFullName():gsub("^Workspace%.ColdWarLobby%.", "")
+				walk(gui, w * gui.PixelsPerStud, h * gui.PixelsPerStud, gui.PixelsPerStud, where)
+			end
+		end
+		t.metric("world labels", total)
+		t.ge(total, 300, "labels measured")
+		for i = 1, math.min(#small, 10) do
+			t.ok(false, "too small: " .. small[i])
+		end
+		t.eq(#small, 0, "labels under 0.25 studs")
+	end)
+
 	test("street lamps stand clear of doorways, windows and flagpoles", function(t)
 		local Layout = runtime:requirePath("ReplicatedStorage.Lobby.Config.Layout")
 		local lamps, windows, flagpoles = {}, {}, {}

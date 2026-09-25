@@ -138,17 +138,17 @@ local PHOTOS = {
 
 local function photo(parent: Instance, frame: CFrame, name: string, x: number, y: number, tilt: number, kind: string)
 	local sheet, gui = paper(parent, frame, name, x, y, 1.5, 1.2, tilt, 2, Color3.fromRGB(236, 234, 226))
-	local image = box(gui, 0.07, 0.08, 0.86, 0.72, Color3.fromRGB(120, 122, 116))
+	local image = box(gui, 0.07, 0.07, 0.86, 0.64, Color3.fromRGB(120, 122, 116))
 	image.Name = "Image"
 	image.ClipsDescendants = true
 	PHOTOS[kind](image)
 	local caption = Kit.text(gui, {
 		Name = "Caption",
-		Text = if kind == "Tank" then "T-72 · OP ALPHA" else "MI-24 · SECTOR C",
+		Text = if kind == "Tank" then "T-72" else "MI-24",
 		Color = INK,
 		Font = Theme.font("Mono"),
-		Position = UDim2.fromScale(0.07, 0.82),
-		Size = UDim2.fromScale(0.86, 0.15),
+		Position = UDim2.fromScale(0.07, 0.74),
+		Size = UDim2.fromScale(0.86, 0.23),
 	})
 	caption.TextXAlignment = Enum.TextXAlignment.Left
 	return sheet
@@ -180,7 +180,7 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 	for _, id in Missions.Order do
 		local mission = Missions.List[id]
 		if mission.Group == "DAILY" then
-			typed(daily, "Mission_" .. id, "[ ] " .. mission.Text, y, 0.1)
+			typed(daily, "Mission_" .. id, "[ ] " .. (mission.Board or mission.Text), y, 0.1)
 			y += 0.13
 		end
 	end
@@ -195,7 +195,7 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 	for _, id in Missions.Order do
 		local mission = Missions.List[id]
 		if mission.Group == "ORIENTATION" then
-			typed(orientation, "Mission_" .. id, "[ ] " .. mission.Text, y, 0.11)
+			typed(orientation, "Mission_" .. id, "[ ] " .. (mission.Board or mission.Text), y, 0.11)
 			y += 0.125
 		end
 	end
@@ -204,7 +204,8 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 	local m = L.MapClipping
 	local clip, mapGui = paper(docs, frame, "MapClipping", m.X, m.Y, m.W, m.H, 3, 2)
 	mapGui.PixelsPerStud = 50
-	MapDraw.preview(mapGui, Maps.List[Maps.Featured], m.W * 50, m.H * 50, { labels = false })
+	-- sector letters sized to read on the small clipping (0.36-stud marks)
+	MapDraw.preview(mapGui, Maps.List[Maps.Featured], m.W * 50, m.H * 50, { labels = false, markSize = 18 })
 	clip:SetAttribute("Kind", "Map")
 
 	-- reconnaissance photos
@@ -215,10 +216,10 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 	local c = L.IntelCard
 	local _, card = paper(docs, frame, "IntelCard", c.X, c.Y, c.W, c.H, -1.5, 2, Color3.fromRGB(226, 214, 176))
 	typed(card, "Header", "INTEL SUMMARY", 0.08, 0.2)
-	typed(card, "Line1", "PACT ARMOR MASSING", 0.34, 0.15).Size = UDim2.fromScale(0.56, 0.15)
+	typed(card, "Line1", "ARMOR MASSING", 0.34, 0.15).Size = UDim2.fromScale(0.56, 0.15)
 	typed(card, "Line2", "NEAR OP ALPHA", 0.5, 0.15).Size = UDim2.fromScale(0.56, 0.15)
-	typed(card, "Line3", "EXPECT CONTACT 0400Z", 0.66, 0.15).Size = UDim2.fromScale(0.56, 0.15)
-	stamp(card, "RESTRICTED", 0.63, 0.5, 0.34, 0.22, -10)
+	typed(card, "Line3", "CONTACT 0400Z", 0.66, 0.15).Size = UDim2.fromScale(0.56, 0.15)
+	stamp(card, "RESTRICTED", 0.62, 0.48, 0.37, 0.26, -10)
 
 	-- pins at the top of each item; red string links the intel items only
 	pin(docs, frame, L.DailyOrders.X, L.DailyOrders.Y + L.DailyOrders.H / 2 - 0.3, W.MutedRed)

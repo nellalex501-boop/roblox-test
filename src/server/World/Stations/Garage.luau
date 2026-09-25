@@ -26,9 +26,11 @@ Garage.Turntable = { X = 0, Z = -34, Radius = 12.5, TopY = 1.1 }
 Garage.Featured = "M1_ABRAMS"
 Garage.ConsoleZ = -16
 
+-- placard subtitles, short enough to read at a quarter stud (the stripe
+-- colour shows the side: red Warsaw Pact, blue NATO)
 local CATEGORY_SHORT = {
 	MBT = "MAIN BATTLE TANK",
-	IFV = "INFANTRY FIGHTING VEHICLE",
+	IFV = "FIGHTING VEHICLE",
 	APC = "ARMORED CARRIER",
 	RECON = "RECONNAISSANCE",
 	AA = "AIR DEFENSE",
@@ -66,7 +68,7 @@ function Garage.display(
 			model,
 			placardCf,
 			unit.Name,
-			("%s · %s"):format(CATEGORY_SHORT[unit.Category] or unit.Category, Units.Factions[unit.Faction].Name),
+			CATEGORY_SHORT[unit.Category] or unit.Category,
 			if unit.Faction == "PACT" then W.MutedRed else W.MutedBlue
 		)
 		plate:SetAttribute("UnitId", unitId)
@@ -271,14 +273,14 @@ local function console(parent: Instance, frame: CFrame)
 	local desk = Common.console(model, base, 6)
 	local screen = Common.crt(model, base * CFrame.new(0, 3.9, -2.3), 3.4, "Showroom")
 	local _, content = Common.screen(screen, "ShowroomScreen", 60)
-	Common.line(content, "Header", "MOTOR POOL // SHOWROOM", 0, 0.14, Common.Phosphor)
+	Common.line(content, "Header", "SHOWROOM", 0, 0.16, Common.Phosphor)
 	Common.line(content, "Title", "VEHICLE FILES", 0.24, 0.22, Common.Phosphor, nil, Enum.TextXAlignment.Center)
 	Common.line(
 		content,
 		"Units",
-		("%d VEHICLES ON FILE"):format(#Units.Order),
+		("%d VEHICLES"):format(#Units.Order),
 		0.5,
-		0.14,
+		0.16,
 		Common.Phosphor,
 		nil,
 		Enum.TextXAlignment.Center
@@ -501,9 +503,10 @@ local function paintBooth(parent: Instance, frame: CFrame)
 		local x = 0.04 + (i - 1) * 0.19
 		Kit.frame(gui, UDim2.fromScale(x, 0.28), UDim2.fromScale(0.17, 0.3), camo.Colors[1])
 		Kit.frame(gui, UDim2.fromScale(x + 0.05, 0.34), UDim2.fromScale(0.08, 0.14), camo.Colors[2])
+		-- two short lines ("WINTER / WHITEWASH") read larger than one long one
 		Kit.text(gui, {
 			Name = "Camo_" .. camoId,
-			Text = camo.Name,
+			Text = (camo.Name:gsub(" ", "\n", 1)),
 			Position = UDim2.fromScale(x, 0.62),
 			Size = UDim2.fromScale(0.17, 0.3),
 			Font = Theme.font("Body", Enum.FontWeight.Bold),
