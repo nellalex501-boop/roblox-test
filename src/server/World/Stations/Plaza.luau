@@ -32,9 +32,13 @@ local function strips(
 	color: Color3,
 	dashed: boolean?
 )
+	-- each strip stands on the relief (top 0.12) up to its layer's top, so
+	-- no line hovers over the map
+	local topY, bottomY = y + 0.03, 0.11
+	local midY = (topY + bottomY) / 2
 	for i = 1, #points - 1 do
-		local a = mapToTable(top, points[i][1], points[i][2], y).Position
-		local b = mapToTable(top, points[i + 1][1], points[i + 1][2], y).Position
+		local a = mapToTable(top, points[i][1], points[i][2], midY).Position
+		local b = mapToTable(top, points[i + 1][1], points[i + 1][2], midY).Position
 		local segments = if dashed then math.max(2, math.floor((b - a).Magnitude / 0.8)) else 1
 		for s = 0, segments - 1 do
 			if not dashed or s % 2 == 0 then
@@ -42,7 +46,7 @@ local function strips(
 				local p1 = a:Lerp(b, (s + 1) / segments)
 				Kit.part(
 					model,
-					Vector3.new(thickness, 0.06, (p1 - p0).Magnitude + thickness * 0.4),
+					Vector3.new(thickness, topY - bottomY, (p1 - p0).Magnitude + thickness * 0.4),
 					CFrame.lookAt((p0 + p1) / 2, p1),
 					color,
 					Enum.Material.SmoothPlastic,

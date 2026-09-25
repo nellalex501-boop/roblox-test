@@ -170,7 +170,7 @@ tools        bake.luau (dist place + insert kit), kit.luau, render/ (preview ren
 Everything below runs headlessly in [Lune](https://lune-org.github.io/docs):
 ```
 ./scripts/check.sh              # rojo build + luau-lsp strict type check + stylua
-lune run tests/run.luau         # 92 test cases → build/test-report.md
+lune run tests/run.luau         # 101 test cases → build/test-report.md
 lune run tools/bake.luau        # rebuild dist/ColdWarLobby.rbxl and dist/InsertKit
 node tools/render/render.mjs build/render/detailing.json build/previews/p overview
 ```
@@ -196,6 +196,12 @@ the remotes. The specs cover:
   windows and flagpoles, theatre-map labels that never overlap, and terminal
   signs in the Operations Center that never hide each other or the wall
   display from the doorway; doorways free of anything collidable
+- the second review pass (`09_visual`, `tests/lib/Audit.luau`): no part
+  floats, no part stands in front of any text, no tree cuts into anything,
+  every road joins the network at both ends, every barracks door opens onto
+  a footpath, every zone's sign is in view from the spawn pads, the Hall
+  boards and the Ops wall display are unobstructed, and wall-mounted signs
+  sit flush
 
 The preview images in `docs/previews` come from an approximate three.js
 renderer. They are not Roblox renders.

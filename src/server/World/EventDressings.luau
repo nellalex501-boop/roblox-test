@@ -277,7 +277,8 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 	-- soft drifts piled against the fence and the tent (sunken spheres; the
 	-- mound's rim is kept inside the fence)
 	local function drift(x: number, z: number, radius: number, height: number)
-		local rim = math.sqrt(radius * radius - (radius - height) ^ 2)
+		-- the rim at ground level (below the snow top) plus a margin
+		local rim = math.sqrt(radius * radius - (radius - height - SNOW_TOP) ^ 2) + 0.4
 		local cx = math.clamp(x, -edge + rim, edge - rim)
 		local cz = math.clamp(z, back + rim, front - rim)
 		Nature.drift(snowFolder, (frame * CFrame.new(cx, SNOW_TOP, cz)).Position, radius, height)
@@ -356,8 +357,8 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 	)
 	local warning = Kit.sign(
 		dressing,
-		-- wired to the fence, in front of its posts
-		Kit.facingOut(frame, Vector3.new(14, 3.6, -EventAreaZone.FenceInset + 0.32)),
+		-- wired to the fence, its back against the posts
+		Kit.facingOut(frame, Vector3.new(14, 3.6, -EventAreaZone.FenceInset + 0.23)),
 		Vector2.new(9, 2.4),
 		"WINTER WARFARE TRAINING AREA",
 		{
@@ -397,7 +398,7 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 			{ -25.5, -34, 13 },
 			{ 31, -38, 17 },
 			{ 26.5, -45, 13.5 },
-			{ 33.5, -47, 15 },
+			{ 31.5, -48, 15 },
 		}
 	do
 		Nature.pine(dressing, frame * CFrame.new(pos[1], SNOW_TOP - 0.1, pos[2]), pos[3], rng, true)
@@ -437,8 +438,21 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 		W.OliveDark,
 		true
 	)
-	-- whitewashed tent sign
-	Kit.sign(dressing, Kit.facingOut(frame, Vector3.new(-9, 9.8, -34.8)), Vector2.new(8, 1.8), "WINTER WARFARE CELL", {
+	-- whitewashed tent sign on two posts beside the entrance
+	for _, dx in { -3.2, 3.2 } do
+		Kit.post(
+			dressing,
+			frame * CFrame.new(-11 + dx, SNOW_TOP - 0.1, -33.73),
+			4.3,
+			0.3,
+			W.SteelDark,
+			Enum.Material.Metal,
+			{
+				Name = "SignPost",
+			}
+		)
+	end
+	Kit.sign(dressing, Kit.facingOut(frame, Vector3.new(-11, 3.4, -33.5)), Vector2.new(8, 1.8), "WINTER WARFARE CELL", {
 		Background = Color3.fromRGB(196, 206, 212),
 		TextColor = W.Charcoal,
 		PixelsPerStud = 40,

@@ -116,7 +116,8 @@ local function streets(parent: Instance)
 		lamp(81.5, z, FACE_WEST)
 	end
 	local signs = Kit.folder(parent, "RoadSigns")
-	grounded(Props.roadSign(signs, at(185, GRASS, -49.5, FACE_EAST), "10", "KM/H · CAMP ROADS", "white"))
+	-- inside the gate, set back from the arch posts
+	grounded(Props.roadSign(signs, at(178, GRASS, -48.2, FACE_EAST), "10", "KM/H · CAMP ROADS", "white"))
 	grounded(Props.roadSign(signs, at(61, SIDEWALK, 66.5, FACE_NORTH), "P", "STAFF PARKING", "info"))
 end
 
@@ -158,7 +159,7 @@ local CIVIL_COLORS = {
 }
 
 -- Car lengths (for nose-in parking against the wheel stops).
-local CAR_LENGTH = { CAR_SEDAN = 12.3, CAR_SMALL = 9.3, VAN = 12.7, JEEP = 9.8 }
+local CAR_LENGTH = { CAR_SEDAN = 15.2, CAR_SMALL = 12.9, VAN = 15.6, JEEP = 12.9 }
 
 local function parking(parent: Instance)
 	local folder = Kit.folder(parent, "Parking")
@@ -249,7 +250,8 @@ local function parking(parent: Instance)
 	for k, title in { "RESERVED · CO", "RESERVED · XO", "RESERVED · CSM" } do
 		local x = P.NorthRowX + (k - 0.5) * P.StallWidth
 		local sign = Kit.model(folder, "ReservedSign")
-		Kit.post(sign, CFrame.new(x, GRASS, field.MinZ - 1.1), 3.4, 0.16, W.Steel, Enum.Material.Metal, {
+		-- the post stands behind the plate (north), touching its back
+		Kit.post(sign, CFrame.new(x, GRASS, field.MinZ - 1.36), 3.4, 0.16, W.Steel, Enum.Material.Metal, {
 			Name = "Post",
 			Decor = true,
 		})
@@ -281,16 +283,29 @@ local function helipad(parent: Instance)
 	local heli =
 		Vehicles.spawn(folder, "HELICOPTER", "HELICOPTER", at(pad.X, pad.Y, pad.Z, CFrame.Angles(0, math.rad(-120), 0)))
 	grounded(heli)
-	-- windsock
+	-- windsock beside the pad (clear of the lane behind the HQ): one
+	-- tapered sleeve of overlapping hoops drooping from a pivot arm
 	local sock = Kit.model(folder, "Windsock")
-	Kit.post(sock, at(138, GRASS, 12), 10, 0.35, W.Steel, Enum.Material.Metal, { Name = "Pole", Shadow = true })
+	local mast = Vector3.new(130, GRASS, 49)
+	Kit.post(sock, at(mast.X, mast.Y, mast.Z), 10, 0.35, W.Steel, Enum.Material.Metal, { Name = "Pole", Shadow = true })
+	local wind = Vector3.new(0.6, -0.2, 0.77).Unit
+	local mouth = Vector3.new(mast.X, 9.6, mast.Z) + wind * 0.4
+	Kit.part(
+		sock,
+		Vector3.new(0.15, 0.15, 0.5),
+		CFrame.lookAt(Vector3.new(mast.X, 9.6, mast.Z), mouth),
+		W.Steel,
+		Enum.Material.Metal,
+		{ Name = "PivotArm", Decor = true }
+	)
 	local stripes = { W.MutedRed, W.OffWhite, W.MutedRed, W.OffWhite }
 	for i, color in stripes do
 		local d = 1.5 - (i - 1) * 0.25
+		local center = mouth + wind * (0.55 + (i - 1) * 1.0)
 		Kit.part(
 			sock,
-			Vector3.new(d, d, 1.1),
-			CFrame.new(138, 9.6 - i * 0.18, 12 + 0.6 + (i - 1) * 1.05) * CFrame.Angles(math.rad(-10), 0, 0),
+			Vector3.new(d, d, 1.15),
+			CFrame.lookAt(center, center + wind),
 			color,
 			Enum.Material.Fabric,
 			{ Name = "Sock", Decor = true }
@@ -333,8 +348,9 @@ local function motorPool(parent: Instance)
 	grounded(Props.fuelTank(folder, at(40, 0.3, -158, FACE_SOUTH)))
 	grounded(Props.drumCluster(folder, at(32, 0.3, -151), 5))
 	grounded(Props.jerrycans(folder, at(48, 0.3, -150), 5))
-	grounded(Props.tireStack(folder, at(-51.5, 0.3, -158.5), 5))
-	grounded(Props.tireStack(folder, at(-51.5, 0.3, -162), 3))
+	-- spare tyres by the fuel point, clear of the parked trucks
+	grounded(Props.tireStack(folder, at(47.5, 0.3, -163), 5))
+	grounded(Props.tireStack(folder, at(51, 0.3, -162.6), 3))
 	grounded(Props.floodlight(folder, at(0, GRASS, -142, FACE_NORTH), true))
 	grounded(Props.crateStack(folder, at(26, 0.3, -162), "wide"))
 end
@@ -353,11 +369,13 @@ local function gate(parent: Instance)
 		grounded(Props.sandbags(folder, seg, 4.6, if i == 2 then 3 else 2, if i == 2 then 0.52 else 0.64))
 	end
 	grounded(Props.jerseyBarrier(folder, at(g.X + 6, GRASS, g.Z + 9.5, FACE_WEST)))
+	-- the security-area warning stands on the fence line south of the gate
+	-- (the gate's own HALT plaque faces the approach)
 	grounded(
 		Props.roadSign(
 			folder,
-			at(g.X + 10, GRASS, g.Z + 11, FACE_EAST),
-			"HALT",
+			at(g.X + 2.5, GRASS, g.Z + 17, FACE_EAST),
+			"ACHTUNG",
 			"MILITÄRISCHER SICHERHEITSBEREICH",
 			"halt"
 		)
@@ -385,17 +403,44 @@ local function courtyard(parent: Instance)
 		Kit.anchor(pipe, "Smoke", "Stove")
 		Effects.smoke(pipe, { Rate = 1.5, Size = 1, Rise = 1.8, Opacity = 0.35 })
 	end
+	-- planters along the walk to the door, parasols over two tables; the
+	-- planters hold clipped shrubs (tree crowns here would hide the canteen
+	-- sign from the plaza)
+	local rng = Random.new(1985)
+	for _, spot in { { -8, -12 }, { 8, -12 }, { -8, -30 }, { 8, -30 } } do
+		grounded(Nature.planter(folder, local_(spot[1], spot[2]).Position, rng, 4, true))
+	end
+	for _, spot in { { -18, -25 }, { 18, -25 } } do
+		local parasol = Kit.model(folder, "Parasol")
+		Kit.post(parasol, local_(spot[1], spot[2]), 7.4, 0.2, W.SteelDark, Enum.Material.Metal, { Name = "Pole" })
+		Kit.post(
+			parasol,
+			local_(spot[1], spot[2]) * CFrame.new(0, 7.1, 0),
+			0.35,
+			7,
+			Color3.fromRGB(168, 150, 108),
+			Enum.Material.Fabric,
+			{ Name = "Canopy", Decor = true }
+		)
+		grounded(parasol)
+	end
+	-- bins and empties by the kitchen's service door (behind the canteen)
+	for _, x in { -21, -23.4 } do
+		grounded(Props.trashBin(folder, frame * CFrame.new(x, GRASS, -72.5)))
+	end
+	grounded(Props.crateStack(folder, frame * CFrame.new(-9.5, GRASS, -72.8)))
 	grounded(Props.crateStack(folder, local_(24, -40.5)))
 	-- radio standing on the crates (not a floor prop)
 	Props.radio(folder, local_(24, -40.5) * CFrame.new(-0.2, 3.6, 0.1))
-	for _, x in { -33, 33 } do
+	-- (clear of the posts of the canteen's name boards)
+	for _, x in { -34, 34 } do
 		grounded(Props.bench(folder, local_(x, -4.4), 6))
 	end
 	-- a bike rack row: every other bike faces the other way and sits half
 	-- a length further on, so the handlebars never clash
 	for i = 0, 3 do
 		local flip = i % 2 == 1
-		grounded(Props.bicycle(folder, local_(9 + i * 1.3, if flip then -41.6 else -42.2, if flip then math.pi else 0)))
+		grounded(Props.bicycle(folder, local_(9 + i * 1.3, if flip then -40.7 else -41.3, if flip then math.pi else 0)))
 	end
 	grounded(Props.trashBin(folder, local_(6, -41)))
 	grounded(Props.trashBin(folder, local_(-37, -22)))
@@ -446,15 +491,15 @@ type BarracksDressing = { benches: { number }, bin: number, bikes: number }
 local function barracksFront(parent: Instance, facade: Vector3, inward: Vector3, dressing: BarracksDressing)
 	local frame = CFrame.lookAt(facade, facade + inward)
 	local folder = Kit.folder(parent, "BarracksFront")
+	-- everything stands on the footpath along the front (0 .. 3 studs out)
 	for _, x in dressing.benches do
-		-- sitters look away from the building
-		grounded(Props.bench(folder, frame * CFrame.new(x, GRASS, 3.5) * FACE_SOUTH, 6))
+		-- against the wall between the doors, sitters looking out
+		grounded(Props.bench(folder, frame * CFrame.new(x, SIDEWALK, 1.4) * FACE_SOUTH, 6))
 	end
-	grounded(Props.trashBin(folder, frame * CFrame.new(dressing.bin, GRASS, 3.6)))
-	-- nose-in to the wall, the front tyre just clear of it; 1.9 apart so
-	-- the handlebars (1.6 wide) never touch
-	for i = 0, 2 do
-		grounded(Props.bicycle(folder, frame * CFrame.new(dressing.bikes - i * 1.9, GRASS, 2.5)))
+	grounded(Props.trashBin(folder, frame * CFrame.new(dressing.bin, SIDEWALK, 1.2)))
+	-- two bicycles parked end to end along the wall
+	for i = 0, 1 do
+		grounded(Props.bicycle(folder, frame * CFrame.new(dressing.bikes + i * 5.2, SIDEWALK, 1.05) * FACE_WEST))
 	end
 end
 
@@ -469,25 +514,15 @@ function Outdoor.build(parent: Instance)
 	gate(folder)
 	courtyard(folder)
 	hallOfCommanders(folder)
-	barracksFront(
-		folder,
-		Vector3.new(150, 0, -8),
-		Vector3.new(1, 0, 0),
-		{ benches = { -27, 27 }, bin = -22.5, bikes = 12 }
-	)
-	barracksFront(
-		folder,
-		Vector3.new(-164, 0, -12),
-		Vector3.new(-1, 0, 0),
-		{ benches = { -32, 32 }, bin = -27.5, bikes = 12 }
-	)
-	-- the south block's north end faces the Hall of Commanders wall
-	barracksFront(
-		folder,
-		Vector3.new(150, 0, 124),
-		Vector3.new(1, 0, 0),
-		{ benches = { 22, -7.5 }, bin = 7, bikes = -21 }
-	)
+	-- benches midway between the doors (at 0 and +-length/4)
+	local dressings: { BarracksDressing } = {
+		{ benches = { -8.75, 8.75 }, bin = -26, bikes = 23.4 },
+		{ benches = { -10, 10 }, bin = -30, bikes = 26 },
+		{ benches = { -7, 7 }, bin = -21, bikes = 19.8 },
+	}
+	for i, b in Layout.Barracks do
+		barracksFront(folder, b.Facade, b.Inward, dressings[i])
+	end
 end
 
 return Outdoor

@@ -161,8 +161,9 @@ function Nature.leafy(parent: Instance, base: CFrame, height: number, rng: Rando
 	return model
 end
 
--- Planter box with a tree (courtyards, plaza corners).
-function Nature.planter(parent: Instance, position: Vector3, rng: Random, size: number?): Model
+-- Planter box with a tree (courtyards, plaza corners), or with a clipped
+-- round shrub where a crown would hide a sign behind it.
+function Nature.planter(parent: Instance, position: Vector3, rng: Random, size: number?, shrub: boolean?): Model
 	local model = Kit.model(parent, "Planter")
 	local s = size or 5
 	local base = CFrame.new(position)
@@ -187,7 +188,19 @@ function Nature.planter(parent: Instance, position: Vector3, rng: Random, size: 
 			Decor = true,
 		}
 	)
-	Nature.leafy(model, base * CFrame.new(0, 1.3, 0), rng:NextNumber(12, 15), rng)
+	if shrub then
+		local d = s - 0.6
+		Kit.ball(
+			model,
+			d,
+			base * CFrame.new(0, 1.35 + d * 0.35, 0),
+			shade(W.FoliageDark, rng:NextNumber(-0.03, 0.03)),
+			Enum.Material.Grass,
+			{ Name = "Shrub", Collide = false }
+		)
+	else
+		Nature.leafy(model, base * CFrame.new(0, 1.3, 0), rng:NextNumber(12, 15), rng)
+	end
 	return model
 end
 
@@ -286,7 +299,9 @@ end
 -- keep-out areas.
 function Nature.forest(parent: Instance, inner: Rect, band: number, count: number, keepOut: { Rect }, rng: Random)
 	local folder = Kit.folder(parent, "Forest")
-	local fence = { MinX = inner.MinX - 6, MaxX = inner.MaxX + 6, MinZ = inner.MinZ - 6, MaxZ = inner.MaxZ + 6 }
+	-- trunks stay 14 studs out, so even the widest tier (a 30-stud pine
+	-- reaches ~12 on the diagonal) never crosses the fence
+	local fence = { MinX = inner.MinX - 14, MaxX = inner.MaxX + 14, MinZ = inner.MinZ - 14, MaxZ = inner.MaxZ + 14 }
 	local placed: { Vector3 } = {}
 	local function free(x: number, z: number): boolean
 		if inside(fence, x, z) then

@@ -183,7 +183,10 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		}
 	)
 
-	-- interior partitions: open lobby at the front, office + records behind
+	-- light ceiling over the ground floor (the lights hang from it) and the
+	-- interior partitions up to it: open lobby at the front, office +
+	-- records behind
+	Architecture.ceiling(shell, frame, -halfW + t, halfW - t, -depth + t, -t, eaveY - 0.4)
 	local interior = W.Beige
 	Kit.wall(
 		shell,
@@ -191,7 +194,7 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		Vector2.new(-halfW + t, -20),
 		Vector2.new(halfW - t, -20),
 		floorY,
-		eaveY - 0.8,
+		eaveY - 0.6,
 		0.6,
 		interior,
 		Enum.Material.Concrete,
@@ -206,7 +209,7 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		Vector2.new(0, -20),
 		Vector2.new(0, -depth + t),
 		floorY,
-		eaveY - 0.8,
+		eaveY - 0.6,
 		0.6,
 		interior,
 		Enum.Material.Concrete
@@ -218,12 +221,25 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 			Vector2.new(x, -t),
 			Vector2.new(x, -6),
 			floorY,
-			eaveY - 0.8,
+			eaveY - 0.6,
 			0.6,
 			interior,
 			Enum.Material.Concrete
 		)
 	end
+	-- the regiment's plaque on the partition facing the front door
+	local crest =
+		Kit.sign(shell, Kit.facingOut(frame, Vector3.new(0, floorY + 8, -19.62)), Vector2.new(9, 3), "BLACKHORSE", {
+			Background = W.BrownDark,
+			TextColor = Color3.fromRGB(214, 190, 120),
+			Subtitle = "11TH ARMORED CAVALRY REGIMENT · ALLONS",
+			Stripe = W.MutedRed,
+			PixelsPerStud = 36,
+			Depth = 0.2,
+			MaxDistance = 90,
+		})
+	crest.Name = "RegimentPlaque"
+
 	-- dark wood wainscoting in the lobby
 	Kit.box(
 		shell,
@@ -245,6 +261,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		Architecture.windowRow(shell, frame, 8, halfW - 1, 0, 1, row[1], row[2], 3, 3, style)
 		Architecture.windowColumn(shell, frame, -depth + 2, -2, -halfW, -1, row[1], row[2], 5, 3, style)
 		Architecture.windowColumn(shell, frame, -depth + 2, -2, halfW, 1, row[1], row[2], 5, 3, style)
+		-- the back is a facade too (the lane behind the HQ passes it)
+		Architecture.windowRow(shell, frame, -halfW + 2, halfW - 2, -depth, -1, row[1], row[2], 7, 3, style)
 	end
 	-- upper window above the porch
 	Architecture.windowRow(shell, frame, -3, 3, 0, 1, 12.9, 16.5, 1, 3.4, style)
@@ -374,7 +392,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 	)
 	local sign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, porchY + 0.95, 5.2 + 0.05 + 0.1)),
+		-- 0.02 into the entablature's face
+		Kit.facingOut(frame, Vector3.new(0, porchY + 0.95, 5.2 + 0.1 - 0.02)),
 		Vector2.new(12.6, 1.6),
 		zone.DisplayName,
 		{ Background = W.BrownDark, TextColor = Color3.fromRGB(214, 190, 120), PixelsPerStud = 40, Depth = 0.2 }
@@ -385,15 +404,16 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 	local plate = Kit.sign(
 		shell,
 		-- on the solid wall between the window row and the porch column
-		Kit.facingOut(frame, Vector3.new(-8, 6, 0.3)),
+		Kit.facingOut(frame, Vector3.new(-8, 6, 0.055)),
 		Vector2.new(2.2, 1.6),
 		"BLDG 103",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }
 	)
 	plate.Name = "BuildingNumber"
 
-	Architecture.flagpole(model, frame * CFrame.new(-15, 0.3, 3.2), 20, Architecture.Flags.Usa)
-	Architecture.flagpole(model, frame * CFrame.new(15, 0.3, 3.2), 20, Architecture.Flags.Cavalry)
+	-- the poles stand out by the pavement so the flags fly clear of the eaves
+	Architecture.flagpole(model, frame * CFrame.new(-15, 0.3, 5.6), 20, Architecture.Flags.Usa)
+	Architecture.flagpole(model, frame * CFrame.new(15, 0.3, 5.6), 20, Architecture.Flags.Cavalry)
 
 	return model, frame
 end

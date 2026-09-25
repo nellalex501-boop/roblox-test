@@ -151,10 +151,9 @@ end
 -- Board 12.4 x 7 studs with a screen on each face. The posts stand
 -- outside the board (the screen text runs almost edge to edge) and hold it
 -- with short brackets; a thin bezel frames each face.
-local function statusPylon(parent: Instance, x: number)
+local function statusPylon(parent: Instance, x: number, z: number)
 	local model = Kit.model(parent, "StatusPylon")
-	local c = Layout.Dais.Center
-	local base = CFrame.new(x, Ground.PavedTop, c.Z)
+	local base = CFrame.new(x, Ground.PavedTop, z)
 	local half, bottom, top = 6.2, 5.6, 12.6
 	Kit.box(
 		model,
@@ -288,8 +287,10 @@ function Plaza.build(root: Instance): Folder
 	dais(folder)
 	mapTable(folder)
 	flags(folder)
-	statusPylon(folder, -36)
-	statusPylon(folder, 36)
+	-- north of the dais, flanking the Operations Center: from every spawn pad
+	-- the Map Room, Garage and HQ stay in view past them
+	statusPylon(folder, -36, -30)
+	statusPylon(folder, 36, -30)
 	assemblyPoint(root, folder)
 
 	-- direction signposts

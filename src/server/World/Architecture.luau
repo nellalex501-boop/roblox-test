@@ -224,6 +224,54 @@ local function glazing(parent: Instance, wf: CFrame, w: number, h: number, glass
 	end
 end
 
+-- Plain windows for the backs of buildings (three parts each: a frame
+-- plate on the wall, the glass 0.05 proud of it and a sill), spaced evenly
+-- between x0 and x1 on the wall face at depth z (outside toward outward).
+function Architecture.plainWindows(
+	parent: Instance,
+	frame: CFrame,
+	x0: number,
+	x1: number,
+	z: number,
+	outward: number,
+	y0: number,
+	y1: number,
+	count: number,
+	width: number,
+	style: WindowStyle?
+)
+	local s: WindowStyle = style or {}
+	local gap = (x1 - x0 - count * width) / (count + 1)
+	local h, mid = y1 - y0, (y0 + y1) / 2
+	for i = 1, count do
+		local cx = x0 + gap * i + width * (i - 1) + width / 2
+		Kit.part(
+			parent,
+			Vector3.new(width + 0.36, h + 0.36, 0.1),
+			frame * CFrame.new(cx, mid, z + outward * 0.05),
+			s.Frame or W.DarkGrey,
+			Enum.Material.SmoothPlastic,
+			{ Name = "WindowFrame", Decor = true }
+		)
+		Kit.part(
+			parent,
+			Vector3.new(width, h, 0.1),
+			frame * CFrame.new(cx, mid, z + outward * 0.1),
+			if s.Lit then W.GlassLit else (s.Glass or W.Glass),
+			Enum.Material.Glass,
+			{ Name = "Window", Reflectance = 0.15, Shadow = false, Query = false }
+		)
+		Kit.part(
+			parent,
+			Vector3.new(width + 0.6, 0.2, 0.35),
+			frame * CFrame.new(cx, y0 - 0.28, z + outward * 0.175),
+			s.Sill or W.ConcreteLight,
+			Enum.Material.Concrete,
+			{ Name = "WindowSill", Decor = true }
+		)
+	end
+end
+
 -- A row of windows on a wall face. The wall runs along local X at depth z,
 -- with its outer face toward +Z (outward = 1) or -Z (outward = -1).
 -- Thin walls get real openings with the glass set back (Inset) inside the
@@ -328,6 +376,32 @@ end
 -- of the parapet's outer faces, and the parapet and coping pieces butt at
 -- the corners instead of overlapping, so no two faces share a plane (no
 -- shimmering band along the roofline).
+-- Light suspended ceiling inside a building: a 0.2 panel whose top meets
+-- the underside of the roof (or floor) above at `top`. It fills the
+-- rectangle between the inner wall faces, so the room never shows the dark
+-- roof slab from below.
+Architecture.CeilingColor = Color3.fromRGB(206, 204, 196)
+
+function Architecture.ceiling(
+	parent: Instance,
+	frame: CFrame,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	top: number
+): Part
+	return Kit.box(
+		parent,
+		frame,
+		Vector3.new(x0, top - 0.2, z0),
+		Vector3.new(x1, top, z1),
+		Architecture.CeilingColor,
+		Enum.Material.SmoothPlastic,
+		{ Name = "Ceiling", Shadow = false }
+	)
+end
+
 function Architecture.flatRoof(
 	parent: Instance,
 	frame: CFrame,

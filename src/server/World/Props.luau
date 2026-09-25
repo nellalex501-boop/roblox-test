@@ -37,8 +37,18 @@ end
 function Props.bench(parent: Instance, cf: CFrame, length: number?): Model
 	local model = Kit.model(parent, "Bench")
 	local l = length or 6
+	-- the backrest leans back 12 degrees and rests on a post above each leg
+	local back = cf * CFrame.new(0, 2.4, 0.95) * CFrame.Angles(math.rad(12), 0, 0)
 	for _, x in { -l / 2 + 0.6, l / 2 - 0.6 } do
 		Kit.part(model, Vector3.new(0.5, 1.5, 1.8), cf * CFrame.new(x, 0.75, 0), W.ConcreteDark, CONCRETE, solid("Leg"))
+		Kit.part(
+			model,
+			Vector3.new(0.3, 1.6, 0.22),
+			back * CFrame.new(x, -0.55, 0.17),
+			W.ConcreteDark,
+			CONCRETE,
+			decor("BackPost")
+		)
 	end
 	for i = 0, 2 do
 		Kit.part(
@@ -50,14 +60,7 @@ function Props.bench(parent: Instance, cf: CFrame, length: number?): Model
 			{ Name = "Slat", Shadow = i == 1 }
 		)
 	end
-	Kit.part(
-		model,
-		Vector3.new(l, 0.9, 0.18),
-		cf * CFrame.new(0, 2.4, 0.95) * CFrame.Angles(math.rad(-12), 0, 0),
-		W.Wood,
-		WOOD,
-		decor("Backrest")
-	)
+	Kit.part(model, Vector3.new(l, 0.9, 0.18), back, W.Wood, WOOD, decor("Backrest"))
 	return model
 end
 
@@ -171,7 +174,7 @@ end
 -- Cluster of drums around a point (deterministic by count).
 function Props.drumCluster(parent: Instance, cf: CFrame, count: number, color: Color3?): Model
 	local model = Kit.model(parent, "DrumCluster")
-	local spots = { { 0, 0 }, { 2, 0.2 }, { 1, -1.8 }, { -1.1, -1.6 }, { 3, -1.6 }, { -2, 0.4 } }
+	local spots = { { 0, 0 }, { 2, 0.2 }, { 1, -1.8 }, { -1.2, -1.7 }, { 3, -1.6 }, { -2, 0.4 } }
 	for i = 1, math.min(count, #spots) do
 		local s = spots[i]
 		Props.oilDrum(model, cf * CFrame.new(s[1], 0, s[2]) * CFrame.Angles(0, i * 0.7, 0), color)
@@ -364,10 +367,19 @@ function Props.floodlight(parent: Instance, cf: CFrame, light: boolean?): Model
 	Kit.post(model, cf, 18, 0.7, W.SteelDark, METAL, solid("Mast"))
 	Kit.part(model, Vector3.new(4, 0.4, 0.4), cf * CFrame.new(0, 18, 0), W.SteelDark, METAL, decor("Bar"))
 	for _, x in { -1.4, 1.4 } do
+		-- a bracket hangs each lamp from the bar
+		Kit.part(
+			model,
+			Vector3.new(0.2, 0.55, 0.2),
+			cf * CFrame.new(x, 17.72, -0.05),
+			W.SteelDark,
+			METAL,
+			decor("Bracket")
+		)
 		local lamp = Kit.part(
 			model,
 			Vector3.new(1.2, 1, 0.5),
-			cf * CFrame.new(x, 17.4, -0.4) * CFrame.Angles(math.rad(-30), 0, 0),
+			cf * CFrame.new(x, 17.4, -0.28) * CFrame.Angles(math.rad(-30), 0, 0),
 			W.Charcoal,
 			METAL,
 			decor("Lamp")
@@ -471,7 +483,8 @@ function Props.phoneBox(parent: Instance, cf: CFrame): Model
 		solid("Back")
 	)
 	Kit.part(model, Vector3.new(0.9, 1.2, 0.5), cf * CFrame.new(0, 5, 1.2), W.Charcoal, PLASTIC, decor("Phone"))
-	Kit.sign(model, cf * CFrame.new(0, 8.8, -1.72), Vector2.new(2.8, 0.7), "TELEFON", {
+	-- name board standing on the front edge of the roof
+	Kit.sign(model, cf * CFrame.new(0, 8.62, -1.55), Vector2.new(2.8, 0.7), "TELEFON", {
 		Background = W.Charcoal,
 		TextColor = yellow,
 		Depth = 0.1,
@@ -557,7 +570,7 @@ end
 -- Field kitchen trailer with a stove pipe (smoke anchor for Phase 5).
 function Props.fieldKitchen(parent: Instance, cf: CFrame): Model
 	local model = Kit.model(parent, "FieldKitchen")
-	Kit.part(model, Vector3.new(6, 3.6, 3.6), cf * CFrame.new(0, 3, 0), W.OliveDark, METAL, solid("Body"))
+	Kit.part(model, Vector3.new(6, 3.6, 3.6), cf * CFrame.new(0, 3, 0), W.Olive, METAL, solid("Body"))
 	Kit.part(model, Vector3.new(6.2, 0.3, 3.8), cf * CFrame.new(0, 4.95, 0), W.SteelDark, METAL, decor("Lid"))
 	for _, x in { -1.6, 1.6 } do
 		for _, z in { -1.9, 1.9 } do
@@ -683,10 +696,12 @@ function Props.wallClock(parent: Instance, cf: CFrame, label: string?, hours: nu
 		decor("MinuteHand")
 	)
 	if label then
-		Kit.sign(model, cf * CFrame.new(0, -1.55, -0.02), Vector2.new(2.4, 0.5), label, {
+		-- name plate hung from the bottom of the clock face, on the wall
+		-- behind it (the face's back is at z = 0.1)
+		Kit.sign(model, cf * CFrame.new(0, -1.3, 0.08), Vector2.new(2.4, 0.5), label, {
 			Background = W.Charcoal,
 			TextColor = W.OffWhite,
-			Depth = 0.06,
+			Depth = 0.08,
 			PixelsPerStud = 40,
 			MaxDistance = 60,
 		})
@@ -830,10 +845,12 @@ function Props.bicycle(parent: Instance, cf: CFrame): Model
 	local crank = Vector3.new(0, 0.95, 0)
 	local seat = Vector3.new(0, 2.15, 0.37)
 	local headTop, headBottom = Vector3.new(0, 2.3, -0.92), Vector3.new(0, 1.9, -0.84)
-	-- tyre and rim caps sit 0.06 apart so they never flicker
+	-- black tyre, a bright rim/spoke disc 0.06 proud of it on both sides and
+	-- a dark hub, so the wheel reads as a ring rather than a solid disc
 	for _, hub in { rear, front } do
 		Kit.cylinder(model, 0.1, 2.2, cf * CFrame.new(hub), W.Rubber, PLASTIC, decor("Tyre"))
-		Kit.cylinder(model, 0.22, 1.86, cf * CFrame.new(hub), W.Steel, METAL, decor("Rim"))
+		Kit.cylinder(model, 0.22, 1.9, cf * CFrame.new(hub), Color3.fromRGB(184, 186, 180), METAL, decor("Rim"))
+		Kit.cylinder(model, 0.34, 0.34, cf * CFrame.new(hub), W.SteelDark, METAL, decor("Hub"))
 	end
 	local frameColor = W.MutedBlue
 	tube(model, cf, seat, headTop, 0.11, frameColor, "TopTube")
@@ -853,6 +870,8 @@ function Props.bicycle(parent: Instance, cf: CFrame): Model
 	tube(model, cf, Vector3.new(-0.75, 2.62, -1.02), Vector3.new(0.75, 2.62, -1.02), 0.08, W.Steel, "Handlebar")
 	-- chainring, crank arms, pedals and the chain's top run on the drive side
 	Kit.cylinder(model, 0.04, 0.46, cf * CFrame.new(crank + Vector3.new(0.3, 0, 0)), W.Steel, METAL, decor("Chainring"))
+	-- bottom-bracket axle through the frame, carrying both crank arms
+	Kit.cylinder(model, 0.76, 0.12, cf * CFrame.new(crank), W.SteelDark, METAL, decor("Axle"))
 	for _, side in { -1, 1 } do
 		local arm = Vector3.new(side * 0.36, -side * 0.34, side * 0.1)
 		tube(model, cf, crank + Vector3.new(side * 0.34, 0, 0), crank + arm, 0.06, W.SteelDark, "CrankArm")

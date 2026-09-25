@@ -192,7 +192,11 @@ end
 local function commandWall(parent: Instance, opsFrame: CFrame)
 	local model = Kit.model(parent, "CommandWall")
 	local z = -62.35
-	local y0, height = 4.4, 15
+	-- the display's lower edge sits above the terminal CRTs as seen by the
+	-- third-person camera in the doorway; from a first-person eye there the
+	-- QUICK desk's CRTs still cover the lowest fifth of it, so the board
+	-- keeps all its text above that
+	local y0, height = 6.5, 13.5
 	local mapW, boardW = 15, 21
 	local total = mapW + boardW
 	-- frame
@@ -237,24 +241,38 @@ local function commandWall(parent: Instance, opsFrame: CFrame)
 		content,
 		"Header",
 		"DEPLOYMENT STATUS // FULDA SECTOR",
-		0,
-		0.1,
+		0.01,
+		0.09,
 		Common.Amber,
 		Theme.font("Mono", Enum.FontWeight.Bold)
 	)
 	local rows = { "QUICK", "1V1", "2V2", "4V4", "PRIVATE" }
 	for i, modeId in rows do
 		local mode = GameModes.Modes[modeId]
-		local y = 0.14 + (i - 1) * 0.13
-		local name = Common.line(content, "Mode_" .. modeId, mode.Title, y, 0.11, Common.Phosphor)
-		name.Size = UDim2.fromScale(0.64, 0.11)
+		local y = 0.13 + (i - 1) * 0.115
+		local name = Common.line(content, "Mode_" .. modeId, mode.Title, y, 0.1, Common.Phosphor)
+		name.Size = UDim2.fromScale(0.64, 0.1)
 		local count =
-			Common.line(content, "Count_" .. modeId, "--", y, 0.11, Common.Amber, nil, Enum.TextXAlignment.Right)
+			Common.line(content, "Count_" .. modeId, "--", y, 0.1, Common.Amber, nil, Enum.TextXAlignment.Right)
 		count.Position = UDim2.fromScale(0.64, y)
-		count.Size = UDim2.fromScale(0.36, 0.11)
+		count.Size = UDim2.fromScale(0.36, 0.1)
 	end
-	Common.line(content, "Operation", "CURRENT OPERATION: --", 0.82, 0.08, Common.Phosphor, Theme.font("Mono"))
-	Common.line(content, "Clock", "0000Z", 0.91, 0.08, Common.Phosphor, Theme.font("Mono"), Enum.TextXAlignment.Right)
+	-- operation and zulu time share the last line, clear of the bottom fifth
+	local operation =
+		Common.line(content, "Operation", "CURRENT OPERATION: --", 0.71, 0.075, Common.Phosphor, Theme.font("Mono"))
+	operation.Size = UDim2.fromScale(0.8, 0.075)
+	local clock = Common.line(
+		content,
+		"Clock",
+		"0000Z",
+		0.71,
+		0.075,
+		Common.Phosphor,
+		Theme.font("Mono"),
+		Enum.TextXAlignment.Right
+	)
+	clock.Position = UDim2.fromScale(0.8, 0.71)
+	clock.Size = UDim2.fromScale(0.2, 0.075)
 	return model
 end
 

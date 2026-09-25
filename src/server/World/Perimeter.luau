@@ -420,16 +420,10 @@ local function guardTower(parent: Instance, position: Vector3, facing: number)
 	return model
 end
 
-local function barracks(
-	parent: Instance,
-	facade: Vector3,
-	inward: Vector3,
-	length: number,
-	depth: number,
-	number: string
-)
+local function barracks(parent: Instance, spec: Layout.Barrack)
 	local model = Kit.model(parent, "Barracks")
-	local frame = CFrame.lookAt(facade, facade + inward)
+	local frame = CFrame.lookAt(spec.Facade, spec.Facade + spec.Inward)
+	local length, depth = spec.Length, spec.Depth
 	local halfL = length / 2
 	local eave = 15
 	local plaster = Color3.fromRGB(196, 186, 160)
@@ -498,6 +492,8 @@ local function barracks(
 	end
 	Architecture.windowRow(model, frame, -halfL + 1, halfL - 1, 0, 1, 9.6, 13.2, count, 2.8, style)
 	Architecture.windowRow(model, frame, -halfL + 1, halfL - 1, -depth, -1, 9.6, 13.2, count, 2.8, style)
+	-- the ground floor at the back gets plain windows (no doors there)
+	Architecture.plainWindows(model, frame, -halfL + 1, halfL - 1, -depth, -1, 3.6, 7.4, count, 2.8, style)
 	for _, x in { -halfL / 2, 0, halfL / 2 } do
 		Kit.box(
 			model,
@@ -507,6 +503,45 @@ local function barracks(
 			W.BrownDark,
 			Enum.Material.Wood,
 			{ Name = "Door" }
+		)
+		-- white frame (jambs and head), a glazed upper panel and a handle
+		for _, side in { -1, 1 } do
+			Kit.box(
+				model,
+				frame,
+				Vector3.new(x + side * 2, 0.6, 0),
+				Vector3.new(x + side * 2.35, 7.6, 0.35),
+				W.OffWhite,
+				Enum.Material.Wood,
+				{ Name = "DoorFrame", Decor = true }
+			)
+		end
+		Kit.box(
+			model,
+			frame,
+			Vector3.new(x - 2.35, 7.6, 0),
+			Vector3.new(x + 2.35, 7.95, 0.35),
+			W.OffWhite,
+			Enum.Material.Wood,
+			{ Name = "DoorFrame", Decor = true }
+		)
+		Kit.box(
+			model,
+			frame,
+			Vector3.new(x - 1.2, 5, 0.24),
+			Vector3.new(x + 1.2, 6.9, 0.3),
+			W.Glass,
+			Enum.Material.Glass,
+			{ Name = "DoorGlass", Decor = true }
+		)
+		Kit.box(
+			model,
+			frame,
+			Vector3.new(x + 1.35, 3.7, 0.24),
+			Vector3.new(x + 1.6, 4.1, 0.42),
+			W.Steel,
+			Enum.Material.Metal,
+			{ Name = "DoorHandle", Decor = true }
 		)
 		Kit.box(
 			model,
@@ -529,24 +564,21 @@ local function barracks(
 	end
 	-- the number plate on the solid wall between the corner and the first
 	-- ground-floor window (the run laid out above: 2.8 wide windows with
-	-- 0.3 surrounds)
+	-- 0.3 surrounds), or on the windowless gable beside that corner
 	local runSpan = edges[2] - edges[1]
 	local runCount = math.floor(runSpan / 7)
 	local firstWindow = if runCount > 0 then edges[1] + (runSpan - runCount * 2.8) / (runCount + 1) - 0.3 else edges[2]
 	local left, right = -halfL + 0.5, firstWindow - 0.2
 	local plateW = math.min(3.4, right - left)
-	local plate = Kit.sign(
-		model,
-		Kit.facingOut(frame, Vector3.new((left + right) / 2, 6, 0.25)),
-		Vector2.new(plateW, plateW * 0.6),
-		number,
-		{
-			Background = W.OffWhite,
-			TextColor = W.Charcoal,
-			Depth = 0.15,
-			PixelsPerStud = 40,
-		}
-	)
+	local plateAt = if spec.NumberOnGable
+		then frame * CFrame.new(-halfL - 0.055, 6, -plateW / 2 - 1.5) * CFrame.Angles(0, math.pi / 2, 0)
+		else Kit.facingOut(frame, Vector3.new((left + right) / 2, 6, 0.055))
+	local plate = Kit.sign(model, plateAt, Vector2.new(plateW, plateW * 0.6), spec.Number, {
+		Background = W.OffWhite,
+		TextColor = W.Charcoal,
+		Depth = 0.15,
+		PixelsPerStud = 40,
+	})
 	plate.Name = "BuildingNumber"
 	return model
 end
@@ -718,12 +750,23 @@ local function troposcatter(parent: Instance, position: Vector3, facing: Vector3
 		Enum.Material.Concrete,
 		{ Name = "Footing" }
 	)
-	-- slightly curved reflector made of three panels
+	-- head beam across the two A-frames' apexes; the reflector hangs from it
+	beam(
+		model,
+		(frame * CFrame.new(-6.4, 16, -1)).Position,
+		(frame * CFrame.new(6.4, 16, -1)).Position,
+		0.6,
+		W.SteelDark,
+		Enum.Material.Metal,
+		{ Name = "HeadBeam" }
+	)
+	-- slightly curved reflector made of three panels, their backs against
+	-- the head beam
 	for i, a in { -0.28, 0, 0.28 } do
 		Kit.part(
 			model,
 			Vector3.new(6.4, 18, 0.5),
-			frame * CFrame.new(math.sin(a) * 6.6, 12, -2 + (1 - math.cos(a)) * 6) * CFrame.Angles(math.rad(-8), a, 0),
+			frame * CFrame.new(math.sin(a) * 6.6, 12, -0.9 + (1 - math.cos(a)) * 6) * CFrame.Angles(math.rad(-8), a, 0),
 			Color3.fromRGB(206, 204, 194),
 			Enum.Material.SmoothPlastic,
 			{ Name = "Reflector" .. i }
@@ -736,6 +779,25 @@ local function troposcatter(parent: Instance, position: Vector3, facing: Vector3
 		W.SteelDark,
 		Enum.Material.Metal,
 		{ Name = "FeedHorn", Decor = true }
+	)
+	-- the horn is held in front of the reflector on a boom and a stay
+	beam(
+		model,
+		(frame * CFrame.new(0, 12, -1.0)).Position,
+		(frame * CFrame.new(0, 12, -4.8)).Position,
+		0.4,
+		W.SteelDark,
+		Enum.Material.Metal,
+		{ Name = "FeedBoom" }
+	)
+	beam(
+		model,
+		(frame * CFrame.new(0, 5.6, -0.1)).Position,
+		(frame * CFrame.new(0, 11.5, -6.4)).Position,
+		0.3,
+		W.SteelDark,
+		Enum.Material.Metal,
+		{ Name = "FeedStay" }
 	)
 	return model
 end
@@ -852,16 +914,23 @@ local function commsCompound(parent: Instance)
 		Enum.Material.Concrete,
 		{ Name = "MastFooting" }
 	)
-	local truss = Instance.new("TrussPart")
-	truss.Name = "RadioMast"
-	truss.Anchored = true
-	truss.CanCollide = false
-	truss.CanTouch = false
-	truss.Size = Vector3.new(2, 86, 2)
-	truss.CFrame = CFrame.new(mastBase + Vector3.new(0, 1.2 + 43, 0))
-	truss.Color = Color3.fromRGB(176, 74, 60)
-	truss.Material = Enum.Material.Metal
-	truss.Parent = folder
+	-- lattice mast in the aviation bands: seven sections, red at the foot
+	-- and the top (truss lengths stay multiples of 2)
+	local bottom = 1.2
+	for i = 0, 6 do
+		local h = if i == 6 then 14 else 12
+		local truss = Instance.new("TrussPart")
+		truss.Name = "RadioMast"
+		truss.Anchored = true
+		truss.CanCollide = false
+		truss.CanTouch = false
+		truss.Size = Vector3.new(2, h, 2)
+		truss.CFrame = CFrame.new(mastBase + Vector3.new(0, bottom + h / 2, 0))
+		truss.Color = if i % 2 == 0 then Color3.fromRGB(176, 74, 60) else Color3.fromRGB(220, 218, 208)
+		truss.Material = Enum.Material.Metal
+		truss.Parent = folder
+		bottom += h
+	end
 	for _, h in { 30, 58, 87.6 } do
 		local light = Kit.ball(
 			folder,
@@ -1191,9 +1260,9 @@ function Perimeter.build(root: Instance)
 	guardTower(towers, Vector3.new(p.MaxX - 8, 0, p.MaxZ - 8), math.rad(45))
 
 	local housing = Kit.folder(folder, "Barracks")
-	barracks(housing, Vector3.new(150, 0, -8), Vector3.new(1, 0, 0), 70, 26, "BLDG 201")
-	barracks(housing, Vector3.new(-164, 0, -12), Vector3.new(-1, 0, 0), 80, 22, "BLDG 202")
-	barracks(housing, Vector3.new(150, 0, 124), Vector3.new(1, 0, 0), 60, 24, "BLDG 203")
+	for _, spec in Layout.Barracks do
+		barracks(housing, spec)
+	end
 
 	vehicleShed(folder)
 	waterTower(folder, Vector3.new(-162, 0, -128))

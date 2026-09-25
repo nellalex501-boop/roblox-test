@@ -32,7 +32,9 @@ Theme.World = {
 	Foliage = Color3.fromRGB(62, 80, 46),
 	FoliageDark = Color3.fromRGB(44, 60, 38),
 	Dirt = Color3.fromRGB(110, 94, 70),
-	Glass = Color3.fromRGB(46, 56, 62),
+	-- a lighter blue-grey reads as glass (and daylight from inside) instead
+	-- of a hole in the wall
+	Glass = Color3.fromRGB(84, 100, 110),
 	GlassLit = Color3.fromRGB(150, 138, 104),
 	OffWhite = Color3.fromRGB(226, 222, 206),
 	Paper = Color3.fromRGB(224, 216, 190),

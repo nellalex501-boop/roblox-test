@@ -3,9 +3,13 @@
 -- signs and plates readable (not covered, not cut by columns or windows,
 -- text large enough), flags built from enough segments, the winter yard's
 -- effects in place, and the landscape closing the view on every side.
+-- Second pass: nothing floats, no text has a part in front of it, trees
+-- stay clear of structures, roads and footpaths form one network, every
+-- zone's sign is in view from the spawn pads, and signs sit flush.
 
 local roblox = require("@lune/roblox")
 
+local Audit = require("../lib/Audit")
 local Geometry = require("../lib/Geometry")
 local WorldChecks = require("../lib/WorldChecks")
 
@@ -17,6 +21,33 @@ return function(test)
 	local grid = Geometry.index(root, function(p)
 		return p.Transparency < 0.1
 	end, 8)
+	local Layout = runtime:requirePath("ReplicatedStorage.Lobby.Config.Layout")
+	-- the base inside the fence with a margin (the forest beyond is scenery)
+	local BASE = { MinX = -200, MaxX = 205, MinZ = -185, MaxZ = 190 }
+
+	-- 15 points spread over a part's front face, `lift` studs off it
+	local function faceSamples(part, lift)
+		local cf, size = part.CFrame, part.Size
+		local list = {}
+		for i = 0, 4 do
+			for j = 0, 2 do
+				table.insert(
+					list,
+					(cf * CFrame.new((i / 4 - 0.5) * size.X * 0.9, (j / 2 - 0.5) * size.Y * 0.8, -size.Z / 2 - lift)).Position
+				)
+			end
+		end
+		return list
+	end
+
+	local function listed(set)
+		local list = {}
+		for name in set do
+			table.insert(list, name)
+		end
+		table.sort(list)
+		return list
+	end
 
 	test("no z-fighting: no two faces share a plane where they overlap", function(t)
 		-- two parts whose faces point the same way, lie within 0.045 studs and
@@ -156,7 +187,6 @@ return function(test)
 	end)
 
 	test("street lamps stand clear of doorways, windows and flagpoles", function(t)
-		local Layout = runtime:requirePath("ReplicatedStorage.Lobby.Config.Layout")
 		local lamps, windows, flagpoles = {}, {}, {}
 		for _, d in root:GetDescendants() do
 			if d:IsA("BasePart") then
@@ -322,5 +352,400 @@ return function(test)
 			end
 			t.eq(covered, 0, "command wall display clear of the signs from " .. tostring(eye))
 		end
+	end)
+
+	test("support: every visible part rests on the ground or on another part", function(t)
+		-- chains of touching visible parts (gaps up to 0.08) from the ground;
+		-- a tree counts as one piece (its crowns stand on the trunk)
+		local islands = Audit.islands(root, BASE, 0.08)
+		for i = 1, math.min(#islands, 10) do
+			local g = islands[i]
+			t.ok(
+				false,
+				("floating: %s (%d parts: %s) at %.0f, %.1f, %.0f"):format(
+					g.path,
+					#g.parts,
+					table.concat(g.parts, ", "):sub(1, 80),
+					g.at.X,
+					g.at.Y,
+					g.at.Z
+				)
+			)
+		end
+		t.eq(#islands, 0, "floating groups")
+	end)
+
+	test("surface text: no part stands within 3 studs in front of any label", function(t)
+		-- rays leave a grid of points on every label (and on the event
+		-- surfaces filled at runtime); the strings run from pin to pin
+		-- across the pinned papers by design
+		local findings = Audit.coveredText(root, BASE, 3, function(hit, part)
+			return hit.Name == "String" and hit.Parent == part.Parent
+		end)
+		for i = 1, math.min(#findings, 10) do
+			local f = findings[i]
+			t.ok(
+				false,
+				("covered: %s [%s] %d/%d rays by %s"):format(
+					Audit.path(root, f.part),
+					f.face,
+					f.covered,
+					f.total,
+					table.concat(f.blockers, "; ")
+				)
+			)
+		end
+		t.eq(#findings, 0, "labels with a part in front")
+	end)
+
+	test("trees: no tree grows into a building, vehicle or prop", function(t)
+		local clashes = Audit.treeClashes(root, BASE, 0.3)
+		for i = 1, math.min(#clashes, 10) do
+			t.ok(false, "clash: " .. clashes[i])
+		end
+		t.eq(#clashes, 0, "trees cutting into other parts")
+	end)
+
+	-- two rects overlap or share an edge of positive length
+	local function joins(a, b)
+		local ox = math.min(a.MaxX, b.MaxX) - math.max(a.MinX, b.MinX)
+		local oz = math.min(a.MaxZ, b.MaxZ) - math.max(a.MinZ, b.MinZ)
+		return ox >= -0.01 and oz >= -0.01 and math.max(ox, oz) > 0.5
+	end
+
+	test("roads: both ends of every road run into another road or out of the base", function(t)
+		for _, road in Layout.Roads do
+			local alongX = road.MaxX - road.MinX > road.MaxZ - road.MinZ
+			local w = if alongX then road.MaxZ - road.MinZ else road.MaxX - road.MinX
+			-- the last road width at each end
+			local ends = if alongX
+				then {
+					{ MinX = road.MinX, MaxX = road.MinX + w, MinZ = road.MinZ, MaxZ = road.MaxZ, At = road.MinX },
+					{ MinX = road.MaxX - w, MaxX = road.MaxX, MinZ = road.MinZ, MaxZ = road.MaxZ, At = road.MaxX },
+				}
+				else {
+					{ MinX = road.MinX, MaxX = road.MaxX, MinZ = road.MinZ, MaxZ = road.MinZ + w, At = road.MinZ },
+					{ MinX = road.MinX, MaxX = road.MaxX, MinZ = road.MaxZ - w, MaxZ = road.MaxZ, At = road.MaxZ },
+				}
+			for _, e in ends do
+				local joined = if alongX
+					then e.At < BASE.MinX or e.At > BASE.MaxX
+					else e.At < BASE.MinZ or e.At > BASE.MaxZ
+				for _, other in Layout.Roads do
+					if other ~= road and joins(e, other) then
+						joined = true
+					end
+				end
+				t.ok(
+					joined,
+					("%s end at %s = %.1f joins the network"):format(road.Name, if alongX then "x" else "z", e.At)
+				)
+			end
+		end
+	end)
+
+	test("barracks: every door opens onto a footpath that leads to a road", function(t)
+		local walks = {}
+		for _, r in Layout.Roads do
+			table.insert(walks, { rect = r, road = true })
+		end
+		for _, r in Layout.Paths do
+			table.insert(walks, { rect = r, path = true })
+		end
+		local sidewalks = root:FindFirstChild("Sidewalks", true)
+		t.ok(sidewalks ~= nil, "sidewalks found")
+		for _, d in sidewalks:GetChildren() do
+			if d:IsA("BasePart") and d.Name == "Sidewalk" then
+				local p, size = d.CFrame.Position, d.Size
+				table.insert(walks, {
+					rect = {
+						MinX = p.X - size.X / 2,
+						MaxX = p.X + size.X / 2,
+						MinZ = p.Z - size.Z / 2,
+						MaxZ = p.Z + size.Z / 2,
+					},
+				})
+			end
+		end
+		-- flood from the roads through touching walks
+		local reached, queue = {}, {}
+		for _, w in walks do
+			if w.road then
+				reached[w] = true
+				table.insert(queue, w)
+			end
+		end
+		local head = 1
+		while head <= #queue do
+			local w = queue[head]
+			head += 1
+			for _, other in walks do
+				if not reached[other] and joins(w.rect, other.rect) then
+					reached[other] = true
+					table.insert(queue, other)
+				end
+			end
+		end
+		for i, w in walks do
+			if w.path then
+				t.ok(reached[w], ("footpath %d joins the road network"):format(i - #Layout.Roads))
+			end
+		end
+		for _, b in Layout.Barracks do
+			local frame = CFrame.lookAt(b.Facade, b.Facade + b.Inward)
+			for _, x in { -b.Length / 4, 0, b.Length / 4 } do
+				-- just past the 2.6-deep door step
+				local p = (frame * CFrame.new(x, 0, 3)).Position
+				local onPath = false
+				for _, r in Layout.Paths do
+					if p.X >= r.MinX and p.X <= r.MaxX and p.Z >= r.MinZ and p.Z <= r.MaxZ then
+						onPath = true
+					end
+				end
+				t.ok(onPath, ("%s door at %.0f, %.0f opens onto a footpath"):format(b.Number, p.X, p.Z))
+			end
+		end
+	end)
+
+	test("sightlines: every zone's sign is in view from the spawn pads", function(t)
+		-- the default camera 12 studs behind a player on the pad who has
+		-- turned toward the sign, 9 up; it pops in front of anything between
+		-- it and the head, so the rays start 12.5 studs out. A sign is in
+		-- view when at most 3 of 15 rays to its face are blocked (a lamp post
+		-- may cross it). Each zone's own sign must be in view from at least
+		-- 6 of the 8 pads, and from every pad either it or a signpost plate
+		-- naming the zone.
+		local NAMES = { EntranceSign = true, TowerSign = true, Header = true, EventBanner = true, ZoneName = true }
+		local pads = {}
+		for _, d in root:GetDescendants() do
+			if d:IsA("SpawnLocation") then
+				table.insert(pads, d)
+			end
+		end
+		t.eq(#pads, Layout.Spawn.Count, "spawn pads")
+		local function blocked(sign, pad)
+			local pos = sign.CFrame.Position
+			local flat = pos - pad.CFrame.Position
+			local eye = pad.CFrame.Position - Vector3.new(flat.X, 0, flat.Z).Unit * 12 + Vector3.new(0, 9, 0)
+			if sign.CFrame.LookVector:Dot((eye - pos).Unit) < 0.2 then
+				return 15 -- edge-on or from behind
+			end
+			local n = 0
+			for _, p in faceSamples(sign, 0.02) do
+				local from = eye + (p - eye).Unit * 12.5
+				local hit = Geometry.raycast(grid, from, p - from)
+				if hit and hit ~= sign then
+					n += 1
+				end
+			end
+			return n
+		end
+		local plates = {}
+		for _, d in root:GetDescendants() do
+			local zoneId = d:IsA("BasePart") and d.Name == "Plate" and d:GetAttribute("Destination")
+			if zoneId then
+				plates[zoneId] = plates[zoneId] or {}
+				table.insert(plates[zoneId], d)
+			end
+		end
+		for _, zoneId in Layout.ZoneOrder do
+			local signs = {}
+			for _, d in root.Zones[zoneId]:GetDescendants() do
+				if d:IsA("BasePart") and NAMES[d.Name] and d:FindFirstChildOfClass("SurfaceGui") then
+					table.insert(signs, d)
+				end
+			end
+			t.ok(#signs > 0, zoneId .. " has an exterior sign")
+			local own, unnamed = 0, {}
+			for _, pad in pads do
+				local seen = false
+				for _, sign in signs do
+					if blocked(sign, pad) <= 3 then
+						seen = true
+						break
+					end
+				end
+				if seen then
+					own += 1
+				else
+					local named = false
+					for _, plate in plates[zoneId] or {} do
+						if
+							(plate.CFrame.Position - pad.CFrame.Position).Magnitude < 60
+							and blocked(plate, pad) <= 3
+						then
+							named = true
+							break
+						end
+					end
+					if not named then
+						table.insert(unnamed, ("%.0f"):format(pad.CFrame.Position.X))
+					end
+				end
+			end
+			t.metric("sign in view: " .. zoneId, ("%d/%d pads"):format(own, #pads))
+			t.ge(own, 6, zoneId .. " sign in view from 6+ spawn pads")
+			t.eq(
+				#unnamed,
+				0,
+				zoneId
+					.. " named in view from every pad"
+					.. (if #unnamed > 0 then " (pads at x " .. table.concat(unnamed, ", ") .. ")" else "")
+			)
+		end
+	end)
+
+	test("hall of commanders: nothing stands between a reader and any board", function(t)
+		local boards = {}
+		for _, d in root.Zones.Leaderboards:GetDescendants() do
+			if d:IsA("BasePart") and d.Name == "BoardScreen" then
+				table.insert(boards, d)
+			end
+		end
+		t.eq(#boards, 5, "boards")
+		-- a player's eye 5.5 above the ground at eight reading spots:
+		-- straight out at 6 to 24 studs and to the sides at 30 and 40 degrees
+		local spots = { { 6, 0 }, { 10, 0 }, { 16, 0 }, { 24, 0 }, { 10, 30 }, { 10, -30 }, { 18, 40 }, { 18, -40 } }
+		for _, board in boards do
+			local cf = board.CFrame
+			local flat = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z).Unit
+			local side = Vector3.new(-flat.Z, 0, flat.X)
+			local blocked, blockers = 0, {}
+			for _, spot in spots do
+				local a = math.rad(spot[2])
+				local base = cf.Position + (flat * math.cos(a) + side * math.sin(a)) * spot[1]
+				local floorHit, ft =
+					Geometry.raycast(grid, Vector3.new(base.X, cf.Position.Y, base.Z), Vector3.new(0, -30, 0))
+				local eye = Vector3.new(base.X, (if floorHit then cf.Position.Y - 30 * ft else 0) + 5.5, base.Z)
+				for _, p in faceSamples(board, 0.02) do
+					local hit = Geometry.raycast(grid, eye, p - eye)
+					if hit and hit ~= board then
+						blocked += 1
+						blockers[hit.Name] = true
+					end
+				end
+			end
+			local names = listed(blockers)
+			t.eq(
+				blocked,
+				0,
+				board.Parent.Name
+					.. " clear from 8 reading spots"
+					.. (if #names > 0 then " (" .. table.concat(names, ", ") .. ")" else "")
+			)
+		end
+	end)
+
+	test("operations hall: nothing hides the command wall from the doorway", function(t)
+		local wall = root.Zones.OperationsCenter.Stations.CommandWall
+		-- the third-person camera behind a player in the doorway sees all of
+		-- both panels
+		local camera = Vector3.new(0, 10, -70)
+		local covered, by = 0, {}
+		for _, panel in wall:GetDescendants() do
+			if panel:IsA("BasePart") and panel:FindFirstChildOfClass("SurfaceGui") then
+				for _, p in faceSamples(panel, 0.02) do
+					local hit = Geometry.raycast(grid, camera, p - camera)
+					if hit and hit ~= panel and not hit:IsDescendantOf(wall) then
+						covered += 1
+						by[Audit.path(root, hit)] = true
+					end
+				end
+			end
+		end
+		local names = listed(by)
+		t.eq(
+			covered,
+			0,
+			"display in full view of the doorway camera"
+				.. (if #names > 0 then " (" .. table.concat(names, "; ") .. ")" else "")
+		)
+		-- a first-person eye just inside the door reads every line of the
+		-- deployment board over the desks' CRTs
+		local eye = Vector3.new(0, 6.5, -78)
+		local board = wall:FindFirstChild("DeploymentBoard")
+		local gui = board and board:FindFirstChildOfClass("SurfaceGui")
+		t.ok(gui ~= nil, "deployment board found")
+		local lines, hidden = 0, {}
+		for _, label in gui:GetDescendants() do
+			if label:IsA("TextLabel") then
+				lines += 1
+				local x0, y0, w, h = Audit.labelRect(label, gui)
+				for i = 0, 4 do
+					for j = 0, 2 do
+						local p = Audit.facePoint(
+							board,
+							"Front",
+							x0 + w * (0.1 + 0.8 * i / 4),
+							y0 + h * (0.2 + 0.6 * j / 2),
+							0.02
+						)
+						local hit = Geometry.raycast(grid, eye, p - eye)
+						if hit and hit ~= board then
+							hidden[label.Name] = true
+						end
+					end
+				end
+			end
+		end
+		t.ge(lines, 12, "board lines")
+		local list = listed(hidden)
+		t.eq(
+			#list,
+			0,
+			"board lines in view at the door" .. (if #list > 0 then " (" .. table.concat(list, ", ") .. ")" else "")
+		)
+	end)
+
+	test("mounted signs: plates, boards and signs on a surface sit flush on it", function(t)
+		-- every sign (front-face text, at most 0.4 deep) whose back is fully
+		-- covered by a surface (all 15 rays from it meet one within 0.4) must
+		-- touch it: gap at most 0.03. Pinned papers stand off the cork by
+		-- design, and a flat sign on a curved tank stands off at its edges.
+		local mounted, loose = 0, {}
+		for _, gui in root:GetDescendants() do
+			local part = gui.Parent
+			if
+				gui:IsA("SurfaceGui")
+				and gui.Face.Name == "Front"
+				and part
+				and part:IsA("BasePart")
+				and part.Size.Z <= 0.4
+				and part.Parent.Name ~= "Documents"
+			then
+				local cf, size = part.CFrame, part.Size
+				local worst, backed, curved = -1, 0, false
+				for i = 0, 4 do
+					for j = 0, 2 do
+						local from = (cf * CFrame.new(
+							(i / 4 - 0.5) * size.X * 0.9,
+							(j / 2 - 0.5) * size.Y * 0.8,
+							size.Z / 2 - 0.05
+						)).Position
+						local hit, ft = Geometry.raycast(grid, from, -cf.LookVector * 0.4, function(q)
+							return q == part
+						end)
+						if hit then
+							backed += 1
+							worst = math.max(worst, ft * 0.4 - 0.05)
+							local shape = Geometry.shape(hit)
+							curved = curved or shape == "Cylinder" or shape == "Ball"
+						end
+					end
+				end
+				if backed == 15 and not curved then
+					mounted += 1
+					if worst > 0.03 then
+						table.insert(loose, ("%s (gap %.3f)"):format(Audit.path(root, part), worst))
+					end
+				end
+			end
+		end
+		t.metric("wall-mounted signs", mounted)
+		t.ge(mounted, 40, "wall-mounted signs checked")
+		for i = 1, math.min(#loose, 10) do
+			t.ok(false, "stands off its wall: " .. loose[i])
+		end
+		t.eq(#loose, 0, "signs standing off their surface")
 	end)
 end

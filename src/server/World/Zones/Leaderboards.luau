@@ -14,7 +14,7 @@ local Leaderboards = {}
 
 -- Board slots along the back wall (zone-local x), boards face +Z.
 Leaderboards.Slots = { -28, -14, 0, 14, 28 }
--- Canopy columns, halfway between the boards.
+-- Canopy columns in the back wall, halfway between the boards.
 Leaderboards.Columns = { -35, -21, -7, 7, 21, 35 }
 Leaderboards.BoardZ = -37.4
 Leaderboards.CanopyY = 17
@@ -87,20 +87,11 @@ function Leaderboards.build(parent: Instance): (Model, CFrame)
 		)
 	end
 
-	-- steel canopy: the columns stand between the boards (boards every 14
-	-- studs, columns offset by 7), the back row set into the back wall, so
-	-- no column ever stands in front of a board
+	-- steel canopy cantilevered from the back wall: columns set into the
+	-- wall between the boards carry it, a knee brace from each column holds
+	-- the front. Nothing stands in front of a board, from any angle.
 	local y = Leaderboards.CanopyY
 	for _, x in Leaderboards.Columns do
-		Kit.box(
-			shell,
-			frame,
-			Vector3.new(x - 0.6, 0.3, -23.1),
-			Vector3.new(x + 0.6, y, -21.9),
-			W.SteelDark,
-			Enum.Material.Metal,
-			{ Name = "Column" }
-		)
 		Kit.box(
 			shell,
 			frame,
@@ -110,15 +101,15 @@ function Leaderboards.build(parent: Instance): (Model, CFrame)
 			Enum.Material.Metal,
 			{ Name = "WallColumn" }
 		)
-		-- base plate
-		Kit.box(
+		local foot = (frame * CFrame.new(x, 12.6, -39.3)).Position
+		local head = (frame * CFrame.new(x, y + 0.1, -27)).Position
+		Kit.part(
 			shell,
-			frame,
-			Vector3.new(x - 0.9, 0.3, -23.4),
-			Vector3.new(x + 0.9, 0.45, -21.6),
-			W.Steel,
+			Vector3.new(0.5, 0.5, (head - foot).Magnitude),
+			CFrame.lookAt((foot + head) / 2, head),
+			W.SteelDark,
 			Enum.Material.Metal,
-			{ Name = "ColumnBase" }
+			{ Name = "KneeBrace" }
 		)
 	end
 	Kit.box(

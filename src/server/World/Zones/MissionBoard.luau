@@ -87,10 +87,11 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 		Enum.Material.Wood
 	)
 
+	-- the header board is fixed across the front of both posts
 	local header = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, 9.85, -2.7)),
-		Vector2.new(15.6, 1.3),
+		Kit.facingOut(frame, Vector3.new(0, 9.85, -2.97)),
+		Vector2.new(18, 1.3),
 		"MISSION BOARD · CURRENT OPERATIONS",
 		{ Background = W.SignGreen, TextColor = W.OffWhite, PixelsPerStud = 40, Depth = 0.2 }
 	)

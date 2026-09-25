@@ -150,10 +150,14 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 	local style: Architecture.WindowStyle = { Frame = W.DarkGrey }
 	Architecture.windowRow(shell, frame, -halfW + 3, -9, 0, 1, 4, 9, 2, 4, style)
 	Architecture.windowRow(shell, frame, 9, halfW - 3, 0, 1, 4, 9, 2, 4, style)
-	Architecture.windowColumn(shell, frame, -depth + 4, -4, -halfW, -1, 13.4, 16.4, 5, 5, style)
-	Architecture.windowColumn(shell, frame, -depth + 4, -4, halfW, 1, 13.4, 16.4, 5, 5, style)
+	-- clerestory strips high on the side walls, above the map displays
+	Architecture.windowColumn(shell, frame, -depth + 4, -4, -halfW, -1, 15.1, 17.3, 5, 5, style)
+	Architecture.windowColumn(shell, frame, -depth + 4, -4, halfW, 1, 15.1, 17.3, 5, 5, style)
+	-- plain windows on the back, toward the assault course
+	Architecture.plainWindows(shell, frame, -halfW + 4, halfW - 4, -depth, -1, 4, 9, 4, 4, style)
 
 	Architecture.flatRoof(shell, frame, -halfW, halfW, -depth, 0, roofY, 1.2, wall)
+	Architecture.ceiling(shell, frame, -halfW + t, halfW - t, -depth + t, -t, roofY)
 
 	-- roof lantern (raised skylight block) for a distinct silhouette
 	local lx0, lx1, lz0, lz1 = -10, 10, -32, -16
@@ -214,7 +218,7 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 	end
 	local sign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, 15.5, 0.25)),
+		Kit.facingOut(frame, Vector3.new(0, 15.5, 0.18)),
 		Vector2.new(22, 3.6),
 		zone.DisplayName,
 		{ Background = W.SignGreen, Stripe = W.Beige, PixelsPerStud = 20 }
@@ -225,7 +229,7 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 	local plate = Kit.sign(
 		shell,
 		-- between the canopy strut and the first window
-		Kit.facingOut(frame, Vector3.new(9.6, 6, 0.3)),
+		Kit.facingOut(frame, Vector3.new(9.6, 6, 0.055)),
 		Vector2.new(2, 1.4),
 		"BLDG 102",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }

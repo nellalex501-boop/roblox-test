@@ -75,6 +75,26 @@ local function post(parent: Instance, p: Vector3, height: number, diameter: numb
 	Kit.post(parent, CFrame.new(p.X, 0, p.Z), height, diameter or 0.3, W.Steel, Enum.Material.Metal, { Name = "Post" })
 end
 
+-- Square timber or steel member from world point a to world point b.
+local function member(
+	parent: Instance,
+	a: Vector3,
+	b: Vector3,
+	thickness: number,
+	color: Color3,
+	material: Enum.Material,
+	name: string
+)
+	return Kit.part(
+		parent,
+		Vector3.new(thickness, thickness, (b - a).Magnitude),
+		CFrame.lookAt((a + b) / 2, b),
+		color,
+		material,
+		{ Name = name }
+	)
+end
+
 -- Stepped bleachers (four tiers) facing -Z of `cf`, seats on each tier.
 local function bleachers(parent: Instance, cf: CFrame, width: number): Model
 	local model = Kit.model(parent, "Bleachers")
@@ -98,7 +118,7 @@ local function bleachers(parent: Instance, cf: CFrame, width: number): Model
 			{ Name = "Seat", Decor = true }
 		)
 	end
-	-- hand rails at both ends
+	-- hand rails at both ends, each on three posts from the ground
 	for _, x in { -width / 2 - 0.15, width / 2 + 0.15 } do
 		Kit.part(
 			model,
@@ -108,6 +128,14 @@ local function bleachers(parent: Instance, cf: CFrame, width: number): Model
 			Enum.Material.Metal,
 			{ Name = "Rail", Decor = true }
 		)
+		for _, z in { -2.1, 0.1, 2.3 } do
+			-- the rail climbs 0.49 per stud toward the back (+Z)
+			local top = 3.8 + z * math.tan(math.rad(26)) + 0.04
+			Kit.post(model, cf * CFrame.new(x, 0, z), top, 0.12, W.SteelDark, Enum.Material.Metal, {
+				Name = "RailPost",
+				Decor = true,
+			})
+		end
 	end
 	return model
 end
@@ -376,7 +404,8 @@ local function assaultCourse(parent: Instance)
 			Kit.part(
 				beam,
 				Vector3.new(0.35, 2, 0.35),
-				CFrame.new(x, 0.95, z + side * 0.5) * CFrame.Angles(side * math.rad(18), 0, 0),
+				-- legs splay outward at the foot (an A-frame under the log)
+				CFrame.new(x, 0.95, z + side * 0.5) * CFrame.Angles(-side * math.rad(18), 0, 0),
 				timber,
 				Enum.Material.Wood,
 				{ Name = "Trestle" }
@@ -389,13 +418,15 @@ local function assaultCourse(parent: Instance)
 	local wall = Kit.model(folder, "ClimbingWall")
 	Kit.part(wall, Vector3.new(0.6, 6, 6), CFrame.new(-106, 3, z), W.Wood, Enum.Material.WoodPlanks, { Name = "Wall" })
 	for _, dz in { -2.4, 2.4 } do
-		Kit.part(
+		-- from the ground behind the wall up to its back face (0.1 into it)
+		member(
 			wall,
-			Vector3.new(4.6, 0.35, 0.35),
-			CFrame.new(-104, 2.9, z + dz) * CFrame.Angles(0, 0, math.rad(52)),
+			Vector3.new(-102.2, -0.2, z + dz),
+			Vector3.new(-105.8, 5.1, z + dz),
+			0.35,
 			timber,
 			Enum.Material.Wood,
-			{ Name = "Strut" }
+			"Strut"
 		)
 	end
 	grounded(wall)
@@ -403,15 +434,18 @@ local function assaultCourse(parent: Instance)
 	grounded(Props.camoNet(folder, CFrame.new(-95, 0, z), Vector2.new(6, 4), 1.5))
 	-- 6 rope frame: two A-frames, a top beam and three ropes
 	local frame = Kit.model(folder, "RopeFrame")
+	-- A-frames: each leg from its foot up under the top beam, the two legs
+	-- lapped side by side at the apex (not merged in one plane)
 	for _, dz in { -2.6, 2.6 } do
 		for _, dx in { -1, 1 } do
-			Kit.part(
+			member(
 				frame,
-				Vector3.new(0.35, 7.4, 0.35),
-				CFrame.new(-84 + dx * 1.2, 3.6, z + dz) * CFrame.Angles(0, 0, dx * math.rad(-10)),
+				Vector3.new(-84 + dx * 1.5, -0.1, z + dz + dx * 0.18),
+				Vector3.new(-84 + dx * 0.12, 7.25, z + dz + dx * 0.18),
+				0.35,
 				timber,
 				Enum.Material.Wood,
-				{ Name = "Leg" }
+				"Leg"
 			)
 		end
 	end
@@ -466,7 +500,7 @@ local function treeGroups(parent: Instance)
 			{ -72, 158 },
 			{ -64, 168 },
 			-- by the assault course and the water tower
-			{ -157, -136 },
+			{ -146, -141 },
 			{ -122, -136 },
 			-- south-east lawn
 			{ 124, 168 },

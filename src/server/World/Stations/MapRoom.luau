@@ -21,13 +21,14 @@ MapRoom.FloorY = 0.6
 type Slot = { Map: string, Pos: Vector3, Facing: Vector3 }
 
 MapRoom.Slots = {
-	{ Map = "TRAIN_STATION", Pos = Vector3.new(-24.5, 0, -14), Facing = Vector3.new(1, 0, 0) },
-	{ Map = "CATHEDRAL", Pos = Vector3.new(-24.5, 0, -32), Facing = Vector3.new(1, 0, 0) },
-	{ Map = "RIVER_CROSSING", Pos = Vector3.new(-16, 0, -46.4), Facing = Vector3.new(0, 0, 1) },
-	{ Map = "INDUSTRIAL_HEART", Pos = Vector3.new(0, 0, -46.4), Facing = Vector3.new(0, 0, 1) },
-	{ Map = "AIRBASE", Pos = Vector3.new(16, 0, -46.4), Facing = Vector3.new(0, 0, 1) },
-	{ Map = "DAM", Pos = Vector3.new(24.5, 0, -32), Facing = Vector3.new(-1, 0, 0) },
-	{ Map = "HIGHWAY", Pos = Vector3.new(24.5, 0, -14), Facing = Vector3.new(-1, 0, 0) },
+	-- frames hung on the walls (inner faces at x = +-25 and z = -47), 0.02 in
+	{ Map = "TRAIN_STATION", Pos = Vector3.new(-24.67, 0, -14), Facing = Vector3.new(1, 0, 0) },
+	{ Map = "CATHEDRAL", Pos = Vector3.new(-24.67, 0, -32), Facing = Vector3.new(1, 0, 0) },
+	{ Map = "RIVER_CROSSING", Pos = Vector3.new(-16, 0, -46.67), Facing = Vector3.new(0, 0, 1) },
+	{ Map = "INDUSTRIAL_HEART", Pos = Vector3.new(0, 0, -46.67), Facing = Vector3.new(0, 0, 1) },
+	{ Map = "AIRBASE", Pos = Vector3.new(16, 0, -46.67), Facing = Vector3.new(0, 0, 1) },
+	{ Map = "DAM", Pos = Vector3.new(24.67, 0, -32), Facing = Vector3.new(-1, 0, 0) },
+	{ Map = "HIGHWAY", Pos = Vector3.new(24.67, 0, -14), Facing = Vector3.new(-1, 0, 0) },
 } :: { Slot }
 
 local function display(parent: Instance, roomFrame: CFrame, slot: Slot)
@@ -61,21 +62,23 @@ local function display(parent: Instance, roomFrame: CFrame, slot: Slot)
 	gui.Name = "MapPreview"
 	MapDraw.preview(gui, info, size.X * pps, size.Y * pps, { labels = true })
 	Interactions.attach(screen, "MapInfo", slot.Map, info.Name)
-	-- name plate under the display
-	local plate = Kit.sign(model, look * CFrame.new(0, -size.Y / 2 - 1.4, -0.1), Vector2.new(size.X, 1.9), info.Name, {
+	-- name plate on the wall under the display (its back 0.02 into the
+	-- wall, its face 0.1 behind the frame's)
+	local plate = Kit.sign(model, look * CFrame.new(0, -size.Y / 2 - 1.4, 0.2), Vector2.new(size.X, 1.9), info.Name, {
 		Background = W.Charcoal,
 		TextColor = W.OffWhite,
 		Stripe = W.Beige,
 		Subtitle = ("%s · %s PLAYERS"):format(info.Size, info.Players),
 		PixelsPerStud = 40,
 		MaxDistance = 120,
+		Depth = 0.3,
 	})
 	plate.Name = "NamePlate"
-	-- small spot lamp above
+	-- picture lamp sitting on the frame's top edge, leaning out over it
 	local lamp = Kit.part(
 		model,
-		Vector3.new(2.4, 0.5, 0.8),
-		look * CFrame.new(0, size.Y / 2 + 1, -1),
+		Vector3.new(2.4, 0.4, 1),
+		look * CFrame.new(0, size.Y / 2 + 0.7, -0.5),
 		W.SteelDark,
 		Enum.Material.Metal,
 		{

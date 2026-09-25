@@ -231,12 +231,14 @@ function EventArea.build(parent: Instance): (Model, CFrame)
 	-- billboard facing the plaza (text set by applyEvent)
 	local bb = EventArea.Billboard
 	local bbFrame = frame * CFrame.new(bb.X, 0, bb.Z) * CFrame.Angles(0, math.rad(-55), 0)
+	-- the posts stand behind the board (its face and text stay clear) and
+	-- stop under the top rail
 	for _, x in { -8, 8 } do
 		Kit.box(
 			shell,
 			bbFrame,
-			Vector3.new(x - 0.5, 0, -0.5),
-			Vector3.new(x + 0.5, 16, 0.5),
+			Vector3.new(x - 0.5, 0, -1.3),
+			Vector3.new(x + 0.5, 16.2, -0.28),
 			W.SteelDark,
 			Enum.Material.Metal,
 			{ Name = "BillboardPost" }
@@ -272,14 +274,21 @@ function EventArea.build(parent: Instance): (Model, CFrame)
 		{ Name = "BillboardFrame" }
 	)
 
+	local signX = gate.Offset - gate.Width / 2 - 6
 	local sign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(gate.Offset - gate.Width / 2 - 6, 3.2, 0.4)),
+		Kit.facingOut(frame, Vector3.new(signX, 3.2, 0.4)),
 		Vector2.new(7, 2.4),
 		zone.DisplayName,
 		{ Background = W.SignGreen, Stripe = W.HazardYellow, PixelsPerStud = 30 }
 	)
 	sign.Name = "ZoneName"
+	-- on two posts just outside the fence, touching the board's back
+	for _, dx in { -2.8, 2.8 } do
+		Kit.post(shell, frame * CFrame.new(signX + dx, 0, 0.07), 4.4, 0.3, W.SteelDark, Enum.Material.Metal, {
+			Name = "SignPost",
+		})
+	end
 
 	Kit.model(model, "Dressing")
 	return model, frame

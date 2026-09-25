@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local World = script.Parent.Parent
+local Common = require(World.Stations.Common)
 local Kit = require(World.Kit)
 local Props = require(World.Props)
 local Layout = require(ReplicatedStorage.Lobby.Config.Layout)
@@ -31,14 +32,18 @@ local function deskCrt(parent: Instance, cf: CFrame)
 		Name = "CrtCase",
 		Decor = true,
 	})
-	Kit.part(
+	local glass = Kit.part(
 		parent,
 		Vector3.new(1.2, 0.9, 0.05),
-		cf * CFrame.new(0, 0.75, 0.72),
+		cf * CFrame.new(0, 0.75, 0.72) * BACK,
 		Color3.fromRGB(40, 64, 44),
 		Enum.Material.SmoothPlastic,
 		{ Name = "CrtGlass", Decor = true }
 	)
+	-- a live watch screen, not a dead one
+	local _, content = Common.screen(glass, "WatchCrt", 60)
+	Common.line(content, "Net", "C3-NET", 0.05, 0.4, Common.Phosphor)
+	Common.line(content, "Link", "LINK OK", 0.52, 0.4, Common.Amber)
 	Kit.part(
 		parent,
 		Vector3.new(1.5, 0.12, 0.55),
@@ -118,12 +123,14 @@ local function operationsCenter(parent: Instance)
 		{ x = 30, label = "MOSCOW", hours = 17.6 },
 	}
 	for _, c in clocks do
-		Props.wallClock(folder, Kit.facingOut(frame, Vector3.new(c.x, 12, -62.2)), c.label, c.hours)
+		-- on the back wall (inner face z = -62.8)
+		Props.wallClock(folder, Kit.facingOut(frame, Vector3.new(c.x, 12, -62.7)), c.label, c.hours)
 	end
 	-- entrance side: filing cabinets and a water cooler
 	for i = 0, 2 do
-		grounded(Props.cabinet(folder, frame * CFrame.new(-32.6, floor, -6 - i * 2.2) * RIGHT))
-		grounded(Props.cabinet(folder, frame * CFrame.new(32.6, floor, -6 - i * 2.2) * LEFT))
+		-- clear of the dado rail along the wall
+		grounded(Props.cabinet(folder, frame * CFrame.new(-32.2, floor, -6 - i * 2.2) * RIGHT))
+		grounded(Props.cabinet(folder, frame * CFrame.new(32.2, floor, -6 - i * 2.2) * LEFT))
 	end
 	grounded(Props.waterCooler(folder, frame * CFrame.new(32.6, floor, -14)))
 	grounded(Props.fireExtinguisher(folder, frame * CFrame.new(-33, floor, -16)))
@@ -156,14 +163,37 @@ local function operationsCenter(parent: Instance)
 	-- east wing: briefing room (rows of chairs facing the briefing board)
 	local briefing = Kit.folder(folder, "BriefingRoom")
 	-- board on the outer (east) wall; three rows of chairs face it (+X)
-	Kit.part(
+	local screen = Kit.part(
 		briefing,
 		Vector3.new(0.3, 7, 11),
-		frame * CFrame.new(48.4, floor + 7, -54),
+		-- against the wall's inner face (x = 48.8), 0.02 into it
+		frame * CFrame.new(48.67, floor + 7, -54),
 		W.Beige,
 		Enum.Material.SmoothPlastic,
 		{ Name = "BriefingBoard" }
 	)
+	-- the projected slide: a situation sketch and three points
+	local slide = Kit.surface(screen, Enum.NormalId.Left, 30, 0.6, 120)
+	slide.Name = "BriefingSlide"
+	Kit.text(slide, {
+		Name = "Title",
+		Text = "SITREP 0600Z · FULDA GAP",
+		Color = W.Charcoal,
+		Position = UDim2.fromScale(0.05, 0.05),
+		Size = UDim2.fromScale(0.9, 0.12),
+	})
+	Kit.frame(slide, UDim2.fromScale(0.05, 0.19), UDim2.fromScale(0.9, 0.012), W.MutedRed)
+	for i, line in { "1  ENEMY: 8TH GUARDS ARMY", "2  FRIENDLY: 11TH ACR SCREEN", "3  MISSION: HOLD THE GAP" } do
+		Kit.text(slide, {
+			Name = "Point" .. i,
+			Text = line,
+			Color = W.Charcoal,
+			Font = Theme.font("Mono", Enum.FontWeight.Bold),
+			XAlign = Enum.TextXAlignment.Left,
+			Position = UDim2.fromScale(0.06, 0.26 + (i - 1) * 0.2),
+			Size = UDim2.fromScale(0.88, 0.14),
+		})
+	end
 	for row = 0, 2 do
 		for seat = 0, 3 do
 			local cf = frame * CFrame.new(36.5 + row * 2.8, floor, -50 - seat * 2.3) * RIGHT
@@ -184,7 +214,8 @@ local function mapRoom(parent: Instance)
 	-- four fluorescent fittings under the 18-stud ceiling
 	for _, x in { -12, 12 } do
 		for _, z in { -12, -36 } do
-			Props.ceilingLight(folder, frame * CFrame.new(x, 18, z), true, 6, 22)
+			-- mounted on the ceiling (underside at 17.8)
+			Props.ceilingLight(folder, frame * CFrame.new(x, 17.8, z), true, 6, 22)
 		end
 	end
 	-- chairs around the planning table (centre (0, -26), 20 x 13)
@@ -197,7 +228,8 @@ local function mapRoom(parent: Instance)
 	local side = frame * CFrame.new(21.5, floor, -4.5) * LEFT
 	grounded(Props.desk(folder, side, 4))
 	Props.coffeeUrn(folder, side * CFrame.new(-0.6, 2.93, 0))
-	Props.wallClock(folder, frame * CFrame.new(0, 14.2, -1.4), "ZULU", 14.6)
+	-- over the door, on the front wall's inner face (z = -1)
+	Props.wallClock(folder, frame * CFrame.new(0, 14.2, -1.1), "ZULU", 14.6)
 end
 
 -- Command HQ --------------------------------------------------------------------------
@@ -257,8 +289,16 @@ local function garage(parent: Instance)
 	local floor = 0.4
 	-- high-bay fittings over the service bays and the console area (the
 	-- spotlight truss lights the turntable), all lit, reaching the floor
-	for _, spot in { { -26, -16 }, { 26, -16 }, { -26, -48 }, { 26, -48 }, { 0, -8 } } do
-		Props.ceilingLight(folder, frame * CFrame.new(spot[1], 21.5, spot[2]), true, 7, 28)
+	-- (each on two drop cords from a tie beam, underside at 23.2)
+	for _, spot in { { -26, -23 }, { 26, -23 }, { -26, -45 }, { 26, -45 }, { 0, -8 } } do
+		local fitting = frame * CFrame.new(spot[1], 21.5, spot[2])
+		Props.ceilingLight(folder, fitting, true, 7, 28)
+		for _, dx in { -2.8, 2.8 } do
+			Kit.part(folder, Vector3.new(0.08, 1.8, 0.08), fitting * CFrame.new(dx, 0.85, 0), W.Charcoal, nil, {
+				Name = "Cord",
+				Decor = true,
+			})
+		end
 	end
 	-- workshop walls: benches, tyres, drums, extinguishers
 	for _, side in { -1, 1 } do
@@ -290,9 +330,13 @@ local function canteen(parent: Instance)
 	local frame = Layout.frame(Layout.Zones.SocialArea) * CFrame.new(0, 0, -44)
 	local floor = 0.65
 	for _, x in { -16, 0, 16 } do
-		Props.ceilingLight(folder, frame * CFrame.new(x, 10.6, -13), true, 6, 16)
+		-- mounted on the ceiling (underside at 10.8)
+		Props.ceilingLight(folder, frame * CFrame.new(x, 10.8, -13), true, 6, 16)
 	end
-	for _, spot in { { -17, -7 }, { -17, -15 }, { 17, -7 }, { 17, -15 } } do
+	-- eight tables in two blocks either side of the aisle from the door
+	for _, spot in
+		{ { -17, -7 }, { -17, -15 }, { -8, -7 }, { -8, -15 }, { 8, -7 }, { 8, -15 }, { 17, -7 }, { 17, -15 } }
+	do
 		local table_ = Kit.model(folder, "CanteenTable")
 		Kit.part(
 			table_,
@@ -330,7 +374,85 @@ local function canteen(parent: Instance)
 	)
 	grounded(counter)
 	Props.coffeeUrn(folder, frame * CFrame.new(-5, floor + 3.4, -23.5))
-	Kit.sign(folder, frame * CFrame.new(0, 7.6, -24.8) * BACK, Vector2.new(9, 2.6), "HEUTE: ERBSENSUPPE", {
+	-- till, tray stack and a bread basket on the counter
+	local counterTop = floor + 3.4
+	Kit.part(folder, Vector3.new(1.4, 1, 1.1), frame * CFrame.new(4.5, counterTop + 0.5, -23.4), W.Beige, nil, {
+		Name = "Till",
+		Decor = true,
+	})
+	Kit.part(folder, Vector3.new(1.8, 0.6, 1.3), frame * CFrame.new(7.2, counterTop + 0.3, -23.3), W.SteelDark, nil, {
+		Name = "Trays",
+		Decor = true,
+	})
+	Kit.part(
+		folder,
+		Vector3.new(1.3, 0.5, 0.9),
+		frame * CFrame.new(1.6, counterTop + 0.25, -23.4),
+		W.Wood,
+		Enum.Material.Wood,
+		{
+			Name = "BreadBasket",
+			Decor = true,
+		}
+	)
+	-- wall clock on the back wall over the till (there is no room above
+	-- the door under the ceiling), a dartboard and a corner television
+	Props.wallClock(folder, frame * CFrame.new(7.2, 8.8, -24.9) * BACK, "BONN", 15.6)
+	Kit.cylinder(
+		folder,
+		0.2,
+		1.8,
+		-- on the solid wall between the last side window and the back wall
+		frame * CFrame.new(-26.9, floor + 5.6, -22.6),
+		Color3.fromRGB(46, 44, 40),
+		Enum.Material.Fabric,
+		{ Name = "Dartboard", Decor = true }
+	)
+	Kit.cylinder(
+		folder,
+		0.25,
+		0.6,
+		frame * CFrame.new(-26.825, floor + 5.6, -22.6),
+		W.MutedRed,
+		Enum.Material.Fabric,
+		{ Name = "Bullseye", Decor = true }
+	)
+	local tv = Kit.model(folder, "Television")
+	Kit.part(tv, Vector3.new(2, 0.2, 2), frame * CFrame.new(-26, 8.1, -2.3), W.SteelDark, Enum.Material.Metal, {
+		Name = "Bracket",
+	})
+	Kit.part(tv, Vector3.new(1.8, 1.7, 2.2), frame * CFrame.new(-25.9, 9.05, -2.3), W.Charcoal, nil, {
+		Name = "TvCase",
+	})
+	local tvGlass = Kit.part(
+		tv,
+		Vector3.new(1.7, 1.2, 0.1),
+		frame * CFrame.new(-24.96, 9.05, -2.3) * CFrame.Angles(0, -math.pi / 2, 0),
+		Color3.fromRGB(40, 64, 44),
+		nil,
+		{ Name = "TvGlass", Decor = true }
+	)
+	local _, tvContent = Common.screen(tvGlass, "CanteenTv", 50)
+	Common.line(tvContent, "Channel", "AFN", 0.08, 0.45, Common.Amber)
+	Common.line(tvContent, "Show", "NEWS", 0.52, 0.4, Common.Phosphor)
+	-- coat rack by the door
+	local rack = Kit.model(folder, "CoatRack")
+	Kit.post(rack, frame * CFrame.new(-7, floor, -2.4), 6.4, 0.25, W.BrownDark, Enum.Material.Wood, { Name = "Stand" })
+	Kit.post(rack, frame * CFrame.new(-7, floor, -2.4), 0.2, 1.6, W.BrownDark, Enum.Material.Wood, { Name = "Foot" })
+	Kit.part(
+		rack,
+		Vector3.new(1.2, 2.2, 0.7),
+		frame * CFrame.new(-7, floor + 4.4, -2.05),
+		W.OliveDark,
+		Enum.Material.Fabric,
+		{
+			Name = "Parka",
+			Decor = true,
+		}
+	)
+	grounded(rack)
+	-- menu board on the back wall (inner face z = -25), 0.02 into it
+	Kit.sign(folder, frame * CFrame.new(0, 7.6, -24.945) * BACK, Vector2.new(9, 2.6), "HEUTE: ERBSENSUPPE", {
 		Background = W.Charcoal,
 		TextColor = W.Paper,
 		Subtitle = "KAFFEE 0,50 DM · TEE 0,40 DM",

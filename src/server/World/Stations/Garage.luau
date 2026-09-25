@@ -182,12 +182,13 @@ local function spotlightTruss(parent: Instance, frame: CFrame)
 	end
 	local target = (frame * CFrame.new(t.X, Garage.FloorY + 3.5, t.Z)).Position
 	for _, corner in { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } } do
-		local mount = frame * CFrame.new(t.X + corner[1] * (half - 1.2), y - 0.4, t.Z + corner[2] * (half - 1.2))
-		-- hanging cable to the roof
+		-- the yoke hangs from the side beam, 1.2 in from the corner
+		local mount = frame * CFrame.new(t.X + corner[1] * (half - 1.2), y - 0.4, t.Z + corner[2] * half)
+		-- hanging cable up to the tie beam above the truss corner
 		Kit.part(
 			model,
-			Vector3.new(0.08, 5.6, 0.08),
-			frame * CFrame.new(t.X + corner[1] * half, y + 3.2, t.Z + corner[2] * half),
+			Vector3.new(0.08, 4.4, 0.08),
+			frame * CFrame.new(t.X + corner[1] * half, y + 2.55, t.Z + corner[2] * half),
 			W.Charcoal,
 			nil,
 			{ Name = "TrussCable", Decor = true }
@@ -232,7 +233,9 @@ local function backdrop(parent: Instance, frame: CFrame)
 	local board = Kit.part(
 		parent,
 		Vector3.new(34, 12, 0.3),
-		Kit.facingOut(frame, Vector3.new(0, Garage.FloorY + 9.5, -62.45)),
+		-- hung on the back wall (inner face at z = -63, above the 4-stud
+		-- concrete band), 0.02 into it
+		Kit.facingOut(frame, Vector3.new(0, Garage.FloorY + 10, -62.87)),
 		Color3.fromRGB(46, 50, 40),
 		Enum.Material.SmoothPlastic,
 		{ Name = "ShowroomBackdrop" }
@@ -330,15 +333,18 @@ end
 local function engineHoist(parent: Instance, cf: CFrame)
 	local model = Kit.model(parent, "EngineHoist")
 	local steel = W.SteelDark
+	-- two A-frames: each leg runs from its foot up to the apex under the
+	-- beam; the second leg of a frame sits 0.4 inboard so the pair never
+	-- share a face at the apex
 	for _, x in { -3.6, 3.6 } do
-		for _, z in { -1.4, 1.4 } do
-			local lean = if z < 0 then -0.2 else 0.2
-			-- the two legs of each A-frame stand side by side
+		for _, z in { -1.6, 1.6 } do
 			local lx = x + (if z < 0 then 0 else -math.sign(x) * 0.4)
+			local foot = (cf * CFrame.new(lx, 0, z)).Position
+			local apex = (cf * CFrame.new(lx, 9.05, z * 0.08)).Position
 			Kit.part(
 				model,
-				Vector3.new(0.35, 9.2, 0.35),
-				cf * CFrame.new(lx, 4.5, z * 0.5) * CFrame.Angles(lean, 0, 0),
+				Vector3.new(0.35, 0.35, (apex - foot).Magnitude),
+				CFrame.lookAt((foot + apex) / 2, apex),
 				steel,
 				Enum.Material.Metal,
 				{ Name = "HoistLeg" }
@@ -348,11 +354,12 @@ local function engineHoist(parent: Instance, cf: CFrame)
 	Kit.part(model, Vector3.new(8, 0.5, 0.5), cf * CFrame.new(0, 9.2, 0), W.HazardYellow, Enum.Material.Metal, {
 		Name = "HoistBeam",
 	})
-	Kit.part(model, Vector3.new(0.9, 1.1, 0.7), cf * CFrame.new(0.6, 8.3, 0), W.Charcoal, Enum.Material.Metal, {
+	-- the chain block hangs from the beam, the chain from the block
+	Kit.part(model, Vector3.new(0.9, 1.1, 0.7), cf * CFrame.new(0.6, 8.42, 0), W.Charcoal, Enum.Material.Metal, {
 		Name = "ChainBlock",
 		Decor = true,
 	})
-	Kit.part(model, Vector3.new(0.12, 3.2, 0.12), cf * CFrame.new(0.6, 6.1, 0), W.Steel, Enum.Material.Metal, {
+	Kit.part(model, Vector3.new(0.12, 3.2, 0.12), cf * CFrame.new(0.6, 6.3, 0), W.Steel, Enum.Material.Metal, {
 		Name = "Chain",
 		Decor = true,
 	})
@@ -473,10 +480,11 @@ local function paintBooth(parent: Instance, frame: CFrame)
 	Kit.part(model, Vector3.new(12.6, 0.6, 6), base * CFrame.new(0, 12.3, -1.5), W.SteelDark, Enum.Material.Metal, {
 		Name = "BoothRoof",
 	})
+	-- back wall from the floor up to the booth roof
 	Kit.part(
 		model,
-		Vector3.new(12, 10, 0.3),
-		base * CFrame.new(0, 5.4, -4.4),
+		Vector3.new(12, 12, 0.3),
+		base * CFrame.new(0, 6, -4.4),
 		Color3.fromRGB(150, 150, 140),
 		Enum.Material.Concrete,
 		{

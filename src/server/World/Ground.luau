@@ -168,6 +168,19 @@ function Ground.build(parent: Instance, detailed: boolean)
 		)
 		part.CastShadow = false
 	end
+	-- footpaths along the barrack fronts (sidewalk height)
+	for _, rect in Layout.Paths do
+		local part = rectBox(
+			walks,
+			rect,
+			Ground.RoadTop,
+			Ground.PavedTop - 0.1,
+			W.ConcreteLight,
+			Enum.Material.Pavement,
+			"Footpath"
+		)
+		part.CastShadow = false
+	end
 
 	return folder
 end
@@ -226,12 +239,24 @@ function Ground.markings(parent: Instance)
 	local folder = Kit.folder(parent, "RoadMarkings")
 	local north, south = Layout.Roads[1], Layout.Roads[2]
 	local west, east = Layout.Roads[3], Layout.Roads[4]
-	local junctions = {
-		{ MinX = west.MinX, MaxX = west.MaxX, MinZ = north.MinZ, MaxZ = north.MaxZ },
-		{ MinX = east.MinX, MaxX = east.MaxX, MinZ = north.MinZ, MaxZ = north.MaxZ },
-		{ MinX = west.MinX, MaxX = west.MaxX, MinZ = south.MinZ, MaxZ = south.MaxZ },
-		{ MinX = east.MinX, MaxX = east.MaxX, MinZ = south.MinZ, MaxZ = south.MaxZ },
-	}
+	-- every place a north-south road meets or crosses an east-west one
+	local junctions = {}
+	for _, a in Layout.Roads do
+		for _, b in Layout.Roads do
+			local vertical = (a.MaxZ - a.MinZ) > (a.MaxX - a.MinX)
+			local horizontal = (b.MaxX - b.MinX) > (b.MaxZ - b.MinZ)
+			if
+				vertical
+				and horizontal
+				and a.MinX <= b.MaxX
+				and a.MaxX >= b.MinX
+				and a.MinZ <= b.MaxZ
+				and a.MaxZ >= b.MinZ
+			then
+				table.insert(junctions, { MinX = a.MinX, MaxX = a.MaxX, MinZ = b.MinZ, MaxZ = b.MaxZ })
+			end
+		end
+	end
 
 	-- crossings in front of each entrance
 	local crossings = {}
@@ -258,10 +283,14 @@ function Ground.markings(parent: Instance)
 	addCrossing(south, Layout.Zones.EventArea.Facade.X, 8)
 	addCrossing(south, Layout.Zones.Leaderboards.Facade.X, 8)
 
-	-- dashed centre lines
+	-- dashed centre lines (not on the single-track service lanes)
 	local y = Ground.RoadTop
 	for _, road in Layout.Roads do
 		local horizontal = (road.MaxX - road.MinX) > (road.MaxZ - road.MinZ)
+		local width = if horizontal then road.MaxZ - road.MinZ else road.MaxX - road.MinX
+		if width < 11 then
+			continue
+		end
 		local length = if horizontal then road.MaxX - road.MinX else road.MaxZ - road.MinZ
 		local start = if horizontal then road.MinX else road.MinZ
 		local centre = if horizontal then (road.MinZ + road.MaxZ) / 2 else (road.MinX + road.MaxX) / 2

@@ -30,6 +30,17 @@ export type Zone = {
 
 export type Rect = { MinX: number, MaxX: number, MinZ: number, MaxZ: number }
 
+export type Barrack = {
+	Facade: Vector3,
+	Inward: Vector3,
+	Length: number,
+	Depth: number,
+	Number: string,
+	-- the number plate on the gable at the facade's left end instead of
+	-- beside the first window (where the facade faces a wall close by)
+	NumberOnGable: boolean?,
+}
+
 local Layout = {}
 
 Layout.GroundY = 0
@@ -56,15 +67,52 @@ Layout.Spawn = {
 Layout.RoadWidth = 12
 Layout.SidewalkWidth = 3
 
--- Paved roads as axis-aligned rectangles (drawn in this order).
+-- Paved roads as axis-aligned rectangles (drawn in this order). The first
+-- four frame the parade square; the two service lanes behind the Garage and
+-- the Command HQ join the north and south roads into one loop (no road
+-- ends in the grass). The public road outside the fence stays last.
 Layout.Roads = {
 	-- the north road runs out through the main gate to the public road
-	{ Name = "NorthRoad", MinX = -150, MaxX = 204, MinZ = -64, MaxZ = -52 },
-	{ Name = "SouthRoad", MinX = -150, MaxX = 150, MinZ = 52, MaxZ = 64 },
+	{ Name = "NorthRoad", MinX = -160.9, MaxX = 204, MinZ = -64, MaxZ = -52 },
+	{ Name = "SouthRoad", MinX = -160.9, MaxX = 146.5, MinZ = 52, MaxZ = 64 },
 	{ Name = "WestRoad", MinX = -80, MaxX = -68, MinZ = -64, MaxZ = 64 },
 	{ Name = "EastRoad", MinX = 68, MaxX = 80, MinZ = -64, MaxZ = 64 },
+	{ Name = "WestLane", MinX = -160.9, MaxX = -152.4, MinZ = -52, MaxZ = 52 },
+	{ Name = "EastLane", MinX = 136.5, MaxX = 146.5, MinZ = -52, MaxZ = 52 },
 	{ Name = "OutsideRoad", MinX = 204, MaxX = 216, MinZ = -260, MaxZ = 260 },
 } :: { Rect & { Name: string } }
+
+-- Barrack blocks: facade centre, direction into the block, length along
+-- the facade and depth. Each front has a footpath to its doors.
+Layout.Barracks = {
+	{ Facade = Vector3.new(150, 0, -8), Inward = Vector3.new(1, 0, 0), Length = 70, Depth = 26, Number = "BLDG 201" },
+	{
+		Facade = Vector3.new(-164, 0, -12),
+		Inward = Vector3.new(-1, 0, 0),
+		Length = 80,
+		Depth = 22,
+		Number = "BLDG 202",
+	},
+	-- set back from the Hall of Commanders, its doors on an open lawn; its
+	-- number faces the path that leads to it
+	{
+		Facade = Vector3.new(156, 0, 132),
+		Inward = Vector3.new(1, 0, 0),
+		Length = 56,
+		Depth = 24,
+		Number = "BLDG 203",
+		NumberOnGable = true,
+	},
+} :: { Barrack }
+
+-- Footpaths (same height as the sidewalks): along the barrack fronts, and
+-- from the south road's end to the south block.
+Layout.Paths = {
+	{ MinX = 146.5, MaxX = 150, MinZ = -43, MaxZ = 27 },
+	{ MinX = -164, MaxX = -160.9, MinZ = -52, MaxZ = 28 },
+	{ MinX = 146.5, MaxX = 156, MinZ = 64, MaxZ = 67 },
+	{ MinX = 152.5, MaxX = 156, MinZ = 67, MaxZ = 160 },
+} :: { Rect }
 
 -- Staff parking (privately owned vehicles) south of the Hall of
 -- Commanders: a two-way access lane off the south road and a double-loaded

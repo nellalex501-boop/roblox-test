@@ -59,7 +59,13 @@ function measure(node, fontSize, maxWidth) {
   measurer.style.width = node.wrapped && maxWidth ? maxWidth + "px" : "auto";
   setText(measurer, node);
   const r = measurer.getBoundingClientRect();
-  return { w: r.width, h: r.height };
+  // a word longer than the wrap width overflows the box: count the overflow
+  // (Roblox's TextScaled shrinks the text until the longest word fits).
+  // scrollWidth/Height are rounded to whole pixels, so only an overflow of
+  // more than a pixel counts (a 472.5 px box reports 473)
+  const sw = measurer.scrollWidth > r.width + 1 ? measurer.scrollWidth : r.width;
+  const sh = measurer.scrollHeight > r.height + 1 ? measurer.scrollHeight : r.height;
+  return { w: sw, h: sh };
 }
 
 function setText(el, node) {

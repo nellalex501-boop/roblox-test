@@ -114,10 +114,12 @@ local function tracks(
 	skirt: boolean
 )
 	local x = side * (halfWidth - width / 2)
+	-- the belt runs down under the road wheels to the ground (its lower run
+	-- carries the vehicle), up to the return run at 0.86 of the height
 	box(
 		ctx,
-		Vector3.new(width, height * 0.72, length - height * 0.7),
-		Vector3.new(x, height * 0.5, 0),
+		Vector3.new(width, height * 0.86, length - height * 0.7),
+		Vector3.new(x, height * 0.43, 0),
 		BLACK,
 		Enum.Material.SmoothPlastic,
 		"Track"
@@ -224,30 +226,36 @@ Builders.MBT_EAST = function(ctx)
 	box(ctx, Vector3.new(11.6, 0.5, 16), Vector3.new(0, 3.25, 0.5), p.Base, nil, "Deck")
 	wedge(ctx, Vector3.new(11.6, 1, 2.6), Vector3.new(0, 3, -8.8), -1, p.Base)
 	wedgeUnder(ctx, Vector3.new(7, 1.4, 1.8), Vector3.new(0, 1.9, -8.2), -1, p.Base)
-	-- low rounded turret: stacked cylinders
+	-- low cast turret: a turret ring, a faceted body with a sloped front
+	-- and sloped cheeks, so it reads as a dome rather than a stack of discs
 	local turret = ctx.frame * CFrame.new(0, 3.5, 0.6)
 	Kit.cylinder(
 		ctx.model,
-		1.6,
+		1,
 		8.4,
-		turret * CFrame.new(0, 0.8, 0) * CFrame.Angles(0, 0, math.pi / 2),
+		turret * CFrame.new(0, 0.5, 0) * CFrame.Angles(0, 0, math.pi / 2),
 		p.Base,
 		Enum.Material.SmoothPlastic,
 		{ Name = "Turret" }
 	)
-	Kit.cylinder(
-		ctx.model,
-		0.9,
-		6.6,
-		turret * CFrame.new(0, 2, 0.3) * CFrame.Angles(0, 0, math.pi / 2),
-		p.Base,
-		Enum.Material.SmoothPlastic,
-		{ Name = "TurretTop" }
-	)
-	box(ctx, Vector3.new(1.4, 1.1, 1.4), Vector3.new(0, 4.4, -3.9), p.Accent, nil, "Mantlet")
-	barrel(ctx, Vector3.new(0, 4.4, -4.4), 12.5, 0.6)
-	box(ctx, Vector3.new(1.3, 0.8, 1.3), Vector3.new(-1.7, 5.9, 1.4), p.Accent, nil, "Hatch")
-	box(ctx, Vector3.new(1.1, 1, 1.4), Vector3.new(1.9, 5.8, 0.4), p.Accent, nil, "Sight")
+	box(ctx, Vector3.new(4.6, 1.3, 5.2), Vector3.new(0, 5.15, 1.4), p.Base, nil, "TurretTop")
+	wedge(ctx, Vector3.new(4.6, 1.3, 2.4), Vector3.new(0, 5.15, -2.4), -1, p.Base, "TurretFront")
+	for _, side in { -1, 1 } do
+		-- cheek wedge along the top's side, sloping down and outward (its
+		-- low edge faces +-X)
+		Kit.wedge(
+			ctx.model,
+			Vector3.new(5.2, 1.3, 1.6),
+			ctx.frame * CFrame.new(side * 3.1, 5.15, 1.4) * CFrame.Angles(0, -side * math.pi / 2, 0),
+			p.Base,
+			Enum.Material.SmoothPlastic,
+			{ Name = "TurretCheek" }
+		)
+	end
+	box(ctx, Vector3.new(1.4, 1.1, 1.4), Vector3.new(0, 4.9, -4.2), p.Accent, nil, "Mantlet")
+	barrel(ctx, Vector3.new(0, 4.9, -4.7), 12.5, 0.6)
+	box(ctx, Vector3.new(1.3, 0.5, 1.3), Vector3.new(-1.2, 6.05, 2.2), p.Accent, nil, "Hatch")
+	box(ctx, Vector3.new(1.0, 0.9, 1.3), Vector3.new(1.3, 6.2, 0.6), p.Accent, nil, "Sight")
 	-- rear fuel drums (a classic Soviet silhouette cue)
 	for _, x in { -2.2, 2.2 } do
 		Kit.cylinder(
@@ -264,7 +272,7 @@ Builders.MBT_EAST = function(ctx)
 	for _, side in { -1, 1 } do
 		box(ctx, Vector3.new(0.9, 0.9, 5), Vector3.new(side * 5.3, 3.9, 2.4), p.Accent, nil, "Stowage")
 	end
-	antenna(ctx, Vector3.new(-2.6, 6, 2.6), 5)
+	antenna(ctx, Vector3.new(-1.8, 5.8, 3.4), 5)
 end
 
 Builders.IFV_WEST = function(ctx)
@@ -478,80 +486,148 @@ Builders.TRUCK_EAST = function(ctx)
 	truck(ctx, true)
 end
 
+-- Civil and light vehicles at true proportions (0.3 m per stud): a
+-- saloon is ~16 studs long, a hatchback ~12, a van ~15.
+local LAMP = Color3.fromRGB(222, 218, 196)
+local TAIL = Color3.fromRGB(150, 44, 38)
+
+-- Headlights, tail lights, grille and number plates on a body whose ends
+-- are at +-halfL (front at -Z), lamps at height y.
+local function carDetails(ctx: Ctx, halfL: number, halfW: number, y: number, grille: boolean?)
+	for _, side in { -1, 1 } do
+		box(ctx, Vector3.new(1, 0.5, 0.1), Vector3.new(side * (halfW - 0.8), y, -halfL - 0.05), LAMP, nil, "Headlight")
+		box(
+			ctx,
+			Vector3.new(0.9, 0.45, 0.1),
+			Vector3.new(side * (halfW - 0.75), y + 0.05, halfL + 0.05),
+			TAIL,
+			nil,
+			"TailLight"
+		)
+	end
+	if grille ~= false then
+		box(ctx, Vector3.new(halfW, 0.5, 0.1), Vector3.new(0, y, -halfL - 0.05), W.Charcoal, nil, "Grille")
+	end
+	for _, z in { -halfL - 0.04, halfL + 0.04 } do
+		box(ctx, Vector3.new(1.6, 0.42, 0.08), Vector3.new(0, y - 0.62, z), W.OffWhite, nil, "Plate")
+	end
+end
+
 Builders.JEEP = function(ctx)
 	local p = ctx.paint
-	for _, z in { -3.3, 3.1 } do
+	-- M151: 5.4 wide, 11.2 long, wheelbase 7.3
+	for _, z in { -3.65, 3.65 } do
 		for _, side in { -1, 1 } do
-			wheel(ctx, Vector3.new(side * 2.9, 1.2, z), 2.4, 1)
+			wheel(ctx, Vector3.new(side * 2.3, 1.15, z), 2.3, 0.9)
 		end
 	end
-	box(ctx, Vector3.new(5.4, 1.6, 9.6), Vector3.new(0, 2.4, 0), p.Base, nil, "Body")
-	box(ctx, Vector3.new(5, 0.9, 3.4), Vector3.new(0, 3.5, -3.1), p.Base, nil, "Hood")
-	box(ctx, Vector3.new(4.8, 0.2, 0.2), Vector3.new(0, 5.4, -1.3), W.Charcoal, nil, "WindscreenFrame")
-	box(ctx, Vector3.new(4.6, 1.6, 0.1), Vector3.new(0, 4.5, -1.3), W.Glass, Enum.Material.Glass, "Windscreen")
-	for _, x in { -1.2, 1.2 } do
-		box(ctx, Vector3.new(1.6, 1.3, 1.4), Vector3.new(x, 3.6, 0.6), W.BrownDark, Enum.Material.Fabric, "Seat")
+	box(ctx, Vector3.new(5, 1.6, 11.2), Vector3.new(0, 2.3, 0), p.Base, nil, "Body")
+	box(ctx, Vector3.new(4.6, 0.8, 3.6), Vector3.new(0, 3.5, -3.4), p.Base, nil, "Hood")
+	-- mudguards over the wheels
+	for _, z in { -3.65, 3.65 } do
+		for _, side in { -1, 1 } do
+			box(ctx, Vector3.new(1.1, 0.25, 2.8), Vector3.new(side * 2.3, 3.2, z), p.Accent, nil, "Fender")
+		end
 	end
-	box(ctx, Vector3.new(1, 1.2, 1.2), Vector3.new(0, 3.5, 4.4), p.Accent, nil, "Spare")
-	antenna(ctx, Vector3.new(2.2, 3.2, 4.2), 5)
+	box(ctx, Vector3.new(4.6, 0.2, 0.2), Vector3.new(0, 5.5, -1.5), W.Charcoal, nil, "WindscreenFrame")
+	box(ctx, Vector3.new(4.4, 1.6, 0.1), Vector3.new(0, 4.6, -1.5), W.Glass, Enum.Material.Glass, "Windscreen")
+	for _, x in { -1.1, 1.1 } do
+		box(ctx, Vector3.new(1.5, 1.3, 1.4), Vector3.new(x, 3.75, 0.6), W.BrownDark, Enum.Material.Fabric, "Seat")
+	end
+	box(ctx, Vector3.new(1, 2.1, 2.1), Vector3.new(0, 3.3, 6.1), W.Charcoal, nil, "Spare")
+	for _, side in { -1, 1 } do
+		box(ctx, Vector3.new(0.9, 0.9, 0.1), Vector3.new(side * 1.7, 2.8, -5.65), LAMP, nil, "Headlight")
+	end
+	antenna(ctx, Vector3.new(2.1, 3.1, 4.6), 5)
 end
 
 Builders.CAR_SEDAN = function(ctx)
 	local p = ctx.paint
-	for _, z in { -3.6, 3.6 } do
+	-- saloon: 5.9 wide, 15.2 long over the bumpers, 4.8 high, wheelbase 8.8;
+	-- the tyres stand 0.07 proud of the body sides (no shared face)
+	for _, z in { -4.4, 4.4 } do
 		for _, side in { -1, 1 } do
-			wheel(ctx, Vector3.new(side * 2.8, 1, z), 2, 0.9, METAL)
+			wheel(ctx, Vector3.new(side * 2.62, 1.05, z), 2.1, 0.8, METAL)
 		end
 	end
-	box(ctx, Vector3.new(5.6, 1.8, 12), Vector3.new(0, 2.2, 0), p.Base, nil, "Body")
-	box(ctx, Vector3.new(5.2, 1.6, 5.6), Vector3.new(0, 3.9, 0.6), p.Base, nil, "Cabin")
-	box(ctx, Vector3.new(5.3, 1.1, 5.2), Vector3.new(0, 3.9, 0.6), W.Glass, Enum.Material.Glass, "Windows")
-	box(ctx, Vector3.new(5.7, 0.4, 0.3), Vector3.new(0, 1.7, -6.05), W.Steel, Enum.Material.Metal, "Bumper")
-	box(ctx, Vector3.new(5.7, 0.4, 0.3), Vector3.new(0, 1.7, 6.05), W.Steel, Enum.Material.Metal, "Bumper")
+	box(ctx, Vector3.new(5.9, 1.7, 14.6), Vector3.new(0, 2.15, 0), p.Base, nil, "Body")
+	box(ctx, Vector3.new(5.4, 1.6, 6.6), Vector3.new(0, 3.8, 0.7), p.Base, nil, "Cabin")
+	box(ctx, Vector3.new(5.5, 1.1, 6.2), Vector3.new(0, 3.85, 0.7), W.Glass, Enum.Material.Glass, "Windows")
+	for _, z in { -7.45, 7.45 } do
+		box(ctx, Vector3.new(6, 0.4, 0.3), Vector3.new(0, 1.5, z), W.Steel, Enum.Material.Metal, "Bumper")
+	end
+	carDetails(ctx, 7.3, 2.95, 2.45)
 end
 
 Builders.CAR_SMALL = function(ctx)
 	local p = ctx.paint
-	for _, z in { -2.8, 2.6 } do
+	-- hatchback: 5.4 wide, 12.3 long, 4.7 high, wheelbase 8; the cabin runs
+	-- to the tail
+	for _, z in { -4, 4 } do
 		for _, side in { -1, 1 } do
-			wheel(ctx, Vector3.new(side * 2.4, 0.9, z), 1.8, 0.8, W.OffWhite)
+			wheel(ctx, Vector3.new(side * 2.37, 0.95, z), 1.9, 0.8, W.OffWhite)
 		end
 	end
-	box(ctx, Vector3.new(4.8, 1.8, 9), Vector3.new(0, 2, 0), p.Base, nil, "Body")
-	box(ctx, Vector3.new(4.4, 1.6, 4.4), Vector3.new(0, 3.7, 0.8), p.Base, nil, "Cabin")
-	box(ctx, Vector3.new(4.5, 1.1, 4), Vector3.new(0, 3.7, 0.8), W.Glass, Enum.Material.Glass, "Windows")
-	box(ctx, Vector3.new(4.9, 0.3, 0.3), Vector3.new(0, 1.4, -4.6), W.OffWhite, nil, "Bumper")
+	box(ctx, Vector3.new(5.4, 1.7, 12.3), Vector3.new(0, 1.95, 0), p.Base, nil, "Body")
+	box(ctx, Vector3.new(5, 1.7, 7.9), Vector3.new(0, 3.65, 1.85), p.Base, nil, "Cabin")
+	box(ctx, Vector3.new(5.1, 1.1, 7.5), Vector3.new(0, 3.7, 1.85), W.Glass, Enum.Material.Glass, "Windows")
+	for _, z in { -6.3, 6.3 } do
+		box(ctx, Vector3.new(5.5, 0.35, 0.3), Vector3.new(0, 1.25, z), W.OffWhite, nil, "Bumper")
+	end
+	carDetails(ctx, 6.15, 2.7, 2.25)
 end
 
 Builders.VAN = function(ctx)
 	local p = ctx.paint
+	-- bus: 5.8 wide, 15 long, 6.4 high, wheelbase 8, two-tone
 	for _, z in { -4, 4 } do
 		for _, side in { -1, 1 } do
-			wheel(ctx, Vector3.new(side * 2.9, 1, z), 2, 0.9, W.OffWhite)
+			wheel(ctx, Vector3.new(side * 2.55, 1.05, z), 2.1, 0.9, W.OffWhite)
 		end
 	end
-	box(ctx, Vector3.new(5.8, 5, 12.6), Vector3.new(0, 3.6, 0), p.Base, nil, "Body")
-	box(ctx, Vector3.new(5.9, 2.2, 12.7), Vector3.new(0, 1.9, 0), p.Accent, nil, "LowerBody")
-	box(ctx, Vector3.new(5.4, 1.6, 0.2), Vector3.new(0, 4.4, -6.35), W.Glass, Enum.Material.Glass, "Windscreen")
-	box(ctx, Vector3.new(5.95, 1.4, 9), Vector3.new(0, 4.6, 1.2), W.Glass, Enum.Material.Glass, "SideWindows")
+	box(ctx, Vector3.new(5.8, 5, 15), Vector3.new(0, 3.8, 0), p.Base, nil, "Body")
+	box(ctx, Vector3.new(5.9, 2.2, 15.1), Vector3.new(0, 2, 0), p.Accent, nil, "LowerBody")
+	box(ctx, Vector3.new(5.4, 1.7, 0.2), Vector3.new(0, 4.9, -7.55), W.Glass, Enum.Material.Glass, "Windscreen")
+	box(ctx, Vector3.new(5.95, 1.4, 10.4), Vector3.new(0, 5, 1.6), W.Glass, Enum.Material.Glass, "SideWindows")
+	for _, z in { -7.7, 7.7 } do
+		box(ctx, Vector3.new(6, 0.4, 0.3), Vector3.new(0, 1.2, z), W.OffWhite, nil, "Bumper")
+	end
+	carDetails(ctx, 7.55, 2.9, 2.3, false)
 end
 
 Builders.HELICOPTER = function(ctx)
 	local p = ctx.paint
-	-- skids
+	-- skids resting on the ground, on two struts each side
 	for _, side in { -1, 1 } do
-		box(ctx, Vector3.new(0.4, 0.4, 13), Vector3.new(side * 3.4, 0.4, 0), METAL, nil, "Skid")
+		box(ctx, Vector3.new(0.4, 0.4, 13), Vector3.new(side * 3.4, 0.2, 0), METAL, nil, "Skid")
 		for _, z in { -3, 3 } do
-			box(ctx, Vector3.new(0.3, 1.6, 0.3), Vector3.new(side * 3, 1.3, z), METAL, nil, "SkidStrut")
+			box(ctx, Vector3.new(0.3, 2, 0.3), Vector3.new(side * 3, 1.3, z), METAL, nil, "SkidStrut")
 		end
 	end
-	box(ctx, Vector3.new(6, 5, 11), Vector3.new(0, 4.6, 0), p.Base, nil, "Fuselage")
-	wedge(ctx, Vector3.new(6, 3, 3), Vector3.new(0, 5.6, -7), -1, W.Glass, "Nose")
-	box(ctx, Vector3.new(6, 2, 3), Vector3.new(0, 3.1, -7), p.Base, nil, "Chin")
-	box(ctx, Vector3.new(1.4, 1.6, 14), Vector3.new(0, 5.6, 12), p.Base, nil, "TailBoom")
+	-- cabin, cockpit with a glazed nose, door openings and windows
+	box(ctx, Vector3.new(6, 4.6, 10), Vector3.new(0, 4.5, 0.5), p.Base, nil, "Fuselage")
+	box(ctx, Vector3.new(5.6, 1.8, 3), Vector3.new(0, 3.1, -6), p.Base, nil, "Chin")
+	wedge(ctx, Vector3.new(5.6, 2.8, 3), Vector3.new(0, 5.4, -6), -1, W.Glass, "Nose")
+	for _, side in { -1, 1 } do
+		box(
+			ctx,
+			Vector3.new(0.06, 1.5, 2.6),
+			Vector3.new(side * 3.03, 5.3, -3),
+			W.Glass,
+			Enum.Material.Glass,
+			"CockpitWindow"
+		)
+		box(ctx, Vector3.new(0.06, 2.8, 3.6), Vector3.new(side * 3.03, 4.4, 1.4), W.Charcoal, nil, "DoorOpening")
+	end
+	-- engine deck, rotor mast
+	box(ctx, Vector3.new(3, 1.4, 5), Vector3.new(0, 7.5, 0.6), p.Accent, nil, "Engine")
+	box(ctx, Vector3.new(1.4, 1.2, 1.6), Vector3.new(0, 7.3, 4.2), p.Accent, nil, "Exhaust")
+	box(ctx, Vector3.new(0.5, 0.9, 0.5), Vector3.new(0, 8.5, 0), METAL, nil, "Mast")
+	-- tapering tail boom, fin and stabiliser
+	box(ctx, Vector3.new(1.9, 2, 6), Vector3.new(0, 5.6, 8.4), p.Base, nil, "TailBoom")
+	box(ctx, Vector3.new(1.2, 1.3, 7.6), Vector3.new(0, 5.8, 15), p.Base, nil, "TailBoom")
 	box(ctx, Vector3.new(0.4, 4, 2.4), Vector3.new(0, 7.4, 18.6), p.Base, nil, "Fin")
-	box(ctx, Vector3.new(4, 0.3, 1.2), Vector3.new(0, 5.8, 16), p.Base, nil, "Stabiliser")
-	box(ctx, Vector3.new(3, 1.4, 5), Vector3.new(0, 7.8, 0.6), p.Accent, nil, "Engine")
+	box(ctx, Vector3.new(4, 0.3, 1.2), Vector3.new(0, 5.8, 15.6), p.Base, nil, "Stabiliser")
 	local rotor = Kit.model(ctx.model, "Rotor")
 	local hub = Kit.part(
 		rotor,
@@ -574,10 +650,13 @@ Builders.HELICOPTER = function(ctx)
 			Decor = true,
 		}
 	)
+	-- tail rotor on a short hub out of the fin's right side
+	-- the hub ends where the rotor starts (their side faces never overlap)
+	box(ctx, Vector3.new(0.45, 0.35, 0.35), Vector3.new(0.425, 7.4, 18.8), METAL, nil, "TailHub")
 	Kit.part(
 		rotor,
 		Vector3.new(0.2, 3.4, 0.4),
-		ctx.frame * CFrame.new(0.9, 7.4, 18.8),
+		ctx.frame * CFrame.new(0.75, 7.4, 18.8),
 		W.Charcoal,
 		Enum.Material.SmoothPlastic,
 		{

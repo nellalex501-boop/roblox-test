@@ -27,8 +27,10 @@ local function board(parent: Instance, frame: CFrame, spec: Config.Board, x: num
 	Kit.box(
 		model,
 		frame,
-		Vector3.new(x - size.X / 2 - 0.5, centerY - size.Y / 2 - 0.5, z - 0.35),
-		Vector3.new(x + size.X / 2 + 0.5, centerY + size.Y / 2 + 0.5, z - 0.15),
+		-- 0.02 into the back wall (face at z - 0.4), the screen's back 0.02
+		-- into the frame
+		Vector3.new(x - size.X / 2 - 0.5, centerY - size.Y / 2 - 0.5, z - 0.42),
+		Vector3.new(x + size.X / 2 + 0.5, centerY + size.Y / 2 + 0.5, z - 0.08),
 		W.SteelDark,
 		Enum.Material.Metal,
 		{

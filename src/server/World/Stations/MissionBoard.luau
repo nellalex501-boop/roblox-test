@@ -52,7 +52,8 @@ local function paper(
 end
 
 local function pin(parent: Instance, frame: CFrame, x: number, y: number, color: Color3): Vector3
-	local pos = (frame * CFrame.new(x, y, CORK_FACE + 0.24)).Position
+	-- through the sheet into the cork
+	local pos = (frame * CFrame.new(x, y, CORK_FACE + 0.14)).Position
 	Kit.ball(parent, 0.26, CFrame.new(pos), color, Enum.Material.SmoothPlastic, { Name = "Pin", Decor = true })
 	return pos
 end
@@ -137,7 +138,7 @@ local PHOTOS = {
 }
 
 local function photo(parent: Instance, frame: CFrame, name: string, x: number, y: number, tilt: number, kind: string)
-	local sheet, gui = paper(parent, frame, name, x, y, 1.5, 1.2, tilt, 2, Color3.fromRGB(236, 234, 226))
+	local sheet, gui = paper(parent, frame, name, x, y, 1.5, 1.2, tilt, 1, Color3.fromRGB(236, 234, 226))
 	local image = box(gui, 0.07, 0.07, 0.86, 0.64, Color3.fromRGB(120, 122, 116))
 	image.Name = "Image"
 	image.ClipsDescendants = true
@@ -202,7 +203,9 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 
 	-- map clipping of the featured battlefield
 	local m = L.MapClipping
-	local clip, mapGui = paper(docs, frame, "MapClipping", m.X, m.Y, m.W, m.H, 3, 2)
+	-- nothing overlaps the clipping, the photos or the card: they lie on the
+	-- cork (layer 1) like the orders
+	local clip, mapGui = paper(docs, frame, "MapClipping", m.X, m.Y, m.W, m.H, 3, 1)
 	mapGui.PixelsPerStud = 50
 	-- sector letters sized to read on the small clipping (0.36-stud marks)
 	MapDraw.preview(mapGui, Maps.List[Maps.Featured], m.W * 50, m.H * 50, { labels = false, markSize = 18 })
@@ -214,7 +217,7 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 
 	-- intel summary card with the classification stamp in its empty corner
 	local c = L.IntelCard
-	local _, card = paper(docs, frame, "IntelCard", c.X, c.Y, c.W, c.H, -1.5, 2, Color3.fromRGB(226, 214, 176))
+	local _, card = paper(docs, frame, "IntelCard", c.X, c.Y, c.W, c.H, -1.5, 1, Color3.fromRGB(226, 214, 176))
 	typed(card, "Header", "INTEL SUMMARY", 0.08, 0.2)
 	typed(card, "Line1", "ARMOR MASSING", 0.34, 0.15).Size = UDim2.fromScale(0.56, 0.15)
 	typed(card, "Line2", "NEAR OP ALPHA", 0.5, 0.15).Size = UDim2.fromScale(0.56, 0.15)
@@ -222,12 +225,13 @@ function MissionBoard.build(zoneModel: Instance, frame: CFrame)
 	stamp(card, "RESTRICTED", 0.62, 0.48, 0.37, 0.26, -10)
 
 	-- pins at the top of each item; red string links the intel items only
-	pin(docs, frame, L.DailyOrders.X, L.DailyOrders.Y + L.DailyOrders.H / 2 - 0.3, W.MutedRed)
-	pin(docs, frame, o.X, o.Y + o.H / 2 - 0.3, W.MutedBlue)
-	local a = pin(docs, frame, m.X, m.Y + m.H / 2 - 0.2, W.MutedRed)
+	-- pins go through the sheets' top margins, never through their titles
+	pin(docs, frame, L.DailyOrders.X, L.DailyOrders.Y + L.DailyOrders.H / 2 - 0.1, W.MutedRed)
+	pin(docs, frame, o.X, o.Y + o.H / 2 - 0.1, W.MutedBlue)
+	local a = pin(docs, frame, m.X, m.Y + m.H / 2 - 0.1, W.MutedRed)
 	local b = pin(docs, frame, L.PhotoTank.X, L.PhotoTank.Y + 0.42, W.HazardYellow)
 	local d = pin(docs, frame, L.PhotoHeli.X, L.PhotoHeli.Y + 0.42, W.HazardYellow)
-	local e = pin(docs, frame, c.X + 1.3, c.Y + c.H / 2 - 0.2, W.MutedRed)
+	local e = pin(docs, frame, c.X + 1.3, c.Y + c.H / 2 - 0.04, W.MutedRed)
 	-- the string runs just in front of the pin heads
 	local out = frame:VectorToWorldSpace(Vector3.new(0, 0, 0.04))
 	for _, pair in { { a, b }, { b, d }, { d, e } } do

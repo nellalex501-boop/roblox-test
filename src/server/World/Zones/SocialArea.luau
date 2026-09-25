@@ -63,6 +63,32 @@ function SocialArea.build(parent: Instance): (Model, CFrame)
 		)
 	end
 
+	-- name boards above the wall beside the two side openings: the Mission
+	-- Board's shelter hides the canteen's own sign from the middle of the
+	-- parade square, one of these stays in view past it from every spawn pad
+	for _, nameX in { -27.4, 27.4 } do
+		local nameSign = Kit.sign(
+			shell,
+			Kit.facingOut(frame, Vector3.new(nameX, 4.6, wallZ - 0.4)),
+			Vector2.new(6.4, 2.4),
+			zone.DisplayName,
+			{ Background = W.BrownDark, TextColor = W.Paper, PixelsPerStud = 30, Depth = 0.3 }
+		)
+		nameSign.Name = "ZoneName"
+		-- two posts behind the wall, touching the board's back
+		for _, dx in { -2.4, 2.4 } do
+			Kit.post(
+				shell,
+				frame * CFrame.new(nameX + dx, 0.3, wallZ - 0.7),
+				5.6,
+				0.3,
+				W.BrownDark,
+				Enum.Material.Wood,
+				{ Name = "SignPost" }
+			)
+		end
+	end
+
 	-- canteen building
 	local c = SocialArea.Canteen
 	local t = 1
@@ -156,6 +182,39 @@ function SocialArea.build(parent: Instance): (Model, CFrame)
 	Architecture.windowRow(shell, canteenFrame, 6, halfW - 1, 0, 1, 3.6, 8.6, 4, 4, style)
 	Architecture.windowColumn(shell, canteenFrame, -depth + 3, -3, -halfW, -1, 3.6, 8.6, 3, 4, style)
 	Architecture.windowColumn(shell, canteenFrame, -depth + 3, -3, halfW, 1, 3.6, 8.6, 3, 4, style)
+	-- kitchen side (south): small high windows and a service door with its
+	-- step and canopy (bins and crates stand outside, see Details)
+	Architecture.windowRow(shell, canteenFrame, 8, halfW - 2, -depth, -1, 5.6, 8.2, 2, 2.4, style)
+	local serviceX = -16
+	Kit.box(
+		shell,
+		canteenFrame,
+		Vector3.new(serviceX - 2, floorY, -depth - 0.25),
+		Vector3.new(serviceX + 2, floorY + 7, -depth),
+		W.Wood,
+		Enum.Material.Wood,
+		{ Name = "Door" }
+	)
+	Kit.box(
+		shell,
+		canteenFrame,
+		Vector3.new(serviceX - 3, 0, -depth - 2.6),
+		Vector3.new(serviceX + 3, floorY, -depth),
+		W.Concrete,
+		Enum.Material.Concrete,
+		{ Name = "DoorStep" }
+	)
+	Kit.box(
+		shell,
+		canteenFrame,
+		Vector3.new(serviceX - 3, floorY + 7.6, -depth - 3),
+		Vector3.new(serviceX + 3, floorY + 8, -depth),
+		W.ConcreteDark,
+		Enum.Material.Concrete,
+		{ Name = "DoorCanopy" }
+	)
+	-- light ceiling at the eaves (the fittings hang from it)
+	Architecture.ceiling(shell, canteenFrame, -halfW + t, halfW - t, -depth + t, -t, eaveY)
 
 	Architecture.gableRoof(
 		shell,
@@ -218,7 +277,7 @@ function SocialArea.build(parent: Instance): (Model, CFrame)
 	local plate = Kit.sign(
 		shell,
 		-- at the corner, clear of the window row
-		Kit.facingOut(canteenFrame, Vector3.new(-halfW + 0.85, 6, 0.3)),
+		Kit.facingOut(canteenFrame, Vector3.new(-halfW + 0.85, 6, 0.055)),
 		Vector2.new(1.5, 1.1),
 		"BLDG 110",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }

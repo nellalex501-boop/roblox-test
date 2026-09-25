@@ -100,7 +100,25 @@ local function office(parent: Instance, frame: CFrame)
 			{ Name = "DeskFlag", Decor = true }
 		)
 	end
-	-- chair behind the desk
+	-- chair behind the desk: a swivel column on a cross base
+	Kit.part(
+		model,
+		Vector3.new(0.35, 1.6, 0.35),
+		deskFrame * CFrame.new(0, 0.8, -3.4),
+		W.SteelDark,
+		Enum.Material.Metal,
+		{ Name = "ChairColumn", Decor = true }
+	)
+	for _, rot in { 0, math.pi / 2 } do
+		Kit.part(
+			model,
+			Vector3.new(1.9, 0.18, 0.3),
+			deskFrame * CFrame.new(0, 0.09, -3.4) * CFrame.Angles(0, rot + math.pi / 4, 0),
+			W.SteelDark,
+			Enum.Material.Metal,
+			{ Name = "ChairBase", Decor = true }
+		)
+	end
 	Kit.part(
 		model,
 		Vector3.new(2.4, 0.5, 2.4),
@@ -121,7 +139,8 @@ local function office(parent: Instance, frame: CFrame)
 	local mapPart = Kit.part(
 		model,
 		Vector3.new(12, 7, 0.2),
-		Kit.facingOut(frame, Vector3.new(-11.5, y + 8, -42.3)),
+		-- on the back wall's inner face (z = -42.8), 0.02 into it
+		Kit.facingOut(frame, Vector3.new(-11.5, y + 8, -42.72)),
 		W.Screen,
 		Enum.Material.SmoothPlastic,
 		{ Name = "OfficeMap" }
@@ -187,8 +206,8 @@ local function lockers(parent: Instance, frame: CFrame)
 		for s = 0, 2 do
 			Kit.part(
 				model,
-				Vector3.new(1, 0.1, 0.05),
-				base * CFrame.new(i * 1.8, 6 - s * 0.35, 0.95),
+				Vector3.new(1, 0.1, 0.1),
+				base * CFrame.new(i * 1.8, 6 - s * 0.35, 0.93),
 				W.Charcoal,
 				nil,
 				{ Name = "Vent", Decor = true }
@@ -229,10 +248,19 @@ local function lockers(parent: Instance, frame: CFrame)
 		Enum.Material.Fabric,
 		{ Name = "Uniform" }
 	)
+	-- a head form on the collar, the beret pulled to one side on top
 	Kit.part(
 		model,
-		Vector3.new(1.3, 0.4, 1.3),
-		stand * CFrame.new(0, 5.6, 0),
+		Vector3.new(0.6, 0.8, 0.6),
+		stand * CFrame.new(0, 5.68, 0),
+		W.BeigeDark,
+		Enum.Material.SmoothPlastic,
+		{ Name = "HeadForm", Decor = true }
+	)
+	Kit.part(
+		model,
+		Vector3.new(1.0, 0.3, 1.1),
+		stand * CFrame.new(0.08, 6.12, 0) * CFrame.Angles(0, 0, math.rad(-9)),
 		W.MutedRed,
 		Enum.Material.Fabric,
 		{ Name = "Beret", Decor = true }
@@ -248,9 +276,11 @@ local function lockers(parent: Instance, frame: CFrame)
 		}
 	)
 	Interactions.attach(counter, "Customize", "LOCKERS", "QUARTERMASTER")
+	-- on the wall above the lockers (inner face 1.2 behind their centre),
+	-- high enough that the locker tops never cut it
 	local sign = Kit.sign(
 		model,
-		base * CFrame.new(0, 8.2, 0.95) * CFrame.Angles(0, math.pi, 0),
+		base * CFrame.new(0, 8.6, -1.145) * CFrame.Angles(0, math.pi, 0),
 		Vector2.new(8, 1.2),
 		"QUARTERMASTER · CUSTOMIZATION",
 		{
@@ -268,38 +298,39 @@ local function trophies(parent: Instance, frame: CFrame)
 	local model = Kit.model(parent, "TrophyCase")
 	local y = CommandHQ.FloorY
 	local base = frame * CFrame.new(-21.4, y, -12) * CFrame.Angles(0, math.pi / 2, 0)
-	local case = Kit.part(
-		model,
-		Vector3.new(9, 7, 2),
-		base * CFrame.new(0, 3.5, -0.2),
-		W.BrownDark,
-		Enum.Material.Wood,
-		{ Name = "Case" }
-	)
-	Kit.part(
-		model,
-		Vector3.new(8.4, 6.4, 1.4),
-		base * CFrame.new(0, 3.6, 0.2),
-		Color3.fromRGB(40, 32, 26),
-		Enum.Material.Wood,
-		{
-			Name = "CaseBack",
-			Decor = true,
-		}
+	-- an open-fronted cabinet against the wall (inner face at base z = -1.4):
+	-- back panel, sides, top and plinth, a velvet back, three shelves of cups
+	-- and two front mullions. Nothing sits inside a solid block.
+	local wood = W.BrownDark
+	local function slab(size: Vector3, pos: Vector3, name: string, color: Color3?, material: Enum.Material?)
+		return Kit.part(model, size, base * CFrame.new(pos), color or wood, material or Enum.Material.Wood, {
+			Name = name,
+		})
+	end
+	-- the sides stand on the floor under an overhanging top, the plinth sits
+	-- between them: no two parts share an outer face
+	slab(Vector3.new(9, 7, 0.3), Vector3.new(0, 3.5, -1.27), "CaseBackPanel")
+	for _, x in { -4.35, 4.35 } do
+		slab(Vector3.new(0.3, 6.6, 2.1), Vector3.new(x, 3.3, -0.07), "CaseSide")
+	end
+	slab(Vector3.new(9.2, 0.4, 2.25), Vector3.new(0, 6.8, 0.005), "CaseTop")
+	local case = slab(Vector3.new(8.4, 1, 2.1), Vector3.new(0, 0.5, -0.07), "Case")
+	slab(
+		Vector3.new(8.4, 5.6, 0.1),
+		Vector3.new(0, 3.8, -1.07),
+		"CaseVelvet",
+		Color3.fromRGB(70, 30, 28),
+		Enum.Material.Fabric
 	)
 	local gold = Color3.fromRGB(176, 146, 78)
 	for shelf = 0, 2 do
-		local sy = 1.4 + shelf * 2.1
-		Kit.part(
-			model,
-			Vector3.new(8.4, 0.15, 1.4),
-			base * CFrame.new(0, sy, 0.3),
-			W.Wood,
-			Enum.Material.Wood,
-			{ Name = "Shelf", Decor = true }
-		)
+		local sy = 1 + shelf * 1.85
+		if shelf > 0 then
+			slab(Vector3.new(8.4, 0.15, 1.9), Vector3.new(0, sy, -0.07), "Shelf", W.Wood)
+		end
+		local top = if shelf == 0 then 1 else sy + 0.075
 		for i = -1, 1 do
-			local cup = base * CFrame.new(i * 2.6 + shelf * 0.3 - 0.3, sy + 0.08, 0.4)
+			local cup = base * CFrame.new(i * 2.6 + shelf * 0.3 - 0.3, top, -0.25)
 			Kit.part(
 				model,
 				Vector3.new(0.6, 0.3, 0.6),
@@ -326,21 +357,22 @@ local function trophies(parent: Instance, frame: CFrame)
 			)
 		end
 	end
-	-- frame bars instead of glass (no transparency cost)
-	for _, x in { -4.4, 0, 4.4 } do
+	-- front mullions from the plinth to the top (no glass: no transparency cost)
+	for _, x in { -1.45, 1.45 } do
 		Kit.part(
 			model,
-			Vector3.new(0.15, 6.6, 0.15),
-			base * CFrame.new(x, 3.6, 1.05),
+			Vector3.new(0.15, 5.6, 0.15),
+			base * CFrame.new(x, 3.8, 0.9),
 			W.Wood,
 			Enum.Material.Wood,
 			{ Name = "Mullion", Decor = true }
 		)
 	end
 	Interactions.attach(case, "Achievements", "TROPHIES", "AWARDS CASE")
+	-- on the wall above the case
 	local sign = Kit.sign(
 		model,
-		base * CFrame.new(0, 7.9, 0.9) * CFrame.Angles(0, math.pi, 0),
+		base * CFrame.new(0, 8.3, -1.345) * CFrame.Angles(0, math.pi, 0),
 		Vector2.new(7, 1.2),
 		"AWARDS CASE · ACHIEVEMENTS",
 		{
@@ -361,11 +393,12 @@ function CommandHQ.build(zoneModel: Instance, frame: CFrame)
 	records(folder, frame)
 	lockers(folder, frame)
 	trophies(folder, frame)
-	-- door plates over the back-room doorways
+	-- door plates over the back-room doorways, 0.02 into the lintel (its
+	-- face is at z -19.7)
 	for _, spec in { { X = -11.5, Text = "COMMANDING OFFICER" }, { X = 11.5, Text = "SERVICE RECORDS" } } do
 		local plate = Kit.sign(
 			folder,
-			Kit.facingOut(frame, Vector3.new(spec.X, CommandHQ.FloorY + 10.9, -19.6)),
+			Kit.facingOut(frame, Vector3.new(spec.X, CommandHQ.FloorY + 10.9, -19.66)),
 			Vector2.new(7, 1),
 			spec.Text,
 			{

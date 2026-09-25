@@ -236,9 +236,14 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 		Architecture.windowColumn(shell, frame, -60, -4, x, outward, 14, 19.5, 7, 3.6, windows)
 		Architecture.windowColumn(shell, frame, -60, -4, x, outward, 4, 9.5, 7, 3.6, windows)
 	end
+	-- the back (toward the motor pool) has plain windows on both floors
+	for _, row in { { 4, 9.5 }, { 14, 19.5 } } do
+		Architecture.plainWindows(shell, frame, -halfW + 2, halfW - 2, -depth, -1, row[1], row[2], 12, 3.4, windows)
+	end
 
 	-- flat roof + parapet
 	Architecture.flatRoof(shell, frame, -halfW, halfW, -depth, 0, roofY, 1.4, wallColor)
+	Architecture.ceiling(shell, frame, -halfW + t, halfW - t, -depth + t, -t, roofY)
 
 	-- central tower block with the building name, rising above the roof
 	local towerTop = 35
@@ -293,7 +298,7 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 
 	local towerSign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, 30, tw.z1 + 0.25)),
+		Kit.facingOut(frame, Vector3.new(0, 30, tw.z1 + 0.18)),
 		Vector2.new(36, 7.5),
 		zone.DisplayName,
 		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.MutedBlue, PixelsPerStud = 18 }
@@ -301,7 +306,8 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	towerSign.Name = "TowerSign"
 
 	-- radome (strong silhouette visible across the lobby)
-	local domeBase = frame * CFrame.new(0, towerTop + 1.3, -25)
+	-- the base stands on the tower's roof slab (top at towerTop + 1)
+	local domeBase = frame * CFrame.new(0, towerTop + 0.98, -25)
 	Kit.post(shell, domeBase, 2.2, 11, W.Concrete, Enum.Material.Concrete, { Name = "RadomeBase" })
 	Kit.ball(
 		shell,
@@ -420,7 +426,7 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	local plate = Kit.sign(
 		shell,
 		-- between the portico columns at 9 and 15
-		Kit.facingOut(frame, Vector3.new(12, 6, 0.3)),
+		Kit.facingOut(frame, Vector3.new(12, 6, 0.055)),
 		Vector2.new(3, 2),
 		"BLDG 101",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }

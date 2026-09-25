@@ -17,6 +17,9 @@ local Garage = {}
 
 Garage.FloorY = 0.4
 Garage.EaveY = 24
+-- zone-local z of the eave tie beams (lights and the showroom truss hang
+-- from them)
+Garage.TieBeams = { -8, -23, -45 }
 
 function Garage.build(parent: Instance): (Model, CFrame)
 	local zone = Layout.Zones.Garage
@@ -26,7 +29,8 @@ function Garage.build(parent: Instance): (Model, CFrame)
 
 	local halfW, depth = zone.Width / 2, zone.Depth
 	local floorY, eaveY = Garage.FloorY, Garage.EaveY
-	local metal = W.Olive
+	-- lighter olive cladding: the hall reads from the square, not as a void
+	local metal = W.OliveLight
 
 	-- the slab stops 0.1 inside the side and back walls and stands 0.1
 	-- proud of the facade as a threshold lip, so its edges never lie in
@@ -164,6 +168,20 @@ function Garage.build(parent: Instance): (Model, CFrame)
 		Enum.Material.CorrodedMetal,
 		Enum.Material.Metal
 	)
+
+	-- steel tie beams across the hall at the eaves: the high-bay lights and
+	-- the showroom truss hang from them
+	for _, z in Garage.TieBeams do
+		Kit.box(
+			shell,
+			frame,
+			Vector3.new(-halfW + 1, eaveY - 0.8, z - 0.25),
+			Vector3.new(halfW - 1, eaveY, z + 0.25),
+			W.SteelDark,
+			Enum.Material.Metal,
+			{ Name = "TieBeam" }
+		)
+	end
 
 	-- high strip windows
 	local style: Architecture.WindowStyle = { Glass = W.Glass, Sill = W.SteelDark }
