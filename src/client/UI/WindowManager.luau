@@ -3,8 +3,9 @@
 --
 -- * One panel at a time, opened by the interaction controller with the
 --   station context (kind, id, tab, part).
--- * Closes with the close button, Esc or gamepad B, when the Roblox menu
---   opens, or when the player walks away from the station it was opened at.
+-- * Closes with the ✕ button, the X key or gamepad B, when the Roblox menu
+--   opens (Esc belongs to Roblox), or when the player walks away from the
+--   station it was opened at.
 -- * While a panel is open the lobby's proximity prompts are hidden (so E /
 --   ButtonX cannot re-trigger a station behind the panel).
 -- * Short transitions (fade + slide), device scaling via UIScale, gamepad
@@ -51,8 +52,9 @@ export type Panel = {
 	code: string,
 	tabs: { string }?,
 	size: Vector2?,
-	-- "center" (default) or "right": docked panels leave the view free
-	-- (e.g. the vehicle inspection sheet next to the orbiting camera)
+	-- "center" (default), "right" (docked, leaves the view free, e.g. the
+	-- vehicle inspection sheet) or "fullscreen" (the panel lays out the
+	-- whole screen itself over the live view, e.g. the showroom)
 	dock: string?,
 	build: (shell: Shell) -> (),
 	open: (shell: Shell, context: Context) -> (),
@@ -107,13 +109,48 @@ local function usingGamepad(): boolean
 	return last.Name:sub(1, 7) == "Gamepad"
 end
 
+WindowManager.CloseKey = Enum.KeyCode.X
+
+-- Key hint next to the ✕ button (touch has no key).
 local function closeHint(): string
 	if usingGamepad() then
-		return "[B] CLOSE"
+		return "[B]"
 	elseif UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-		return "CLOSE"
+		return ""
 	end
-	return "CLOSE [ESC]"
+	return "[" .. WindowManager.CloseKey.Name .. "]"
+end
+
+-- Square ✕ close button (drawn with two bars, no font glyph needed) with
+-- the key hint to its left. Named "Close".
+function WindowManager.closeButton(parent: Instance): TextButton
+	local button = Kit.button(parent, "", "ghost", function()
+		WindowManager.close()
+	end)
+	button.Name = "Close"
+	button.Size = UDim2.fromOffset(36, 36)
+	for _, angle in { 45, -45 } do
+		Kit.frame(button, {
+			Name = "Bar",
+			BackgroundColor3 = UI.Text,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(20, 2),
+			Rotation = angle,
+		})
+	end
+	Kit.text(button, {
+		Name = "KeyHint",
+		Text = closeHint(),
+		FontFace = Kit.Fonts.Mono,
+		TextSize = Kit.Text.Small,
+		TextColor3 = UI.TextDim,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(0, -8, 0.5, 0),
+		Size = UDim2.fromOffset(60, 20),
+	})
+	return button
 end
 
 local function firstSelectable(root: Instance): GuiObject?
@@ -145,7 +182,40 @@ function WindowManager.setTab(shell: Shell, tab: string)
 	end
 end
 
+-- Full-screen shell: a transparent layer the panel lays out itself.
+local function buildFullscreenShell(name: string, panel: Panel): Shell
+	local root: CanvasGroup = Kit.new("CanvasGroup", {
+		Name = "Panel_" .. name,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Visible = false,
+		Parent = WindowManager.layer("Panels"),
+	})
+	local hidden = { Visible = false, Size = UDim2.fromOffset(0, 0) }
+	local shell: Shell = {
+		name = name,
+		root = root,
+		body = Kit.box(root, { Name = "Body" }),
+		title = Kit.text(root, hidden),
+		code = Kit.text(root, hidden),
+		footer = Kit.text(root, hidden),
+		tabBar = nil,
+		tabButtons = {},
+		tab = nil,
+		context = {},
+		panel = panel,
+	}
+	panel.build(shell)
+	return shell
+end
+
 local function buildShell(name: string, panel: Panel): Shell
+	if panel.dock == "fullscreen" then
+		return buildFullscreenShell(name, panel)
+	end
 	local size = panel.size or Vector2.new(900, 560)
 	local root: CanvasGroup = Kit.new("CanvasGroup", {
 		Name = "Panel_" .. name,
@@ -185,14 +255,9 @@ local function buildShell(name: string, panel: Panel): Shell
 		Size = UDim2.new(1, -220, 0, 32),
 		TextTruncate = Enum.TextTruncate.AtEnd,
 	})
-	local close = Kit.button(header, closeHint(), "ghost", function()
-		WindowManager.close()
-	end)
-	close.Name = "Close"
+	local close = WindowManager.closeButton(header)
 	close.AnchorPoint = Vector2.new(1, 0.5)
 	close.Position = UDim2.new(1, -14, 0.5, 0)
-	close.Size = UDim2.fromOffset(150, 32)
-	close.TextSize = 14
 	Kit.frame(header, {
 		Name = "Rule",
 		BackgroundColor3 = UI.BorderDim,
@@ -311,10 +376,10 @@ function WindowManager.open(name: string, context: Context?)
 		shells[name] = shell
 	end
 	shell.context = ctx
-	local header = shell.root:FindFirstChild("Header")
-	local close = header and header:FindFirstChild("Close")
-	if close and close:IsA("TextButton") then
-		close.Text = closeHint()
+	local close = shell.root:FindFirstChild("Close", true)
+	local keyHint = close and close:FindFirstChild("KeyHint")
+	if keyHint and keyHint:IsA("TextLabel") then
+		keyHint.Text = closeHint()
 	end
 	local wasOpen = current == shell
 	current = shell
@@ -331,13 +396,17 @@ function WindowManager.open(name: string, context: Context?)
 		ProximityPromptService.Enabled = false
 		Sound.play("Open")
 		local docked = panel.dock == "right"
+		local fullscreen = panel.dock == "fullscreen"
 		local target = if docked then UDim2.new(1, -24, 0.5, 0) else UDim2.fromScale(0.5, 0.5)
 		shell.root.Visible = true
 		shell.root.GroupTransparency = 1
-		shell.root.Position = if docked then target + UDim2.fromOffset(24, 0) else target + UDim2.fromOffset(0, 14)
+		shell.root.Position = if docked
+			then target + UDim2.fromOffset(24, 0)
+			elseif fullscreen then target
+			else target + UDim2.fromOffset(0, 14)
 		tween(shell.root, FADE_IN, { GroupTransparency = 0, Position = target })
 		local bd = backdrop
-		if bd and not docked then
+		if bd and not docked and not fullscreen then
 			bd.Visible = true
 			tween(bd, FADE_IN, { BackgroundTransparency = 0.55 })
 		end
@@ -497,7 +566,7 @@ function WindowManager.start()
 			return
 		end
 		local key = input.KeyCode
-		if key == Enum.KeyCode.ButtonB or key == Enum.KeyCode.Escape then
+		if key == Enum.KeyCode.ButtonB or key == WindowManager.CloseKey then
 			WindowManager.close()
 		elseif key == Enum.KeyCode.ButtonR1 then
 			cycleTab(1)

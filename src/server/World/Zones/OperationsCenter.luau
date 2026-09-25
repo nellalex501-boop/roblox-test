@@ -49,7 +49,7 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 		frame,
 		Vector3.new(-34, floorY, -62.8),
 		Vector3.new(34, floorY + 0.05, -1.2),
-		Color3.fromRGB(58, 66, 60),
+		Color3.fromRGB(128, 130, 120),
 		Enum.Material.SmoothPlastic,
 		{
 			Name = "HallFloor",
@@ -86,8 +86,8 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(-halfW - 0.4, 0, -depth),
-		Vector3.new(-halfW + 0.1, 1.8, 0),
+		Vector3.new(-halfW - 0.4, 0, -depth + 0.1),
+		Vector3.new(-halfW + 0.1, 1.8, -0.1),
 		plinth,
 		Enum.Material.Concrete,
 		{ Name = "Plinth" }
@@ -95,8 +95,8 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(halfW - 0.1, 0, -depth),
-		Vector3.new(halfW + 0.4, 1.8, 0),
+		Vector3.new(halfW - 0.1, 0, -depth + 0.1),
+		Vector3.new(halfW + 0.4, 1.8, -0.1),
 		plinth,
 		Enum.Material.Concrete,
 		{ Name = "Plinth" }
@@ -265,8 +265,8 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(tw.x0, roofY + 1, tw.z0),
-		Vector3.new(tw.x0 + 1, towerTop, tw.z1),
+		Vector3.new(tw.x0, roofY + 1, tw.z0 + 1),
+		Vector3.new(tw.x0 + 1, towerTop, tw.z1 - 1),
 		wallColor,
 		Enum.Material.Concrete,
 		{
@@ -276,8 +276,8 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(tw.x1 - 1, roofY + 1, tw.z0),
-		Vector3.new(tw.x1, towerTop, tw.z1),
+		Vector3.new(tw.x1 - 1, roofY + 1, tw.z0 + 1),
+		Vector3.new(tw.x1, towerTop, tw.z1 - 1),
 		wallColor,
 		Enum.Material.Concrete,
 		{
@@ -388,18 +388,28 @@ function OperationsCenter.build(parent: Instance): (Model, CFrame)
 			Name = "Canopy",
 		}
 	)
+	-- the tower already carries the name; the portico fascia shows the
+	-- building number, stencilled like the rest of the base
 	local fascia = Kit.sign(
 		shell,
 		Kit.facingOut(frame, Vector3.new(0, canopyY + 3.05, 9.25)),
-		Vector2.new(34, 3.2),
-		zone.DisplayName,
-		{ Background = W.Charcoal, TextColor = W.OffWhite, PixelsPerStud = 22 }
+		Vector2.new(22, 3.2),
+		"BLDG 101",
+		{ Background = W.Charcoal, TextColor = W.OffWhite, PixelsPerStud = 22, Subtitle = "C3 OPERATIONS HALL" }
 	)
 	fascia.Name = "EntranceSign"
-	Kit.box(shell, frame, Vector3.new(-17, canopyY - 0.2, 8.6), Vector3.new(17, canopyY + 1, 9.6), W.MutedBlue, nil, {
-		Name = "CanopyStripe",
-		Decor = true,
-	})
+	Kit.box(
+		shell,
+		frame,
+		Vector3.new(-17.05, canopyY - 0.2, 8.6),
+		Vector3.new(17.05, canopyY + 1, 9.6),
+		W.MutedBlue,
+		nil,
+		{
+			Name = "CanopyStripe",
+			Decor = true,
+		}
+	)
 
 	-- entrance doors
 	Architecture.doorFrame(shell, frame, door.Offset, 0, door.Width, door.Height, floorY, W.DarkGrey)

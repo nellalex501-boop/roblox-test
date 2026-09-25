@@ -2,22 +2,25 @@
 -- Subtle ambient animation on the world anchors the server tags with
 -- LobbyAmbient / AmbientRole (see World/Kit.anchor):
 --   RadarSpin   rotating surveillance radar
---   Flag        three-segment flags waving in the wind
+--   Flag        segmented flags waving in the wind (every frame)
 --   BlinkRed    aviation obstruction lights (slow red blink)
 --   BlinkSlow / BlinkFast   equipment lamps on racks and consoles
---   CrtFlicker  the occasional CRT brightness dip
---   Fire        brazier light flicker
--- Everything runs locally from one Heartbeat connection, updates at modest
--- rates and skips anchors far from the camera. Streaming-safe: anchors are
--- tracked with CollectionService added/removed signals.
+--   CrtFlicker  the occasional CRT brightness dip (back to the screen's
+--               own brightness afterwards)
+--   Fire        smooth fire-light flicker (layered noise, no strobing)
+--   NightLamp   street, bollard and flood lamps: lit after dusk, dark by day
+-- Everything runs locally from one Heartbeat connection and skips anchors
+-- far from the camera. Streaming-safe: anchors are tracked with
+-- CollectionService added/removed signals.
 
 local CollectionService = game:GetService("CollectionService")
+local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
 local AmbientAnimator = {}
 
 AmbientAnimator.Tag = "LobbyAmbient"
-AmbientAnimator.FlagRange = 220
+AmbientAnimator.FlagRange = 700
 AmbientAnimator.RadarRange = 400
 AmbientAnimator.RadarSpeed = math.pi * 2 / 5 -- one turn every 5 s
 
@@ -33,18 +36,36 @@ type Blinker = {
 	phase: number,
 	lit: boolean,
 }
-type FireLight = { light: PointLight, base: number, range: number }
+type FireLight = { light: PointLight, base: number, range: number, seed: number }
+type Screen = { gui: SurfaceGui, base: number, dimmed: boolean }
+type NightLamp = { lens: BasePart, light: Light?, dayColor: Color3, nightColor: Color3, dayMaterial: Enum.Material }
 
 local radars: { [BasePart]: Radar } = {}
 local flags: { [BasePart]: Flag } = {}
 local blinkers: { [BasePart]: Blinker } = {}
-local screens: { [BasePart]: SurfaceGui } = {}
+local screens: { [BasePart]: Screen } = {}
 local fires: { [BasePart]: FireLight } = {}
+local lamps: { [BasePart]: NightLamp } = {}
+local lampsLit: boolean? = nil
 local connection: RBXScriptConnection? = nil
 local rng = Random.new(1984)
 
 local function dim(color: Color3, factor: number): Color3
 	return Color3.new(color.R * factor, color.G * factor, color.B * factor)
+end
+
+-- Lamps burn between dusk and dawn (Lighting.ClockTime, hours).
+function AmbientAnimator.isNight(clockTime: number): boolean
+	return clockTime < 6.4 or clockTime > 18.1
+end
+
+local function light(lamp: NightLamp, on: boolean)
+	lamp.lens.Color = if on then lamp.nightColor else lamp.dayColor
+	lamp.lens.Material = if on then Enum.Material.Neon else lamp.dayMaterial
+	local l = lamp.light
+	if l then
+		l.Enabled = on
+	end
 end
 
 local function track(part: Instance)
@@ -91,12 +112,30 @@ local function track(part: Instance)
 	elseif role == "CrtFlicker" then
 		local gui = part:FindFirstChildOfClass("SurfaceGui")
 		if gui then
-			screens[part] = gui
+			screens[part] = { gui = gui, base = gui.Brightness, dimmed = false }
+		end
+	elseif role == "NightLamp" then
+		local night = part:GetAttribute("NightColor")
+		local lamp: NightLamp = {
+			lens = part,
+			light = part:FindFirstChildWhichIsA("Light"),
+			dayColor = part.Color,
+			nightColor = if typeof(night) == "Color3" then night else part.Color,
+			dayMaterial = part.Material,
+		}
+		lamps[part] = lamp
+		if lampsLit ~= nil then
+			light(lamp, lampsLit)
 		end
 	elseif role == "Fire" then
 		local light = part:FindFirstChildOfClass("PointLight")
 		if light then
-			fires[part] = { light = light, base = light.Brightness, range = light.Range }
+			fires[part] = {
+				light = light,
+				base = light.Brightness,
+				range = light.Range,
+				seed = rng:NextNumber(0, 100),
+			}
 		end
 	end
 end
@@ -108,23 +147,38 @@ local function untrack(part: Instance)
 		blinkers[part] = nil
 		screens[part] = nil
 		fires[part] = nil
+		lamps[part] = nil
 	end
 end
 
--- Positions a flag's segments along a travelling wave.
+-- Positions a flag's segments along a travelling wave: each joint bends a
+-- little more toward the fly end, with a slow gust that swells and fades.
 function AmbientAnimator.waveFlag(flag: Flag, t: number)
 	local edge = flag.pole
+	local n = #flag.segments
+	local gust = 0.75 + 0.5 * math.noise(t * 0.25, flag.phase)
 	for i, segment in flag.segments do
-		local angle = math.sin(t * 2.6 - i * 1.1 + flag.phase) * (0.1 + i * 0.07)
+		local u = i / n
+		local amplitude = (0.03 + 0.22 * u) * (4 / n) * gust
+		local angle = math.sin(t * 2.4 - u * 4.5 + flag.phase) * amplitude
 		local turn = CFrame.Angles(0, angle, 0)
 		segment.CFrame = edge * turn * CFrame.new(flag.width / 2, -flag.height / 2, 0)
 		edge = edge * turn * CFrame.new(flag.width, 0, 0)
 	end
 end
 
+-- Fire light at time t as (brightness, range) factors: two layers of
+-- noise, so it breathes and licks instead of jumping at random.
+function AmbientAnimator.fireLevel(seed: number, t: number): (number, number)
+	local slow = math.noise(t * 1.6, seed)
+	local fast = math.noise(t * 5.3, seed + 17.3)
+	local brightness = math.clamp(0.9 + 0.35 * slow + 0.12 * fast, 0.55, 1.3)
+	local range = math.clamp(1 + 0.08 * math.noise(t * 1.1, seed + 41.7), 0.9, 1.1)
+	return brightness, range
+end
+
 local clock = 0
 local slowTimer = 0
-local flagTimer = 0
 local flickerAt = 3
 
 function AmbientAnimator.step(dt: number)
@@ -137,20 +191,29 @@ function AmbientAnimator.step(dt: number)
 			radar.model:PivotTo(radar.base * CFrame.Angles(0, clock * AmbientAnimator.RadarSpeed, 0))
 		end
 	end
-	-- flags: 30 Hz, only near the camera
-	flagTimer += dt
-	if flagTimer >= 1 / 30 then
-		flagTimer = 0
-		for _, flag in flags do
-			if (flag.pole.Position - eye).Magnitude < AmbientAnimator.FlagRange then
-				AmbientAnimator.waveFlag(flag, clock)
-			end
+	-- flags: every frame within sight
+	for _, flag in flags do
+		if (flag.pole.Position - eye).Magnitude < AmbientAnimator.FlagRange then
+			AmbientAnimator.waveFlag(flag, clock)
 		end
 	end
-	-- lamps and fire light: 12 Hz
+	-- fire light: every frame, smooth
+	for _, f in fires do
+		local brightness, range = AmbientAnimator.fireLevel(f.seed, clock)
+		f.light.Brightness = f.base * brightness
+		f.light.Range = f.range * range
+	end
+	-- lamps: 12 Hz is plenty for on/off blinking; lamps follow the clock
 	slowTimer += dt
 	if slowTimer >= 1 / 12 then
 		slowTimer = 0
+		local night = AmbientAnimator.isNight(Lighting.ClockTime)
+		if night ~= lampsLit then
+			lampsLit = night
+			for _, lamp in lamps do
+				light(lamp, night)
+			end
+		end
 		for _, b in blinkers do
 			local lit = ((clock + b.phase) % b.period) < b.period * b.duty
 			if lit ~= b.lit then
@@ -159,23 +222,24 @@ function AmbientAnimator.step(dt: number)
 				b.part.Material = if lit then b.onMaterial else Enum.Material.SmoothPlastic
 			end
 		end
-		for _, f in fires do
-			f.light.Brightness = f.base * rng:NextNumber(0.75, 1.15)
-			f.light.Range = f.range * rng:NextNumber(0.9, 1.05)
-		end
 	end
-	-- a random CRT dips briefly every few seconds
+	-- a random CRT dips briefly every few seconds, then returns to its own
+	-- brightness (the screens are not all at 1)
 	if clock >= flickerAt then
 		flickerAt = clock + rng:NextNumber(2.5, 6)
-		local list = {}
-		for _, gui in screens do
-			table.insert(list, gui)
+		local list: { Screen } = {}
+		for _, screen in screens do
+			if not screen.dimmed then
+				table.insert(list, screen)
+			end
 		end
 		if #list > 0 then
-			local gui = list[rng:NextInteger(1, #list)]
-			gui.Brightness = 0.8
+			local screen = list[rng:NextInteger(1, #list)]
+			screen.dimmed = true
+			screen.gui.Brightness = screen.base * 0.8
 			task.delay(0.08, function()
-				gui.Brightness = 1
+				screen.gui.Brightness = screen.base
+				screen.dimmed = false
 			end)
 		end
 	end
@@ -195,6 +259,7 @@ function AmbientAnimator.counts(): { [string]: number }
 		blinkers = size(blinkers),
 		screens = size(screens),
 		fires = size(fires),
+		lamps = size(lamps),
 	}
 end
 

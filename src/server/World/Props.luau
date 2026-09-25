@@ -83,6 +83,21 @@ function Props.picnicTable(parent: Instance, cf: CFrame): Model
 	return model
 end
 
+-- Lamps are dark by day: a plain lens and the light off. The client turns
+-- every NightLamp on after dusk and off after dawn (AmbientAnimator), so
+-- nothing glows in the afternoon sun.
+Props.LensDayColor = Color3.fromRGB(206, 204, 192)
+
+local function nightLamp(lens: BasePart, light: Light?)
+	lens:SetAttribute("NightColor", lens.Color)
+	lens.Color = Props.LensDayColor
+	lens.Material = Enum.Material.SmoothPlastic
+	if light then
+		light.Enabled = false
+	end
+	Kit.anchor(lens, "NightLamp")
+end
+
 -- Cobra-head street lamp; `light` adds a warm non-shadowed PointLight.
 function Props.streetLamp(parent: Instance, cf: CFrame, light: boolean?, height: number?): Model
 	local model = Kit.model(parent, "StreetLamp")
@@ -99,15 +114,18 @@ function Props.streetLamp(parent: Instance, cf: CFrame, light: boolean?, height:
 		Enum.Material.Neon,
 		decor("Lens")
 	)
+	local point: PointLight? = nil
 	if light then
-		local point = Instance.new("PointLight")
-		point.Name = "LampLight"
-		point.Color = Props.LampColor
-		point.Brightness = 1.1
-		point.Range = 26
-		point.Shadows = false
-		point.Parent = lens
+		local lamp = Instance.new("PointLight")
+		lamp.Name = "LampLight"
+		lamp.Color = Props.LampColor
+		lamp.Brightness = 1.1
+		lamp.Range = 26
+		lamp.Shadows = false
+		lamp.Parent = lens
+		point = lamp
 	end
+	nightLamp(lens, point)
 	return model
 end
 
@@ -116,15 +134,18 @@ function Props.bollardLamp(parent: Instance, cf: CFrame, light: boolean?): Model
 	local model = Kit.model(parent, "BollardLamp")
 	Kit.post(model, cf, 3, 0.8, W.SteelDark, METAL, solid("Post"))
 	local cap = Kit.post(model, cf * CFrame.new(0, 3, 0), 0.5, 0.9, Props.LampColor, Enum.Material.Neon, decor("Cap"))
+	local point: PointLight? = nil
 	if light then
-		local point = Instance.new("PointLight")
-		point.Name = "LampLight"
-		point.Color = Props.LampColor
-		point.Brightness = 0.7
-		point.Range = 12
-		point.Shadows = false
-		point.Parent = cap
+		local lamp = Instance.new("PointLight")
+		lamp.Name = "LampLight"
+		lamp.Color = Props.LampColor
+		lamp.Brightness = 0.7
+		lamp.Range = 12
+		lamp.Shadows = false
+		lamp.Parent = cap
+		point = lamp
 	end
+	nightLamp(cap, point)
 	return model
 end
 
@@ -349,17 +370,20 @@ function Props.floodlight(parent: Instance, cf: CFrame, light: boolean?): Model
 			Enum.Material.Neon,
 			decor("Lens")
 		)
+		local spot: SpotLight? = nil
 		if light and x > 0 then
-			local spot = Instance.new("SpotLight")
-			spot.Name = "Flood"
-			spot.Color = Props.LampColor
-			spot.Brightness = 1.2
-			spot.Range = 40
-			spot.Angle = 70
-			spot.Face = Enum.NormalId.Front
-			spot.Shadows = false
-			spot.Parent = lens
+			local flood = Instance.new("SpotLight")
+			flood.Name = "Flood"
+			flood.Color = Props.LampColor
+			flood.Brightness = 1.2
+			flood.Range = 40
+			flood.Angle = 70
+			flood.Face = Enum.NormalId.Front
+			flood.Shadows = false
+			flood.Parent = lens
+			spot = flood
 		end
+		nightLamp(lens, spot)
 	end
 	return model
 end
@@ -659,7 +683,8 @@ function Props.wallClock(parent: Instance, cf: CFrame, label: string?, hours: nu
 end
 
 -- Fluorescent ceiling fitting hanging below `cf` (cf = ceiling point).
-function Props.ceilingLight(parent: Instance, cf: CFrame, light: boolean?, length: number?): Model
+-- `range` should reach the floor from the mounting height (default 20).
+function Props.ceilingLight(parent: Instance, cf: CFrame, light: boolean?, length: number?, range: number?): Model
 	local model = Kit.model(parent, "CeilingLight")
 	local l = length or 5
 	Kit.part(model, Vector3.new(l, 0.3, 1.2), cf * CFrame.new(0, -0.15, 0), W.Steel, METAL, decor("Housing"))
@@ -676,9 +701,9 @@ function Props.ceilingLight(parent: Instance, cf: CFrame, light: boolean?, lengt
 		surface.Name = "TubeLight"
 		surface.Face = Enum.NormalId.Bottom
 		surface.Color = Props.TubeColor
-		surface.Brightness = 0.9
-		surface.Range = 16
-		surface.Angle = 120
+		surface.Brightness = 1.5
+		surface.Range = range or 20
+		surface.Angle = 130
 		surface.Shadows = false
 		surface.Parent = tube
 	end
@@ -744,27 +769,6 @@ end
 
 -- String of bulbs between two points (Decor), with `lights` real lights
 -- spread along it (keep this small).
-function Props.stringLights(parent: Instance, a: Vector3, b: Vector3, bulbs: number, lights: number?)
-	Props.wire(parent, a, b, 0.9, 5)
-	local placed = 0
-	local every = if lights and lights > 0 then math.max(1, math.floor(bulbs / lights)) else math.huge
-	for i = 1, bulbs do
-		local t = i / (bulbs + 1)
-		local point = a:Lerp(b, t) - Vector3.new(0, 0.9 * 4 * t * (1 - t) + 0.35, 0)
-		local bulb = Kit.ball(parent, 0.45, CFrame.new(point), Props.LampColor, Enum.Material.Neon, decor("Bulb"))
-		if lights and placed < lights and i % every == 0 then
-			placed += 1
-			local point2 = Instance.new("PointLight")
-			point2.Name = "BulbLight"
-			point2.Color = Props.LampColor
-			point2.Brightness = 0.6
-			point2.Range = 14
-			point2.Shadows = false
-			point2.Parent = bulb
-		end
-	end
-end
-
 function Props.coffeeUrn(parent: Instance, cf: CFrame): Model
 	local model = Kit.model(parent, "CoffeeUrn")
 	Kit.post(model, cf, 1.8, 1.1, W.Steel, METAL, decor("Urn"))

@@ -79,13 +79,20 @@ local function onTriggered(prompt: ProximityPrompt, player: Player)
 		return
 	end
 	perPlayer[prompt] = now
-	local interactionId = id or ""
+	InteractionService.record(player, kind, id or "", prompt)
+end
+
+-- Records an interaction on the profile (missions, event challenges) and
+-- tells the listeners. Prompts call it; so do server-validated actions
+-- that stand for a physical interaction (viewing a vehicle in the Garage
+-- showroom counts as inspecting it).
+function InteractionService.record(player: Player, kind: string, id: string, prompt: ProximityPrompt?)
 	CommanderService.update(player, function(profile)
-		Trackers.recordInteraction(profile, kind, interactionId)
+		Trackers.recordInteraction(profile, kind, id)
 		return true
 	end)
 	for _, handler in listeners do
-		task.spawn(handler, player, kind, interactionId, prompt)
+		task.spawn(handler, player, kind, id, prompt :: any)
 	end
 end
 

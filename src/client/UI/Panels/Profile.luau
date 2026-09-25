@@ -75,18 +75,62 @@ end
 
 -- PROFILE ---------------------------------------------------------------
 
+-- Colour strip at the top of the dossier: Pact colours (red, gold bands,
+-- gold star) for Warsaw Pact commanders, navy with a white star for NATO.
+-- The base itself flies no Pact flag.
+local function allegianceBanner(card: Frame, pact: boolean)
+	local field = if pact then Color3.fromRGB(138, 42, 36) else Color3.fromRGB(24, 46, 96)
+	local ink = if pact then Color3.fromRGB(214, 170, 72) else Color3.fromRGB(232, 230, 222)
+	local banner = Kit.frame(card, {
+		Name = "AllegianceBanner",
+		BackgroundColor3 = field,
+		Size = UDim2.new(1, 0, 0, 26),
+		LayoutOrder = 0,
+	})
+	banner:SetAttribute("Faction", if pact then "PACT" else "NATO")
+	if pact then
+		for _, y in { 0.12, 0.8 } do
+			Kit.frame(banner, {
+				Name = "Band",
+				BackgroundColor3 = ink,
+				Position = UDim2.fromScale(0, y),
+				Size = UDim2.new(1, 0, 0, 2),
+			})
+		end
+	end
+	local star = Kit.frame(banner, {
+		Name = "Star",
+		BackgroundColor3 = ink,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, 16, 0.5, 0),
+		Size = UDim2.fromOffset(10, 10),
+		Rotation = 45,
+	})
+	star.ZIndex = 2
+	Kit.text(banner, {
+		Name = "Allegiance",
+		Text = if pact then "WARSAW PACT · COMBINED ARMED FORCES" else "NATO · ALLIED FORCES CENTRAL EUROPE",
+		FontFace = Kit.Fonts.MonoBold,
+		TextSize = 11,
+		TextColor3 = ink,
+		Position = UDim2.fromOffset(30, 0),
+		Size = UDim2.new(1, -34, 1, 0),
+	})
+end
+
 local function renderProfile(page: Frame, p: Data)
 	Kit.clear(page)
 	-- dossier card
 	local card = Kit.frame(page, {
 		Name = "Dossier",
 		BackgroundColor3 = Color3.fromRGB(196, 184, 150),
-		Size = UDim2.fromOffset(330, 420),
+		Size = UDim2.fromOffset(330, 448),
 	})
 	Kit.corner(card, 2)
 	Kit.padding(card, 16, 16, 14, 14)
 	Kit.list(card, Enum.FillDirection.Vertical, 6)
 	local ink = Color3.fromRGB(46, 42, 34)
+	allegianceBanner(card, p.faction == "PACT")
 	Kit.text(card, {
 		Name = "Classification",
 		Text = "PERSONNEL FILE · RESTRICTED",
@@ -539,7 +583,7 @@ function Panel.build(shell: Shell)
 		Position = UDim2.new(0, 0, 1, -16),
 		Size = UDim2.new(1, 0, 0, 16),
 	})
-	shell.footer.Text = "COMMAND HQ · PROFILE, RECORDS, QUARTERMASTER, HALL OF HONOUR · WALK AWAY TO CLOSE"
+	shell.footer.Text = "COMMAND HQ · PROFILE, RECORDS, QUARTERMASTER, AWARDS CASE · WALK AWAY TO CLOSE"
 	State.changed:Connect(function(key)
 		if key == "profile" and WindowManager.current() == "Profile" then
 			render(currentTab)

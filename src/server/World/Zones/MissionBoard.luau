@@ -15,7 +15,7 @@ local MissionBoard = {}
 
 -- Cork board face (zone-local): centre, size, facing +Z.
 MissionBoard.BoardCenter = Vector3.new(0, 5.3, -3.3)
-MissionBoard.BoardSize = Vector2.new(13, 6.4)
+MissionBoard.BoardSize = Vector2.new(15.4, 6.4)
 
 function MissionBoard.build(parent: Instance): (Model, CFrame)
 	local zone = Layout.Zones.MissionBoard
@@ -27,14 +27,14 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(-halfW + 2, 0.3, -5),
-		Vector3.new(halfW - 2, 0.5, 0),
+		Vector3.new(-halfW + 1, 0.3, -5),
+		Vector3.new(halfW - 1, 0.5, 0),
 		W.Concrete,
 		Enum.Material.Concrete,
 		{ Name = "Platform" }
 	)
 
-	for _, x in { -7.4, 7.4 } do
+	for _, x in { -8.65, 8.65 } do
 		Kit.box(
 			shell,
 			frame,
@@ -74,8 +74,8 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 	Architecture.gableRoof(
 		shell,
 		frame,
-		-8.6,
-		8.6,
+		-9.8,
+		9.8,
 		-5.2,
 		-0.8,
 		10.8,
@@ -90,7 +90,7 @@ function MissionBoard.build(parent: Instance): (Model, CFrame)
 	local header = Kit.sign(
 		shell,
 		Kit.facingOut(frame, Vector3.new(0, 9.85, -2.7)),
-		Vector2.new(13.8, 1.3),
+		Vector2.new(15.6, 1.3),
 		"MISSION BOARD · CURRENT OPERATIONS",
 		{ Background = W.SignGreen, TextColor = W.OffWhite, PixelsPerStud = 40, Depth = 0.2 }
 	)

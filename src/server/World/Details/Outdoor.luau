@@ -294,28 +294,9 @@ local function courtyard(parent: Instance)
 	for _, spot in { { -29, -14 }, { -18, -25 }, { -28, -35 }, { 29, -14 }, { 18, -25 }, { 28, -35 } } do
 		grounded(Props.picnicTable(folder, local_(spot[1], spot[2], if spot[1] < 0 then 0.06 else -0.06)))
 	end
-	-- string lights on four poles, crossing over the courtyard
-	local tops = {}
-	for _, p in { { -38, -6 }, { 38, -6 }, { 38, -40 }, { -38, -40 } } do
-		local base = local_(p[1], p[2])
-		Kit.post(folder, base, 12, 0.45, W.BrownDark, Enum.Material.Wood, { Name = "LightPole", Shadow = true })
-		table.insert(tops, (base * CFrame.new(0, 11.6, 0)).Position)
-	end
-	Props.stringLights(folder, tops[1], tops[3], 22, 2)
-	Props.stringLights(folder, tops[2], tops[4], 22, 2)
-	-- oil drum brazier (fire + crackle added by the ambient system)
-	local barrel = Props.oilDrum(folder, local_(-10, -20), W.SteelDark)
-	grounded(barrel)
-	local flameBase = Kit.part(
-		barrel,
-		Vector3.new(1.4, 0.4, 1.4),
-		local_(-10, -20) * CFrame.new(0, 2.95, 0),
-		W.Charcoal,
-		nil,
-		{ Name = "FlameBase", Transparency = 1, Decor = true }
-	)
-	Kit.anchor(flameBase, "Fire", "FireBarrel")
-	Effects.fire(flameBase, 2.6)
+	-- two lamps light the courtyard at night (off by day)
+	grounded(Props.streetLamp(folder, local_(-38, -6, math.rad(-135)), true, 12))
+	grounded(Props.streetLamp(folder, local_(38, -40, math.rad(45)), true, 12))
 	grounded(Props.fieldKitchen(folder, local_(37.5, -24)))
 	local pipe = folder:FindFirstChild("StovePipe", true)
 	if pipe and pipe:IsA("BasePart") then

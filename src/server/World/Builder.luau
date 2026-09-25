@@ -48,7 +48,7 @@ local Builder = {}
 
 Builder.RootName = "ColdWarLobby"
 Builder.OriginName = "LobbyOrigin"
-Builder.Version = 4
+Builder.Version = 5
 
 local ZONE_BUILDERS: { [string]: (Instance) -> (Model, CFrame) } = {
 	OperationsCenter = OperationsCenter.build,

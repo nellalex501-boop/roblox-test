@@ -29,11 +29,12 @@ Operations.Stations = {
 	["4V4"] = Vector3.new(26, 0, -30),
 }
 
-local function terminalScreen(screen: Part, mode: GameModes.Mode, index: number)
+local function terminalScreen(screen: Part, mode: GameModes.Mode, number: string)
 	local gui, content = Common.screen(screen, "TerminalScreen", 70)
 	gui:SetAttribute("ModeId", mode.Id)
+	gui:SetAttribute("TerminalNumber", number)
 	local phosphor = Common.Phosphor
-	Common.line(content, "Header", ("C3-NET // OPS TERMINAL %02d"):format(index), 0, 0.12, phosphor, Theme.font("Mono"))
+	Common.line(content, "Header", "C3-NET // OPS TERMINAL " .. number, 0, 0.12, phosphor, Theme.font("Mono"))
 	Common.line(
 		content,
 		"Title",
@@ -89,11 +90,15 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 	local big = modeId == "QUICK"
 	local width = if big then 11 else 8
 
-	-- floor pad in the mode colour
+	-- floor pad in the mode colour: its top 0.05 above the hall floor
+	-- (FloorY + 0.05), the coloured edges 0.05 above the pad and inset from
+	-- its sides; sized so neighbouring pads never overlap
+	local floorTop = 0.05
+	local padW, padD = width + 1, 6
 	Kit.part(
 		model,
-		Vector3.new(width + 2, 0.04, 7),
-		frame * CFrame.new(0, 0.02, 3.6),
+		Vector3.new(padW, 0.06, padD),
+		frame * CFrame.new(0, floorTop + 0.02, 0.1 + padD / 2),
 		W.DarkGrey:Lerp(color, 0.35),
 		Enum.Material.SmoothPlastic,
 		{
@@ -101,11 +106,18 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 			Decor = true,
 		}
 	)
+	local edgeY = floorTop + 0.075
 	for _, seg in
 		{
-			{ Vector3.new(width + 2, 0.06, 0.4), Vector3.new(0, 0.03, 7) },
-			{ Vector3.new(0.4, 0.06, 7), Vector3.new(-(width + 2) / 2, 0.03, 3.6) },
-			{ Vector3.new(0.4, 0.06, 7), Vector3.new((width + 2) / 2, 0.03, 3.6) },
+			{ Vector3.new(padW - 0.1, 0.05, 0.4), Vector3.new(0, edgeY, padD - 0.15) },
+			{
+				Vector3.new(0.4, 0.05, padD - 0.55),
+				Vector3.new(-(padW / 2 - 0.25), edgeY, 0.1 + (padD - 0.55) / 2 + 0.05),
+			},
+			{
+				Vector3.new(0.4, 0.05, padD - 0.55),
+				Vector3.new(padW / 2 - 0.25, edgeY, 0.1 + (padD - 0.55) / 2 + 0.05),
+			},
 		}
 	do
 		Kit.part(
@@ -126,7 +138,9 @@ local function station(parent: Instance, opsFrame: CFrame, modeId: string, index
 	local monitors: { number } = if big then { -2.6, 2.6 } else { 0 }
 	for i, x in monitors do
 		local screen = Common.crt(model, frame * CFrame.new(x, 3.9, -2.3), 3.4, "Terminal")
-		terminalScreen(screen, mode, index * 10 + i)
+		-- same number as the terminal panel ("03"); dual screens are 03A/03B
+		local number = ("%02d"):format(index) .. (if #monitors > 1 then (if i == 1 then "A" else "B") else "")
+		terminalScreen(screen, mode, number)
 	end
 
 	-- equipment rack with blinking lamps

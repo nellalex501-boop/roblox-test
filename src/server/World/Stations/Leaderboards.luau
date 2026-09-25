@@ -17,7 +17,7 @@ local Leaderboards = {}
 Leaderboards.Boards = Config.Boards
 
 Leaderboards.Rows = Config.Rows
-local SLOTS = { -28, -14, 0, 14, 28 }
+local SLOTS = require(World.Zones.Leaderboards).Slots
 
 local function board(parent: Instance, frame: CFrame, spec: Config.Board, x: number)
 	local model = Kit.model(parent, "Board_" .. spec.Id)

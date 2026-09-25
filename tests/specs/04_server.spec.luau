@@ -412,9 +412,10 @@ return function(test)
 			"UNKNOWN_MISSION",
 			"unknown refused"
 		)
-		-- three different vehicles for ORI_INSPECT
+		-- three different vehicles viewed in the Garage showroom for ORI_INSPECT
+		stand(rt, player, "Showroom", "SHOWROOM")
 		for _, unit in { "M1_ABRAMS", "T72", "BMP2" } do
-			use(rt, player, "UnitInspect", unit)
+			t.ok(invoke(rt, player, "Garage", { action = "view", unit = unit }).ok, "showroom view " .. unit)
 		end
 		-- a match server reports stats (simulated here through the service)
 		local CommanderService = rt:requirePath("ServerScriptService.LobbyServer.Services.CommanderService")
@@ -547,7 +548,7 @@ return function(test)
 		t.noRuntimeErrors()
 	end)
 
-	test("garage: unlock with credits and level, paint shop, proximity", function(t)
+	test("garage showroom: unlock with credits and level, paint schemes, views, proximity", function(t)
 		local rt = boot()
 		local player = join(rt, "Tanker")
 		local r = invoke(rt, player, "Garage", { action = "collection" })
@@ -558,8 +559,18 @@ return function(test)
 			"NOT_AT_GARAGE",
 			"must be in the garage"
 		)
-		stand(rt, player, "UnitCollection")
+		t.eq(
+			invoke(rt, player, "Garage", { action = "view", unit = "T72" }).error,
+			"NOT_AT_GARAGE",
+			"vehicles are viewed in the showroom"
+		)
+		stand(rt, player, "Showroom", "SHOWROOM")
 		t.eq(invoke(rt, player, "Garage", { action = "unlock", unit = "BRDM2" }).error, "LEVEL_TOO_LOW", "level gate")
+		t.eq(invoke(rt, player, "Garage", { action = "view", unit = "NOPE" }).error, "UNKNOWN_UNIT", "unknown unit")
+		t.ok(invoke(rt, player, "Garage", { action = "view", unit = "T72" }).ok, "view at the showroom console")
+		t.ok(invoke(rt, player, "Garage", { action = "view", unit = "T72" }).ok, "repeat view accepted")
+		local counts = profileOf(rt, player).lobby.interactions
+		t.eq(counts["UnitInspect:T72"], 1, "a showroom view counts as one inspection (repeat within cooldown ignored)")
 		local CommanderService = rt:requirePath("ServerScriptService.LobbyServer.Services.CommanderService")
 		CommanderService.update(player, function(p)
 			p.xp = 1000
@@ -574,7 +585,6 @@ return function(test)
 			"EVENT_ONLY",
 			"event unit not for sale"
 		)
-		stand(rt, player, "UnitCosmetics")
 		t.eq(
 			invoke(rt, player, "Garage", { action = "buyCamo", camo = "URBAN" }).error,
 			"NOT_ENOUGH_CREDITS",

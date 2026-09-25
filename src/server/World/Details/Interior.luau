@@ -80,13 +80,11 @@ local function operationsCenter(parent: Instance)
 	local frame = Layout.frame(Layout.Zones.OperationsCenter)
 	local floor = 0.65
 	local ceiling = 22.6
-	-- light fittings on drop cords above the hanging mode signs
-	local lit = 0
-	for _, x in { -20, 0, 20 } do
-		for _, z in { -14, -40 } do
-			lit += 1
+	-- light fittings on drop cords: a 3 x 3 grid over the whole hall, all lit
+	for _, x in { -22, 0, 22 } do
+		for _, z in { -12, -30, -48 } do
 			local fitting = frame * CFrame.new(x, 17, z)
-			Props.ceilingLight(folder, fitting, lit % 2 == 1 or x == 0, 6)
+			Props.ceilingLight(folder, fitting, true, 6, 24)
 			for _, dx in { -2.4, 2.4 } do
 				Kit.part(
 					folder,
@@ -149,8 +147,8 @@ local function operationsCenter(parent: Instance)
 		papers(signals, desk * CFrame.new(1, 2.93, -0.2))
 		grounded(Props.chair(signals, desk * CFrame.new(0, 0, 2.4)))
 	end
-	Props.ceilingLight(signals, frame * CFrame.new(-42, ceiling - 0.2, -20), true, 5)
-	Props.ceilingLight(signals, frame * CFrame.new(-42, ceiling - 0.2, -46), false, 5)
+	Props.ceilingLight(signals, frame * CFrame.new(-42, ceiling - 0.2, -20), true, 5, 24)
+	Props.ceilingLight(signals, frame * CFrame.new(-42, ceiling - 0.2, -46), true, 5, 24)
 
 	-- east wing: briefing room (rows of chairs facing the briefing board)
 	local briefing = Kit.folder(folder, "BriefingRoom")
@@ -170,8 +168,8 @@ local function operationsCenter(parent: Instance)
 		end
 	end
 	grounded(Props.desk(briefing, frame * CFrame.new(46.4, floor, -44.5) * LEFT, 4))
-	Props.ceilingLight(briefing, frame * CFrame.new(42, ceiling - 0.2, -48), true, 5)
-	Props.ceilingLight(briefing, frame * CFrame.new(42, ceiling - 0.2, -18), false, 5)
+	Props.ceilingLight(briefing, frame * CFrame.new(42, ceiling - 0.2, -48), true, 5, 24)
+	Props.ceilingLight(briefing, frame * CFrame.new(42, ceiling - 0.2, -18), true, 5, 24)
 end
 
 -- Map Room --------------------------------------------------------------------------
@@ -180,6 +178,12 @@ local function mapRoom(parent: Instance)
 	local folder = Kit.folder(parent, "MapRoom")
 	local frame = Layout.frame(Layout.Zones.MapRoom)
 	local floor = 0.6
+	-- four fluorescent fittings under the 18-stud ceiling
+	for _, x in { -12, 12 } do
+		for _, z in { -12, -36 } do
+			Props.ceilingLight(folder, frame * CFrame.new(x, 18, z), true, 6, 22)
+		end
+	end
 	-- chairs around the planning table (centre (0, -26), 20 x 13)
 	for _, x in { -6, 0, 6 } do
 		grounded(Props.chair(folder, frame * CFrame.new(x, floor, -26 + 8.6)))
@@ -248,13 +252,10 @@ local function garage(parent: Instance)
 	local folder = Kit.folder(parent, "Garage")
 	local frame = Layout.frame(Layout.Zones.Garage)
 	local floor = 0.4
-	-- high-bay fittings over the display bays
-	local lit = 0
-	for _, x in { -26, 0, 26 } do
-		for _, z in { -19, -45 } do
-			lit += 1
-			Props.ceilingLight(folder, frame * CFrame.new(x, 21.5, z), lit % 2 == 0, 7)
-		end
+	-- high-bay fittings over the service bays and the console area (the
+	-- spotlight truss lights the turntable), all lit, reaching the floor
+	for _, spot in { { -26, -16 }, { 26, -16 }, { -26, -48 }, { 26, -48 }, { 0, -8 } } do
+		Props.ceilingLight(folder, frame * CFrame.new(spot[1], 21.5, spot[2]), true, 7, 28)
 	end
 	-- workshop walls: benches, tyres, drums, extinguishers
 	for _, side in { -1, 1 } do
@@ -285,8 +286,8 @@ local function canteen(parent: Instance)
 	-- canteen frame: door at z = 0, interior x ±27, z -1 .. -25
 	local frame = Layout.frame(Layout.Zones.SocialArea) * CFrame.new(0, 0, -44)
 	local floor = 0.65
-	for _, x in { -12, 12 } do
-		Props.ceilingLight(folder, frame * CFrame.new(x, 10.6, -13), true, 6)
+	for _, x in { -16, 0, 16 } do
+		Props.ceilingLight(folder, frame * CFrame.new(x, 10.6, -13), true, 6, 16)
 	end
 	for _, spot in { { -17, -7 }, { -17, -15 }, { 17, -7 }, { 17, -15 } } do
 		local table_ = Kit.model(folder, "CanteenTable")

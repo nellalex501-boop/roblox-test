@@ -47,14 +47,7 @@ Blockout.Points = {
 		p("Achievements", "TROPHIES", -14, -14, "TROPHIES"),
 	},
 	Garage = {
-		p("UnitInspect", "M1_ABRAMS", -32, -9, "M1"),
-		p("UnitInspect", "T72", -6, -9, "T-72"),
-		p("UnitInspect", "M2_BRADLEY", 20, -9, "M2"),
-		p("UnitInspect", "BMP2", -32, -33, "BMP-2"),
-		p("UnitInspect", "BTR70", -6, -33, "BTR-70"),
-		p("UnitInspect", "ZSU234", 20, -33, "ZSU"),
-		p("UnitCollection", "REGISTRY", -30, -58, "REGISTRY"),
-		p("UnitCosmetics", "PAINT", 30, -58, "PAINT"),
+		p("Showroom", "SHOWROOM", -6, -16, "SHOWROOM"),
 	},
 	Leaderboards = {
 		p("Leaderboard", "TOP_COMMANDERS", -28, -30, "TOP"),
@@ -261,7 +254,7 @@ function Blockout.build(root: Instance)
 		Enum.Material.SmoothPlastic,
 		{ Name = "TheaterMap" }
 	)
-	Interactions.attach(map, "TheaterMap", "THEATER", "THEATRE MAP")
+	Interactions.attach(map, "TheaterMap", "THEATER", "THEATER MAP")
 
 	local spawns = Kit.folder(root, "Spawns")
 	local spawnCfg = Layout.Spawn

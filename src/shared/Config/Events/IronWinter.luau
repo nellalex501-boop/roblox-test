@@ -12,7 +12,7 @@ local event: Types.Event = {
 	Title = "IRON WINTER",
 	Codename = "OPERATION IRON WINTER",
 	Tagline = "THE FULDA SECTOR FREEZES OVER",
-	Description = "An early winter has frozen the Fulda. Ice opens new river crossings and Warsaw Pact armour is massing in whitewash. Hold the line until the thaw.",
+	Description = "An early winter has frozen the Fulda. Ice opens new river crossings and Warsaw Pact armor is massing in whitewash. Hold the line until the thaw.",
 	-- Unix timestamps (UTC): 2026-09-15 00:00 → 2026-10-17 00:00.
 	StartsAt = 1789430400,
 	EndsAt = 1792195200,

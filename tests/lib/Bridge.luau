@@ -62,6 +62,8 @@ function Bridge.boot(options)
 		local Builder = client:requirePath("ServerScriptService.LobbyServer.World.Builder")
 		Builder.Build({ Parent = client.workspace, SkipLighting = true })
 	end
+	-- "replicate" the time of day set by the server's LightingSetup
+	client.game:GetService("Lighting").ClockTime = server.game:GetService("Lighting").ClockTime
 	-- "replicate" the lobby's position: the server moves a lobby that was
 	-- inserted at an offset back to the origin (Setup.alignWorld)
 	local serverLobby = server.workspace:FindFirstChild("ColdWarLobby")

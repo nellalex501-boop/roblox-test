@@ -1,7 +1,8 @@
 --!strict
--- GARAGE — vehicle maintenance/showcase hall (unit collection).
+-- GARAGE — motor pool hall with the vehicle showroom (turntable, see
+-- Stations/Garage) and working service bays along the sides.
 -- Steel-frame hall: concrete base band, olive metal cladding, shallow gable
--- roof, three large roll-up doors with bollards, painted bay lines.
+-- roof, three large roll-up doors with bollards, painted walkway lines.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -16,15 +17,6 @@ local Garage = {}
 
 Garage.FloorY = 0.4
 Garage.EaveY = 24
--- Vehicle bays (zone-local centres); front row near the doors.
-Garage.Bays = {
-	{ X = -26, Z = -19 },
-	{ X = 0, Z = -19 },
-	{ X = 26, Z = -19 },
-	{ X = -26, Z = -45 },
-	{ X = 0, Z = -45 },
-	{ X = 26, Z = -45 },
-}
 
 function Garage.build(parent: Instance): (Model, CFrame)
 	local zone = Layout.Zones.Garage
@@ -41,7 +33,7 @@ function Garage.build(parent: Instance): (Model, CFrame)
 		frame,
 		Vector3.new(-halfW, 0, -depth),
 		Vector3.new(halfW, floorY, 0),
-		W.Concrete,
+		Color3.fromRGB(168, 166, 156),
 		Enum.Material.Concrete,
 		{ Name = "Floor" }
 	)
@@ -57,8 +49,8 @@ function Garage.build(parent: Instance): (Model, CFrame)
 	Kit.box(
 		shell,
 		frame,
-		Vector3.new(-halfW, 0.3, 4.6),
-		Vector3.new(halfW, 0.32, 5.2),
+		Vector3.new(-halfW + 0.5, 0.3, 4.6),
+		Vector3.new(halfW - 0.5, 0.36, 5.2),
 		W.DarkGrey,
 		Enum.Material.DiamondPlate,
 		{
@@ -204,7 +196,8 @@ function Garage.build(parent: Instance): (Model, CFrame)
 			}
 		)
 		for _, side in { -1, 1 } do
-			local jamb = x + side * (entrance.Width / 2 + 0.3)
+			-- rails stand 0.05 clear of the door reveal
+			local jamb = x + side * (entrance.Width / 2 + 0.35)
 			Kit.box(
 				shell,
 				frame,
@@ -232,7 +225,7 @@ function Garage.build(parent: Instance): (Model, CFrame)
 		if i ~= 2 then
 			local plate = Kit.sign(
 				shell,
-				Kit.facingOut(frame, Vector3.new(x, top + 2.2, 0.35)),
+				Kit.facingOut(frame, Vector3.new(x, top + 2.2, 0.2)),
 				Vector2.new(7, 2.4),
 				"BAY " .. i,
 				{ Background = W.Charcoal, TextColor = W.HazardYellow, PixelsPerStud = 30 }
@@ -244,52 +237,34 @@ function Garage.build(parent: Instance): (Model, CFrame)
 	-- main sign over the centre door
 	local sign = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(0, floorY + 18 + 3.2, 0.4)),
-		Vector2.new(30, 5.4),
+		Kit.facingOut(frame, Vector3.new(0, floorY + 18 + 3.2, 0.2)),
+		Vector2.new(24, 5.4),
 		zone.DisplayName,
 		{ Background = W.SignGreen, Subtitle = zone.Subtitle, Stripe = W.HazardYellow, PixelsPerStud = 18 }
 	)
 	sign.Name = "EntranceSign"
 	local plate = Kit.sign(
 		shell,
-		Kit.facingOut(frame, Vector3.new(-39, 8, 0.8)),
-		Vector2.new(3, 2),
+		Kit.facingOut(frame, Vector3.new(-37.1, 8, 0.075)),
+		Vector2.new(2, 1.4),
 		"BLDG 104",
 		{ Background = W.OffWhite, TextColor = W.Charcoal, Depth = 0.15, PixelsPerStud = 40 }
 	)
 	plate.Name = "BuildingNumber"
 
-	-- painted bay lines on the hall floor
+	-- painted walkway lines from the doors to the showroom, 0.06 proud
 	local line = W.HazardYellow
 	for _, x in { -13, 13 } do
 		Kit.box(
 			shell,
 			frame,
-			Vector3.new(x - 0.25, floorY, -58),
-			Vector3.new(x + 0.25, floorY + 0.04, -4),
+			Vector3.new(x - 0.25, floorY - 0.04, -14),
+			Vector3.new(x + 0.25, floorY + 0.06, -3),
 			line,
 			nil,
-			{ Name = "BayLine", Decor = true }
+			{ Name = "WalkLine", Decor = true }
 		)
 	end
-	Kit.box(
-		shell,
-		frame,
-		Vector3.new(-39, floorY, -32.25),
-		Vector3.new(39, floorY + 0.04, -31.75),
-		line,
-		nil,
-		{ Name = "BayLine", Decor = true }
-	)
-	Kit.box(
-		shell,
-		frame,
-		Vector3.new(-39, floorY, -58.25),
-		Vector3.new(39, floorY + 0.04, -57.75),
-		line,
-		nil,
-		{ Name = "BayLine", Decor = true }
-	)
 
 	-- personnel door on the north side (closed)
 	local doorCf = frame * CFrame.new(halfW + 0.1, floorY + 4, -(depth - 12))

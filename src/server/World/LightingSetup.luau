@@ -23,11 +23,12 @@ function LightingSetup.apply()
 	Lighting.ClockTime = 15.6
 	Lighting.GeographicLatitude = 50.5
 	Lighting.Brightness = 2.3
-	Lighting.Ambient = Color3.fromRGB(70, 72, 70)
+	-- Ambient lights only what the sky cannot reach: the interiors
+	Lighting.Ambient = Color3.fromRGB(112, 112, 106)
 	Lighting.OutdoorAmbient = Color3.fromRGB(126, 128, 120)
 	Lighting.ColorShift_Top = Color3.fromRGB(255, 240, 220)
 	Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
-	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentDiffuseScale = 0.55
 	Lighting.EnvironmentSpecularScale = 0.3
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.3

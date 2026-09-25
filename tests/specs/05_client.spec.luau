@@ -89,7 +89,7 @@ return function(test)
 		t.noRuntimeErrors()
 	end)
 
-	test("every station opens its panel and tab; Esc and walking away close it", function(t)
+	test("every station opens its panel and tab; X and walking away close it", function(t)
 		local ctx = boot()
 		local Interactions = ctx.module("UI.Kit") and ctx.client:requirePath("ReplicatedStorage.Lobby.Interactions")
 		local seen = {}
@@ -114,8 +114,8 @@ return function(test)
 			end
 			t.ok(shell and shell.root.Visible, def.Panel .. " visible")
 			t.eq(ctx.client.game:GetService("ProximityPromptService").Enabled, false, "prompts hidden while open")
-			ctx.key(Enum.KeyCode.Escape)
-			t.eq(WindowManager.current(), nil, "Esc closes " .. def.Panel)
+			ctx.key(Enum.KeyCode.X)
+			t.eq(WindowManager.current(), nil, "X closes " .. def.Panel)
 		end
 		t.eq(ctx.client.game:GetService("ProximityPromptService").Enabled, true, "prompts back after closing")
 		-- walking away
@@ -138,7 +138,7 @@ return function(test)
 		t.ok(ctx.findVisible("LeaveQueue") ~= nil, "leave button shown")
 		Scheduler.advance(2)
 		ctx.capture("matchmaking-queued", BG.plaza)
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.key(Enum.KeyCode.X)
 		local strip = ctx.find("QueueStrip")
 		t.eq(strip.Visible, true, "HUD queue strip visible after closing the panel")
 		t.ok(ctx.text("Text"):find("1v1 DUEL") ~= nil, "strip names the mode")
@@ -221,12 +221,12 @@ return function(test)
 		ctx.click("SetPreferred")
 		t.eq(ctx.profile().preferredMap, "DAM", "preferred map saved on the server")
 		t.eq(ctx.text("SetPreferred"), "PREFERRED MAP ✓", "button reflects the saved state")
-		ctx.click("Tab_THEATRE")
+		ctx.click("Tab_THEATER")
 		t.ok(ctx.find("TheaterCanvas") ~= nil, "theatre map drawn")
-		ctx.capture("maps-theatre", BG.back)
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.capture("maps-theater", BG.back)
+		ctx.key(Enum.KeyCode.X)
 		ctx.use("TheaterMap")
-		t.eq(ctx.module("UI.WindowManager").shell("Maps").tab, "THEATRE", "plaza table opens the theatre tab")
+		t.eq(ctx.module("UI.WindowManager").shell("Maps").tab, "THEATER", "plaza table opens the theatre tab")
 		t.noRuntimeErrors()
 	end)
 
@@ -247,13 +247,13 @@ return function(test)
 		ctx.click("Tab_ACHIEVEMENTS")
 		t.ok(ctx.findVisible("Achievement_FIRST_WIN") ~= nil, "achievements listed")
 		ctx.capture("profile-achievements", BG.side)
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.key(Enum.KeyCode.X)
 		ctx.use("Statistics")
 		t.eq(ctx.module("UI.WindowManager").shell("Profile").tab, "STATISTICS", "records room opens statistics")
 		t.noRuntimeErrors()
 	end)
 
-	test("garage UI: inspect sheet with orbit camera, unlock, paint shop", function(t)
+	test("garage showroom: picked vehicle on the turntable, camera clear of walls, unlock, paint", function(t)
 		local ctx = boot()
 		local CommanderService = ctx.serverModule("Services.CommanderService")
 		CommanderService.update(ctx.serverPlayer, function(p)
@@ -262,37 +262,103 @@ return function(test)
 			return true
 		end)
 		Scheduler.advance(0.5)
-		ctx.use("UnitInspect", "M2_BRADLEY")
-		t.eq(ctx.current(), "Inspect", "inspection sheet open")
+		local Showroom = ctx.module("Controllers.ShowroomController")
+		local CameraController = ctx.module("Controllers.CameraController")
+		local Units = ctx.client:requirePath("ReplicatedStorage.Lobby.Config.Units")
+		local Layout = ctx.client:requirePath("ReplicatedStorage.Lobby.Config.Layout")
+		t.ok(Showroom.stage() ~= nil, "turntable found")
+		t.eq(Showroom.model() and Showroom.model():GetAttribute("UnitId"), "M1_ABRAMS", "default vehicle on show")
+		local featuredLeft = false
+		for _, d in ctx.client.workspace:GetDescendants() do
+			if d:IsA("Model") and d:GetAttribute("ShowroomFeatured") then
+				featuredLeft = true
+			end
+		end
+		t.ok(not featuredLeft, "the server's featured vehicle is hidden for this player")
+		ctx.use("Showroom")
+		t.eq(ctx.current(), "Showroom", "showroom viewer open")
 		local camera = ctx.client.workspace.CurrentCamera
-		t.eq(camera.CameraType, Enum.CameraType.Scriptable, "camera orbits the vehicle")
+		t.eq(camera.CameraType, Enum.CameraType.Scriptable, "camera focuses on the vehicle")
+		t.ok(ctx.findVisible("Unit_T72") ~= nil and ctx.findVisible("Unit_LEOPARD_2") ~= nil, "every vehicle listed")
+		t.ok(ctx.findVisible("Close") ~= nil, "clickable close button")
+		ctx.capture("garage-showroom", BG.side)
+		ctx.click("Unit_M2_BRADLEY")
+		t.eq(Showroom.current(), "M2_BRADLEY", "picked vehicle")
+		local model = Showroom.model()
+		t.eq(model and model:GetAttribute("UnitId"), "M2_BRADLEY", "picked vehicle is on the turntable")
+		t.eq(CameraController.state() and CameraController.state().model, model, "camera follows the new vehicle")
+		t.eq(ctx.text("VehicleName"), "M2 BRADLEY", "name plate")
+		-- the camera stays inside the hall with a clear view, at every angle
+		-- and fully zoomed out (walls shorten the distance)
+		local frame = Layout.frame(Layout.Zones.Garage)
+		local halfW, depth = Layout.Zones.Garage.Width / 2, Layout.Zones.Garage.Depth
+		local inside, clear = true, true
+		CameraController.zoom(-20)
+		for _ = 1, 12 do
+			CameraController.turn(Vector2.new(260, 0))
+			ctx.client:step(0.5)
+			local eye = camera.CFrame.Position
+			local localEye = frame:PointToObjectSpace(eye)
+			if math.abs(localEye.X) > halfW - 1 or localEye.Z > -1 or localEye.Z < -depth + 1 or localEye.Y > 24 then
+				inside = false
+			end
+			local center = CameraController.state().center
+			local params = {
+				FilterType = Enum.RaycastFilterType.Exclude,
+				FilterDescendantsInstances = { model, ctx.player.Character },
+			}
+			if ctx.client.workspace:Raycast(center, eye - center, params) then
+				clear = false
+			end
+		end
+		t.ok(inside, "camera never leaves the Garage hall")
+		t.ok(clear, "nothing comes between the camera and the vehicle")
+		-- unlock
 		t.ok(ctx.findVisible("Unlock") ~= nil, "unlock offered")
-		ctx.capture("garage-inspect", BG.side)
 		ctx.click("Unlock")
 		t.ok(ctx.profile().unitsUnlocked.M2_BRADLEY, "unit unlocked on the server")
 		t.eq(ctx.profile().credits, 3500, "credits spent")
-		ctx.key(Enum.KeyCode.Escape)
-		t.eq(camera.CameraType, Enum.CameraType.Custom, "camera handed back")
-		ctx.use("UnitCollection")
-		t.eq(ctx.current(), "Garage", "registry opens the garage panel")
-		t.ok(ctx.findVisible("Unit_LEOPARD_2") ~= nil, "collection lists locked units")
-		ctx.capture("garage-collection", BG.side)
-		ctx.key(Enum.KeyCode.Escape)
-		ctx.use("UnitCosmetics")
-		t.eq(ctx.module("UI.WindowManager").shell("Garage").tab, "PAINT", "paint shop tab")
+		-- paint: preview on the vehicle, buy, apply
+		ctx.click("Tab_PAINT")
 		ctx.click("Camo_WOODLAND")
+		local base
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and d:GetAttribute("Paint") == "Base" then
+				base = d
+			end
+		end
+		t.eq(base and base.Color, Units.Camos.List.WOODLAND.Colors[1], "scheme previewed on the vehicle")
 		ctx.click("BuyCamo")
 		t.ok(ctx.profile().camosOwned.WOODLAND, "camo bought")
 		ctx.click("ApplyCamo")
-		t.eq(ctx.profile().unitCamos.M1_ABRAMS, "WOODLAND", "camo applied to the selected unit")
+		t.eq(ctx.profile().unitCamos.M2_BRADLEY, "WOODLAND", "camo applied to the vehicle on show")
 		ctx.capture("garage-paint", BG.side)
+		-- viewing vehicles counts for the inspect mission
+		ctx.click("Tab_INFO")
+		ctx.click("Unit_T72")
+		ctx.click("Unit_BMP2")
+		Scheduler.advance(1)
+		local distinct = 0
+		for _ in ctx.profile().lobby.distinct.UnitInspect or {} do
+			distinct += 1
+		end
+		t.ge(distinct, 3, "showroom views count as inspecting different vehicles")
+		ctx.key(Enum.KeyCode.X)
+		t.eq(ctx.current(), nil, "X closes the showroom")
+		t.eq(camera.CameraType, Enum.CameraType.Custom, "camera handed back")
+		-- the event's limited unit keeps its inspection sheet
+		ctx.use("UnitInspect", "T80BV_ZIMA")
+		t.eq(ctx.current(), "Inspect", "event unit inspection sheet")
+		t.eq(camera.CameraType, Enum.CameraType.Scriptable, "camera orbits the event unit")
+		ctx.capture("event-inspect", BG.side)
+		ctx.key(Enum.KeyCode.X)
 		t.noRuntimeErrors()
 	end)
 
 	test("missions UI: claim from the board, board ticks personalised", function(t)
 		local ctx = boot()
 		ctx.use("Matchmaking", "QUICK")
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.key(Enum.KeyCode.X)
 		Scheduler.advance(1)
 		ctx.use("Missions")
 		t.eq(ctx.current(), "Missions", "mission board open")
@@ -323,10 +389,10 @@ return function(test)
 		t.ok(ctx.text("Mine"):find("YOUR STANDING") ~= nil, "your standing shown")
 		t.ok(ctx.find("Row1") ~= nil, "rows drawn")
 		ctx.capture("leaderboards", BG.back)
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.key(Enum.KeyCode.X)
 		ctx.use("Event", "CURRENT")
 		ctx.use("UnitInspect", "T80BV_ZIMA")
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.key(Enum.KeyCode.X)
 		ctx.use("Event", "CURRENT")
 		Scheduler.advance(1)
 		t.eq(ctx.current(), "Event", "event briefing open")
@@ -385,7 +451,7 @@ return function(test)
 		t.le(size.X.Offset * scale, 800, "panel width fits")
 		t.le(size.Y.Offset * scale + 58, 360, "panel height fits below the top bar")
 		ctx.capture("phone-matchmaking")
-		ctx.key(Enum.KeyCode.Escape)
+		ctx.key(Enum.KeyCode.X)
 		ctx.capture("phone-hud")
 		t.noRuntimeErrors()
 	end)

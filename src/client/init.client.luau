@@ -14,6 +14,7 @@ local Hud = require(script.UI.Hud.Hud)
 local Notifications = require(script.UI.Hud.Notifications)
 local InteractionController = require(script.Controllers.InteractionController)
 local CameraController = require(script.Controllers.CameraController)
+local ShowroomController = require(script.Controllers.ShowroomController)
 local MissionBoardView = require(script.Controllers.MissionBoardView)
 local AmbientAnimator = require(script.Ambient.AmbientAnimator)
 local AmbientSound = require(script.Ambient.AmbientSound)
@@ -25,7 +26,7 @@ local PANELS: { [string]: WindowManager.Panel } = {
 	Maps = require(Panels.Maps),
 	Profile = require(Panels.Profile),
 	Inspect = require(Panels.Inspect),
-	Garage = require(Panels.Garage),
+	Showroom = require(Panels.Showroom),
 	Leaderboards = require(Panels.Leaderboards),
 	Missions = require(Panels.Missions),
 	Event = require(Panels.Event),
@@ -40,6 +41,7 @@ Hud.start()
 Notifications.start()
 InteractionController.start()
 CameraController.start()
+ShowroomController.start()
 MissionBoardView.start()
 AmbientAnimator.start()
 AmbientSound.start()

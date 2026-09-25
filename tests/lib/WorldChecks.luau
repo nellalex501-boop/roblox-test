@@ -154,6 +154,7 @@ function WorldChecks.stats(root)
 		surfaceGuis = 0,
 		textLabels = 0,
 		lights = 0,
+		enabledLights = 0,
 		shadowLights = 0,
 		particles = 0,
 		sounds = 0,
@@ -196,6 +197,9 @@ function WorldChecks.stats(root)
 			stats.textLabels += 1
 		elseif d:IsA("Light") then
 			stats.lights += 1
+			if d.Enabled then
+				stats.enabledLights += 1
+			end
 			if d.Shadows then
 				stats.shadowLights += 1
 			end

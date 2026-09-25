@@ -252,7 +252,7 @@ local function lockers(parent: Instance, frame: CFrame)
 		model,
 		base * CFrame.new(0, 8.2, 0.95) * CFrame.Angles(0, math.pi, 0),
 		Vector2.new(8, 1.2),
-		"QUARTERMASTER · CUSTOMISATION",
+		"QUARTERMASTER · CUSTOMIZATION",
 		{
 			Background = W.SignGreen,
 			PixelsPerStud = 40,
@@ -337,12 +337,12 @@ local function trophies(parent: Instance, frame: CFrame)
 			{ Name = "Mullion", Decor = true }
 		)
 	end
-	Interactions.attach(case, "Achievements", "TROPHIES", "HALL OF HONOUR")
+	Interactions.attach(case, "Achievements", "TROPHIES", "AWARDS CASE")
 	local sign = Kit.sign(
 		model,
 		base * CFrame.new(0, 7.9, 0.9) * CFrame.Angles(0, math.pi, 0),
 		Vector2.new(7, 1.2),
-		"HALL OF HONOUR · ACHIEVEMENTS",
+		"AWARDS CASE · ACHIEVEMENTS",
 		{
 			Background = W.BrownDark,
 			TextColor = Color3.fromRGB(214, 190, 120),

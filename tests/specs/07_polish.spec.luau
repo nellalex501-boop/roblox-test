@@ -55,27 +55,58 @@ return function(test)
 		local model = radar.Parent
 		local before = model:GetPivot()
 		local flagPart = anchors(ctx, "Flag")[1]
-		local tip = flagPart.Parent:FindFirstChild("FlagSegment3")
+		local segments = 0
+		for _, child in flagPart.Parent:GetChildren() do
+			if child:GetAttribute("FlagIndex") then
+				segments += 1
+			end
+		end
+		local tip = flagPart.Parent:FindFirstChild("FlagSegment" .. segments)
 		local tipBefore = tip.CFrame
 		local lamp
 		for _, part in anchors(ctx, "BlinkFast") do
 			lamp = part
 		end
 		local fire = anchors(ctx, "Fire")[1]:FindFirstChildOfClass("PointLight")
+		local crts = {}
+		local above = 0
+		for _, part in anchors(ctx, "CrtFlicker") do
+			local gui = part:FindFirstChildOfClass("SurfaceGui")
+			if gui then
+				crts[gui] = gui.Brightness
+				if gui.Brightness > 1 then
+					above += 1
+				end
+			end
+		end
 		local colors, brightness, dipped = {}, {}, false
-		for _ = 1, 240 do
-			ctx.client:step(1 / 30)
+		local lastFire, maxJump, fireBase = fire.Brightness, 0, fire.Brightness
+		local frozenFrames, lastTip = 0, tip.CFrame
+		for frame = 1, 480 do
+			ctx.client:step(1 / 60)
 			colors[tostring(lamp.Color)] = true
 			brightness[string.format("%.2f", fire.Brightness)] = true
-			for _, d in ctx.client.workspace:GetDescendants() do
-				if d:IsA("SurfaceGui") and d.Brightness < 1 then
+			-- (the first frame hands the light over from its resting level)
+			if frame > 1 then
+				maxJump = math.max(maxJump, math.abs(fire.Brightness - lastFire))
+			end
+			lastFire = fire.Brightness
+			if (tip.CFrame.Position - lastTip.Position).Magnitude < 1e-5 then
+				frozenFrames += 1
+			end
+			lastTip = tip.CFrame
+			for gui, base in crts do
+				if gui.Brightness < base - 0.01 then
 					dipped = true
 				end
 			end
 		end
+		ctx.client:step(0.3)
 		local turned = before.LookVector:Dot(model:GetPivot().LookVector)
 		t.ok(turned < 0.999, "radar rotated")
 		t.ok((tip.CFrame.Position - tipBefore.Position).Magnitude > 0.01, "flag fly end moves")
+		t.ge(segments, 6, "flags have at least 6 segments")
+		t.le(frozenFrames, 2, "flags move every frame (no 30 Hz judder)")
 		local lampStates = 0
 		for _ in colors do
 			lampStates += 1
@@ -85,8 +116,17 @@ return function(test)
 		for _ in brightness do
 			fireStates += 1
 		end
-		t.ge(fireStates, 4, "fire light flickers")
+		t.ge(fireStates, 20, "fire light flickers")
+		t.le(maxJump, fireBase * 0.08, "fire light changes smoothly between frames (no strobe)")
 		t.ok(dipped, "a CRT flickered")
+		t.ge(above, 1, "CRT screens start brighter than 1")
+		local restored = true
+		for gui, base in crts do
+			if math.abs(gui.Brightness - base) > 1e-6 then
+				restored = false
+			end
+		end
+		t.ok(restored, "every CRT is back at its own brightness after flickering")
 		t.noRuntimeErrors()
 	end)
 

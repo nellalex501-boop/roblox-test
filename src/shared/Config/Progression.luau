@@ -77,7 +77,7 @@ export type Insignia = { Id: string, Name: string, Short: string, Color: Color3,
 
 Progression.Insignia = {
 	{ Id = "BORDER_CAV", Name = "1ST BORDER CAVALRY", Short = "1BC", Color = Color3.fromRGB(88, 120, 152), Level = 1 },
-	{ Id = "ARMORED_7", Name = "7TH ARMOURED BRIGADE", Short = "7AB", Color = Color3.fromRGB(112, 132, 84), Level = 1 },
+	{ Id = "ARMORED_7", Name = "7TH ARMORED BRIGADE", Short = "7AB", Color = Color3.fromRGB(112, 132, 84), Level = 1 },
 	{
 		Id = "GUARDS_TANK",
 		Name = "GUARDS TANK DIVISION",

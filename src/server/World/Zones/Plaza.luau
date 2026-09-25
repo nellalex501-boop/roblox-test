@@ -121,55 +121,71 @@ local function mapTable(parent: Instance)
 	return model
 end
 
+-- Two flag groups either side of the dais, clear of the central axis so
+-- they never stand between the spawn and the Operations Center sign.
+Plaza.FlagPlan = {
+	{ Angle = 166, Height = 29, Design = "WestGermany" },
+	{ Angle = 150, Height = 33, Design = "Usa" },
+	{ Angle = 30, Height = 31, Design = "Nato" },
+	{ Angle = 14, Height = 28, Design = "Cavalry" },
+}
+
 local function flags(parent: Instance)
 	local folder = Kit.folder(parent, "Flags")
 	local center = Layout.Dais.Center
 	local radius = Layout.Dais.Radius + 1.8
-	local plan = {
-		{ Angle = 164, Height = 26, Design = Architecture.Flags.Nato },
-		{ Angle = 141, Height = 29, Design = Architecture.Flags.WestGermany },
-		{ Angle = 118, Height = 33, Design = Architecture.Flags.Base },
-		{ Angle = 62, Height = 33, Design = Architecture.Flags.Base },
-		{ Angle = 39, Height = 29, Design = Architecture.Flags.Regiment },
-		{ Angle = 16, Height = 26, Design = Architecture.Flags.Pact },
-	}
-	for _, f in plan do
+	for _, f in Plaza.FlagPlan do
 		local a = math.rad(f.Angle)
 		local pos = center + Vector3.new(math.cos(a) * radius, Ground.PavedTop, -math.sin(a) * radius)
 		-- flags stream toward the east (prevailing wind)
-		Architecture.flagpole(folder, CFrame.new(pos), f.Height, f.Design, 8)
+		Architecture.flagpole(folder, CFrame.new(pos), f.Height, Architecture.Flags[f.Design], 8)
 	end
 end
 
+-- Board 12.4 x 7 studs with a screen on each face. The posts stand
+-- outside the board (the screen text runs almost edge to edge) and hold it
+-- with short brackets; a thin bezel frames each face.
 local function statusPylon(parent: Instance, x: number)
 	local model = Kit.model(parent, "StatusPylon")
 	local c = Layout.Dais.Center
 	local base = CFrame.new(x, Ground.PavedTop, c.Z)
+	local half, bottom, top = 6.2, 5.6, 12.6
 	Kit.box(
 		model,
 		base,
-		Vector3.new(-6.6, 0, -1.2),
-		Vector3.new(6.6, 0.6, 1.2),
+		Vector3.new(-7.7, 0, -1.3),
+		Vector3.new(7.7, 0.6, 1.3),
 		W.ConcreteDark,
 		Enum.Material.Concrete,
 		{ Name = "Footing" }
 	)
-	for _, px in { -5.4, 5.4 } do
+	for _, side in { -1, 1 } do
 		Kit.box(
 			model,
 			base,
-			Vector3.new(px - 0.45, 0.6, -0.45),
-			Vector3.new(px + 0.45, 12.8, 0.45),
+			Vector3.new(side * (half + 0.15), 0.6, -0.4),
+			Vector3.new(side * (half + 0.95), top, 0.4),
 			W.SteelDark,
 			Enum.Material.Metal,
 			{ Name = "Post" }
 		)
+		for _, y in { bottom + 0.6, top - 0.6 } do
+			Kit.box(
+				model,
+				base,
+				Vector3.new(side * (half - 0.1), y - 0.15, -0.15),
+				Vector3.new(side * (half + 0.2), y + 0.15, 0.15),
+				W.Steel,
+				Enum.Material.Metal,
+				{ Name = "Bracket" }
+			)
+		end
 	end
 	local board = Kit.box(
 		model,
 		base,
-		Vector3.new(-6.2, 5.6, -0.35),
-		Vector3.new(6.2, 12.6, 0.35),
+		Vector3.new(-half, bottom, -0.35),
+		Vector3.new(half, top, 0.35),
 		W.Screen,
 		Enum.Material.SmoothPlastic,
 		{
@@ -177,11 +193,25 @@ local function statusPylon(parent: Instance, x: number)
 		}
 	)
 	board:SetAttribute("StatusBoard", true)
+	-- bezel strips, 0.25 wide, in front of the screen margins
+	for _, face in { -1, 1 } do
+		local z0, z1 = face * 0.35, face * 0.43
+		for _, strip in
+			{
+				{ Vector3.new(-half, top - 0.25, z0), Vector3.new(half, top, z1) },
+				{ Vector3.new(-half, bottom, z0), Vector3.new(half, bottom + 0.25, z1) },
+				{ Vector3.new(-half, bottom + 0.25, z0), Vector3.new(-half + 0.25, top - 0.25, z1) },
+				{ Vector3.new(half - 0.25, bottom + 0.25, z0), Vector3.new(half, top - 0.25, z1) },
+			}
+		do
+			Kit.box(model, base, strip[1], strip[2], W.SteelDark, Enum.Material.Metal, { Name = "Bezel" })
+		end
+	end
 	Kit.box(
 		model,
 		base,
-		Vector3.new(-6.6, 12.6, -0.6),
-		Vector3.new(6.6, 13.1, 0.6),
+		Vector3.new(-(half + 1.1), top, -0.6),
+		Vector3.new(half + 1.1, top + 0.5, 0.6),
 		W.SteelDark,
 		Enum.Material.Metal,
 		{ Name = "Cap" }

@@ -1,7 +1,8 @@
 --!strict
--- Garage backend: unit collection (unlocks), paint shop (camo purchases
--- and per-unit schemes), and the preview models clients use for the
--- registry / paint shop viewports (ReplicatedStorage.LobbyUnitPreviews).
+-- Garage backend for the showroom: unit collection (unlocks), paint schemes
+-- (purchases and per-unit schemes), vehicle views (count as inspections for
+-- missions and event challenges), and the models clients show on the
+-- turntable and in previews (ReplicatedStorage.LobbyUnitPreviews).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -16,11 +17,14 @@ local InteractionService = require(script.Parent.InteractionService)
 local GarageService = {}
 
 GarageService.PreviewFolderName = "LobbyUnitPreviews"
--- Purchases must be made at a garage station (registry, paint shop or a
--- showcase vehicle), matching the physical lobby.
+-- Purchases must be made at a garage station (the showroom console or an
+-- inspectable vehicle), matching the physical lobby.
 GarageService.RequireProximity = true
+-- A vehicle counts as inspected again only after this many seconds.
+GarageService.ViewCooldown = 2
 
-local GARAGE_KINDS = { "UnitCollection", "UnitCosmetics", "UnitInspect" }
+local GARAGE_KINDS = { "Showroom", "UnitInspect" }
+local lastView: { [Player]: { [string]: number } } = {}
 local PREVIEW_SIZE = Vector3.new(14, 11, 22)
 
 function GarageService.buildPreviews(): Folder
@@ -81,6 +85,28 @@ ACTIONS.collection = function(player)
 	return reply(player, { ok = true })
 end
 
+-- The player looked at a vehicle in the showroom: counts as inspecting it.
+ACTIONS.view = function(player, request)
+	local unitId = request.unit
+	if type(unitId) ~= "string" or not Units.List[unitId] then
+		return { ok = false, error = "UNKNOWN_UNIT" }
+	end
+	if not atGarage(player) then
+		return { ok = false, error = "NOT_AT_GARAGE" }
+	end
+	local perPlayer = lastView[player]
+	if not perPlayer then
+		perPlayer = {}
+		lastView[player] = perPlayer
+	end
+	local now = os.clock()
+	if not perPlayer[unitId] or now - perPlayer[unitId] >= GarageService.ViewCooldown then
+		perPlayer[unitId] = now
+		InteractionService.record(player, "UnitInspect", unitId)
+	end
+	return { ok = true }
+end
+
 ACTIONS.unlock = function(player, request)
 	local unitId = request.unit
 	if type(unitId) ~= "string" or not Units.List[unitId] then
@@ -117,7 +143,7 @@ ACTIONS.buyCamo = function(player, request)
 		return success
 	end)
 	if ok then
-		notify(player, "PAINT SCHEME PURCHASED", Units.Camos.List[camoId].Name, "APPLY IT AT THE PAINT SHOP")
+		notify(player, "PAINT SCHEME PURCHASED", Units.Camos.List[camoId].Name, "APPLY IT IN THE SHOWROOM")
 		return reply(player, { ok = true })
 	end
 	return reply(player, { ok = false, error = err })
@@ -145,6 +171,9 @@ end
 
 function GarageService.start()
 	GarageService.buildPreviews()
+	game:GetService("Players").PlayerRemoving:Connect(function(player)
+		lastView[player] = nil
+	end)
 	Net.fn("Garage").OnServerInvoke = function(player: Player, request: any)
 		if type(request) ~= "table" or type(request.action) ~= "string" then
 			return { ok = false, error = "BAD_REQUEST" }

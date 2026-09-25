@@ -1,7 +1,7 @@
 --!strict
 -- Map Room: battle map dossiers (top-down preview, size, terrain,
 -- recommended players, landmark) with "set as preferred map" for
--- matchmaking, and the Fulda Gap theatre overview with every map marked.
+-- matchmaking, and the Fulda Gap theater overview with every map marked.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -23,29 +23,29 @@ type Shell = WindowManager.Shell
 local Panel = {} :: WindowManager.Panel
 Panel.title = "MAP ROOM"
 Panel.code = "G2 INTELLIGENCE // BATTLE MAP DOSSIERS"
-Panel.tabs = { "MAPS", "THEATRE" }
+Panel.tabs = { "MAPS", "THEATER" }
 Panel.size = Vector2.new(940, 580)
 
 local refs: {
 	selected: string,
 	mapsPage: Frame?,
-	theatrePage: Frame?,
+	theaterPage: Frame?,
 	rows: { [string]: TextButton },
 	preview: Frame?,
 	details: Frame?,
-	theatreCanvas: Frame?,
-	theatreRows: { [string]: TextButton },
+	theaterCanvas: Frame?,
+	theaterRows: { [string]: TextButton },
 	status: TextLabel?,
 } =
 	{
 		selected = Maps.Featured,
 		mapsPage = nil,
-		theatrePage = nil,
+		theaterPage = nil,
 		rows = {},
 		preview = nil,
 		details = nil,
-		theatreCanvas = nil,
-		theatreRows = {},
+		theaterCanvas = nil,
+		theaterRows = {},
 		status = nil,
 	}
 
@@ -73,7 +73,7 @@ local function setPreferred(id: string)
 		if status then
 			status.Text = if id == ""
 				then "PREFERRED MAP CLEARED"
-				else "PREFERRED MAP SET — MATCHMAKING WILL FAVOUR IT WHEN POSSIBLE"
+				else "PREFERRED MAP SET — MATCHMAKING WILL FAVOR IT WHEN POSSIBLE"
 			status.TextColor3 = UI.Success
 		end
 	else
@@ -147,14 +147,14 @@ renderDetails = function()
 	button.LayoutOrder = 9
 end
 
-local function renderTheatre()
-	local canvasHolder = refs.theatreCanvas
+local function renderTheater()
+	local canvasHolder = refs.theaterCanvas
 	if not canvasHolder then
 		return
 	end
 	Kit.clear(canvasHolder)
 	MapDraw.theater(canvasHolder, 540, 400, { highlight = refs.selected })
-	for id, row in refs.theatreRows do
+	for id, row in refs.theaterRows do
 		Kit.setSelected(row, id == refs.selected)
 	end
 end
@@ -162,7 +162,7 @@ end
 local function select(id: string)
 	refs.selected = id
 	renderDetails()
-	renderTheatre()
+	renderTheater()
 end
 
 local function buildMapsPage(page: Frame)
@@ -247,14 +247,14 @@ local function buildMapsPage(page: Frame)
 	})
 end
 
-local function buildTheatrePage(page: Frame)
+local function buildTheaterPage(page: Frame)
 	local canvasHolder = Kit.frame(page, {
-		Name = "Theatre",
+		Name = "Theater",
 		BackgroundColor3 = UI.Backdrop,
 		Size = UDim2.fromOffset(540, 400),
 	})
 	Kit.stroke(canvasHolder, UI.Border)
-	refs.theatreCanvas = canvasHolder
+	refs.theaterCanvas = canvasHolder
 	local side = Kit.box(page, {
 		Name = "Side",
 		Position = UDim2.fromOffset(560, 0),
@@ -286,7 +286,7 @@ local function buildTheatrePage(page: Frame)
 			Sound.play("Map")
 			select(id)
 		end)
-		row.Name = "TheatreMap_" .. id
+		row.Name = "TheaterMap_" .. id
 		Kit.text(row, {
 			Name = "Label",
 			Text = ("%d  %s"):format(i, info.Name),
@@ -295,7 +295,7 @@ local function buildTheatrePage(page: Frame)
 			Position = UDim2.fromOffset(8, 0),
 			Size = UDim2.new(1, -8, 1, 0),
 		})
-		refs.theatreRows[id] = row
+		refs.theaterRows[id] = row
 	end
 	local open = Kit.button(side, "OPEN DOSSIER", "primary", function()
 		local shell = WindowManager.shell("Maps")
@@ -310,11 +310,11 @@ end
 
 function Panel.build(shell: Shell)
 	local mapsPage = Kit.box(shell.body, { Name = "MapsPage" })
-	local theatrePage = Kit.box(shell.body, { Name = "TheatrePage", Visible = false })
+	local theaterPage = Kit.box(shell.body, { Name = "TheaterPage", Visible = false })
 	refs.mapsPage = mapsPage
-	refs.theatrePage = theatrePage
+	refs.theaterPage = theaterPage
 	buildMapsPage(mapsPage)
-	buildTheatrePage(theatrePage)
+	buildTheaterPage(theaterPage)
 	shell.footer.Text = "PREFERRED MAP IS USED WHEN MATCHMAKING PICKS A BATTLEFIELD · WALK AWAY TO CLOSE"
 	State.changed:Connect(function(key)
 		if key == "profile" and WindowManager.current() == "Maps" then
@@ -324,13 +324,13 @@ function Panel.build(shell: Shell)
 end
 
 function Panel.selectTab(_shell: Shell, tab: string)
-	local mapsPage, theatrePage = refs.mapsPage, refs.theatrePage
-	if mapsPage and theatrePage then
+	local mapsPage, theaterPage = refs.mapsPage, refs.theaterPage
+	if mapsPage and theaterPage then
 		mapsPage.Visible = tab == "MAPS"
-		theatrePage.Visible = tab == "THEATRE"
+		theaterPage.Visible = tab == "THEATER"
 	end
-	if tab == "THEATRE" then
-		renderTheatre()
+	if tab == "THEATER" then
+		renderTheater()
 	else
 		renderDetails()
 	end
@@ -341,7 +341,7 @@ function Panel.open(shell: Shell, context: WindowManager.Context)
 	if id and Maps.List[id] then
 		refs.selected = id
 	end
-	shell.title.Text = if context.kind == "TheaterMap" then "THEATRE MAP — FULDA GAP" else "MAP ROOM"
+	shell.title.Text = if context.kind == "TheaterMap" then "THEATER MAP — FULDA GAP" else "MAP ROOM"
 	local status = refs.status
 	if status then
 		status.Text = ""

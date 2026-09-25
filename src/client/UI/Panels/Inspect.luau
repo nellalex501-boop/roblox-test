@@ -34,7 +34,7 @@ local refs: { unitId: string, sheet: Frame?, status: TextLabel?, units: { [strin
 }
 
 local STAT_LABELS =
-	{ { "Armor", "ARMOUR" }, { "Firepower", "FIREPOWER" }, { "Mobility", "MOBILITY" }, { "Cost", "COST" } }
+	{ { "Armor", "ARMOR" }, { "Firepower", "FIREPOWER" }, { "Mobility", "MOBILITY" }, { "Cost", "COST" } }
 
 local render: () -> ()
 

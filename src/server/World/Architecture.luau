@@ -99,7 +99,10 @@ function Architecture.windowColumn(
 	Architecture.windowRow(parent, rotated, a, b, 0, 1, y0, y1, count, windowWidth, style)
 end
 
--- Flat roof slab with a parapet around its edge.
+-- Flat roof slab with a parapet around its edge. The slab stops 0.06 short
+-- of the parapet's outer faces, and the parapet and coping pieces butt at
+-- the corners instead of overlapping, so no two faces share a plane (no
+-- shimmering band along the roofline).
 function Architecture.flatRoof(
 	parent: Instance,
 	frame: CFrame,
@@ -112,29 +115,42 @@ function Architecture.flatRoof(
 	color: Color3,
 	capColor: Color3?
 )
-	Kit.box(parent, frame, Vector3.new(x0, y, z0), Vector3.new(x1, y + 1, z1), W.ConcreteDark, Enum.Material.Concrete, {
-		Name = "RoofSlab",
-	})
+	local inset = 0.06
+	Kit.box(
+		parent,
+		frame,
+		Vector3.new(x0 + inset, y, z0 + inset),
+		Vector3.new(x1 - inset, y + 1, z1 - inset),
+		W.ConcreteDark,
+		Enum.Material.Concrete,
+		{
+			Name = "RoofSlab",
+		}
+	)
 	local t = 0.8
 	local top = y + 1 + parapet
 	local cap = capColor or W.ConcreteLight
-	local walls = {
-		{ Vector3.new(x0, y, z1 - t), Vector3.new(x1, top, z1) },
-		{ Vector3.new(x0, y, z0), Vector3.new(x1, top, z0 + t) },
-		{ Vector3.new(x0, y, z0), Vector3.new(x0 + t, top, z1) },
-		{ Vector3.new(x1 - t, y, z0), Vector3.new(x1, top, z1) },
+	local o = 0.15 -- coping overhang
+	-- the two long runs (along X) take the corners; the Z runs fit between
+	type Run = { a: Vector3, b: Vector3, long: boolean }
+	local walls: { Run } = {
+		{ a = Vector3.new(x0, y, z1 - t), b = Vector3.new(x1, top, z1), long = true },
+		{ a = Vector3.new(x0, y, z0), b = Vector3.new(x1, top, z0 + t), long = true },
+		{ a = Vector3.new(x0, y, z0 + t), b = Vector3.new(x0 + t, top, z1 - t), long = false },
+		{ a = Vector3.new(x1 - t, y, z0 + t), b = Vector3.new(x1, top, z1 - t), long = false },
 	}
 	for _, w in walls do
-		Kit.box(parent, frame, w[1], w[2], color, Enum.Material.Concrete, { Name = "Parapet" })
-		Kit.box(
-			parent,
-			frame,
-			Vector3.new(w[1].X - 0.15, top, w[1].Z - 0.15),
-			Vector3.new(w[2].X + 0.15, top + 0.3, w[2].Z + 0.15),
-			cap,
-			Enum.Material.Concrete,
-			{ Name = "Coping", Shadow = false }
-		)
+		local a, b, long = w.a, w.b, w.long
+		Kit.box(parent, frame, a, b, color, Enum.Material.Concrete, { Name = "Parapet" })
+		local capA, capB
+		if long then
+			capA = Vector3.new(a.X - o, top, a.Z - o)
+			capB = Vector3.new(b.X + o, top + 0.3, b.Z + o)
+		else
+			capA = Vector3.new(a.X - o, top, a.Z + o)
+			capB = Vector3.new(b.X + o, top + 0.3, b.Z - o)
+		end
+		Kit.box(parent, frame, capA, capB, cap, Enum.Material.Concrete, { Name = "Coping", Shadow = false })
 	end
 end
 
@@ -401,14 +417,89 @@ function Architecture.guiArrow(parent: Instance, position: UDim2, size: number, 
 	return holder
 end
 
-export type FlagDesign = {
-	Field: Color3,
-	Draw: ((Frame) -> ())?,
+-- A flag design paints onto a canvas in "flag units": x runs 0..Aspect
+-- (width / height), y runs 0..1 from the top edge.
+export type FlagPainter = {
+	Aspect: number,
+	rect: (x0: number, y0: number, x1: number, y1: number, color: Color3) -> (),
+	bar: (cx: number, cy: number, length: number, thickness: number, degrees: number, color: Color3) -> (),
+	ring: (cx: number, cy: number, radius: number, thickness: number, color: Color3) -> (),
+	text: (cx: number, cy: number, w: number, h: number, text: string, color: Color3) -> (),
 }
 
+export type FlagDesign = {
+	Name: string?,
+	Field: Color3,
+	Draw: ((FlagPainter) -> ())?,
+}
+
+Architecture.FlagSegments = 8
+Architecture.FlagPixelsPerStud = 20
+
+-- Painter for one segment face: shapes outside the segment's slice of the
+-- canvas are skipped, so each segment only carries what it shows.
+local function painter(canvas: Frame, aspect: number, pixelHeight: number, x0: number, x1: number): FlagPainter
+	local function visible(a: number, b: number): boolean
+		return b > x0 - 0.001 and a < x1 + 0.001
+	end
+	local function frame(cx: number, cy: number, w: number, h: number, color: Color3): Frame
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = color
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale(cx / aspect, cy)
+		f.Size = UDim2.fromScale(w / aspect, h)
+		f.Parent = canvas
+		return f
+	end
+	local p: FlagPainter = {
+		Aspect = aspect,
+		rect = function(ax, ay, bx, by, color)
+			if visible(ax, bx) then
+				frame((ax + bx) / 2, (ay + by) / 2, bx - ax, by - ay, color)
+			end
+		end,
+		bar = function(cx, cy, length, thickness, degrees, color)
+			local reach = length / 2 + thickness
+			if visible(cx - reach, cx + reach) then
+				local f = frame(cx, cy, thickness, length, color)
+				f.Rotation = degrees
+			end
+		end,
+		ring = function(cx, cy, radius, thickness, color)
+			if visible(cx - radius, cx + radius) then
+				local f = frame(cx, cy, radius * 2, radius * 2, color)
+				f.BackgroundTransparency = 1
+				local corner = Instance.new("UICorner")
+				corner.CornerRadius = UDim.new(0.5, 0)
+				corner.Parent = f
+				local stroke = Instance.new("UIStroke")
+				stroke.Color = color
+				stroke.Thickness = math.max(1, thickness * pixelHeight)
+				stroke.Parent = f
+			end
+		end,
+		text = function(cx, cy, w, h, text, color)
+			if visible(cx - w / 2, cx + w / 2) then
+				local label = Instance.new("TextLabel")
+				label.BackgroundTransparency = 1
+				label.AnchorPoint = Vector2.new(0.5, 0.5)
+				label.Position = UDim2.fromScale(cx / aspect, cy)
+				label.Size = UDim2.fromScale(w / aspect, h)
+				label.Text = text
+				label.TextColor3 = color
+				label.TextScaled = true
+				label.FontFace = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold)
+				label.Parent = canvas
+			end
+		end,
+	}
+	return p
+end
+
 -- Flag split into vertical segments (so the client can animate a wave).
--- The design is drawn once per segment inside a full-width canvas offset
--- by the segment position, so the segments line up seamlessly.
+-- Each segment face shows its slice of a full-width canvas, so the design
+-- runs seamlessly across the segments.
 function Architecture.flag(
 	parent: Instance,
 	poleTop: CFrame,
@@ -418,9 +509,10 @@ function Architecture.flag(
 	segments: number?
 )
 	local model = Kit.model(parent, "Flag")
-	local n = segments or 3
+	local n = segments or Architecture.FlagSegments
 	local segW = width / n
-	local pixelsPerStud = 16
+	local pixelsPerStud = Architecture.FlagPixelsPerStud
+	local aspect = width / height
 	for i = 0, n - 1 do
 		local cf = poleTop * CFrame.new(segW * (i + 0.5), -height / 2, 0)
 		local seg = Kit.part(model, Vector3.new(segW, height, 0.12), cf, design.Field, Enum.Material.Fabric, {
@@ -429,7 +521,7 @@ function Architecture.flag(
 		})
 		seg:SetAttribute("FlagIndex", i + 1)
 		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
-			local gui = Kit.surface(seg, face, pixelsPerStud, 1, 420)
+			local gui = Kit.surface(seg, face, pixelsPerStud, 1, 600)
 			local canvas = Instance.new("Frame")
 			canvas.Name = "Canvas"
 			canvas.BorderSizePixel = 0
@@ -440,11 +532,12 @@ function Architecture.flag(
 			canvas.Position = UDim2.new(-index, 0, 0, 0)
 			canvas.Parent = gui
 			if design.Draw then
-				design.Draw(canvas)
+				local x0 = index / n * aspect
+				design.Draw(painter(canvas, aspect, height * pixelsPerStud, x0, x0 + aspect / n))
 			end
 		end
 	end
-	Kit.anchor(model.PrimaryPart or (model:FindFirstChild("FlagSegment1") :: BasePart), "Flag")
+	Kit.anchor(model:FindFirstChild("FlagSegment1") :: BasePart, "Flag")
 	return model
 end
 
@@ -461,122 +554,150 @@ function Architecture.flagpole(parent: Instance, base: CFrame, height: number, d
 		Enum.Material.Metal,
 		{ Name = "Finial", Decor = true }
 	)
+	-- halyard cleat and rope
+	Kit.box(
+		model,
+		base,
+		Vector3.new(0.2, 3.2, -0.09),
+		Vector3.new(0.36, 3.8, 0.09),
+		W.SteelDark,
+		Enum.Material.Metal,
+		{ Name = "Cleat", Decor = true }
+	)
+	Kit.box(
+		model,
+		base,
+		Vector3.new(0.26, 3.5, -0.03),
+		Vector3.new(0.3, height + 0.2, 0.03),
+		W.OffWhite,
+		Enum.Material.Fabric,
+		{ Name = "Halyard", Decor = true }
+	)
 	local w = flagWidth or 7
-	Architecture.flag(model, base * CFrame.new(0.25, height + 0.2, 0), w, w * 0.62, design)
+	Architecture.flag(model, base * CFrame.new(0.32, height + 0.2, 0), w, w * 0.62, design)
+	model:SetAttribute("FlagDesign", design.Name)
 	return model
 end
 
--- Flag designs drawn with GUI frames (no image assets needed).
-local function band(canvas: Frame, y: number, h: number, color: Color3)
-	local f = Instance.new("Frame")
-	f.BorderSizePixel = 0
-	f.BackgroundColor3 = color
-	f.Position = UDim2.fromScale(0, y)
-	f.Size = UDim2.fromScale(1, h)
-	f.Parent = canvas
-end
-
-local function square(parent: Instance, scale: number): Frame
-	local f = Instance.new("Frame")
-	f.BackgroundTransparency = 1
-	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.Position = UDim2.fromScale(0.5, 0.5)
-	f.Size = UDim2.fromScale(scale, scale)
-	f.Parent = parent
-	local aspect = Instance.new("UIAspectRatioConstraint")
-	aspect.AspectRatio = 1
-	aspect.Parent = f
-	return f
-end
-
-local function diamond(canvas: Frame, color: Color3, scale: number)
-	local d = square(canvas, scale)
-	d.Rotation = 45
-	d.BackgroundTransparency = 0
-	d.BackgroundColor3 = color
-	d.BorderSizePixel = 0
-end
-
--- NATO-style compass: ring with four points.
-local function compass(canvas: Frame, color: Color3)
-	local ring = square(canvas, 0.42)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = ring
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = color
-	stroke.Thickness = 5
-	stroke.Parent = ring
-	for _, angle in { 0, 90 } do
-		local holder = square(canvas, 0.95)
-		holder.Rotation = angle
-		local bar = Instance.new("Frame")
-		bar.BorderSizePixel = 0
-		bar.BackgroundColor3 = color
-		bar.AnchorPoint = Vector2.new(0.5, 0.5)
-		bar.Position = UDim2.fromScale(0.5, 0.5)
-		bar.Size = UDim2.fromScale(0.07, 0.9)
-		bar.Parent = holder
+-- Four-pointed star as stepped halves (light / shade), points on the axes.
+local function compassStar(
+	p: FlagPainter,
+	cx: number,
+	cy: number,
+	reach: number,
+	halfWidth: number,
+	light: Color3,
+	shade: Color3
+)
+	local steps = 9
+	for _, dir in { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } } do
+		local dx, dy = dir[1], dir[2]
+		-- perpendicular, clockwise from the point direction
+		local px, py = -dy, dx
+		for k = 0, steps - 1 do
+			local r0, r1 = reach * k / steps, reach * (k + 1) / steps
+			local hw = halfWidth * (1 - (k + 0.5) / steps)
+			for _, half in { 1, -1 } do
+				local ax, ay = cx + dx * r0, cy + dy * r0
+				local bx, by = cx + dx * r1 + px * hw * half, cy + dy * r1 + py * hw * half
+				p.rect(
+					math.min(ax, bx),
+					math.min(ay, by),
+					math.max(ax, bx),
+					math.max(ay, by),
+					if half == 1 then light else shade
+				)
+			end
+		end
 	end
 end
 
--- Military chevron (two bars meeting in a point).
-local function chevron(canvas: Frame, color: Color3)
-	for _, sign in { -1, 1 } do
-		local holder = square(canvas, 0.7)
-		local bar = Instance.new("Frame")
-		bar.BorderSizePixel = 0
-		bar.BackgroundColor3 = color
-		bar.AnchorPoint = Vector2.new(0.5, 0.5)
-		bar.Position = UDim2.fromScale(0.5 + sign * 0.2, 0.5)
-		bar.Size = UDim2.fromScale(0.5, 0.16)
-		bar.Rotation = sign * 35
-		bar.Parent = holder
-	end
+-- Sabre as a blade with a guard near the hilt (the bar starts vertical,
+-- `degrees` turns it clockwise).
+local function sabre(p: FlagPainter, cx: number, cy: number, length: number, degrees: number, color: Color3)
+	p.bar(cx, cy, length, 0.035, degrees, color)
+	local a = math.rad(degrees)
+	local hx, hy = cx - math.sin(a) * length * 0.36, cy + math.cos(a) * length * 0.36
+	p.bar(hx, hy, 0.11, 0.03, degrees + 90, color)
 end
+
+local WHITE = Color3.fromRGB(232, 230, 222)
 
 Architecture.Flags = {
+	-- NATO: white compass rose in a ring, with lines toward the edges
 	Nato = {
-		Field = Color3.fromRGB(34, 52, 94),
-		Draw = function(canvas: Frame)
-			compass(canvas, Color3.fromRGB(230, 230, 222))
+		Field = Color3.fromRGB(24, 46, 96),
+		Draw = function(p: FlagPainter)
+			local cx, cy = p.Aspect / 2, 0.5
+			p.ring(cx, cy, 0.19, 0.028, WHITE)
+			local t = 0.014
+			p.rect(cx - t, 0.05, cx + t, cy - 0.37, WHITE)
+			p.rect(cx - t, cy + 0.37, cx + t, 0.95, WHITE)
+			p.rect(0.07, cy - t, cx - 0.37, cy + t, WHITE)
+			p.rect(cx + 0.37, cy - t, p.Aspect - 0.07, cy + t, WHITE)
+			compassStar(p, cx, cy, 0.33, 0.075, WHITE, Color3.fromRGB(128, 146, 186))
 		end,
 	},
-	Pact = {
-		Field = Color3.fromRGB(138, 42, 36),
-		Draw = function(canvas: Frame)
-			band(canvas, 0.08, 0.07, Color3.fromRGB(214, 170, 72))
-			band(canvas, 0.85, 0.07, Color3.fromRGB(214, 170, 72))
-			diamond(canvas, Color3.fromRGB(214, 170, 72), 0.3)
-		end,
-	},
+	-- West Germany (federal flag, 1949-1990)
 	WestGermany = {
 		Field = Color3.fromRGB(24, 24, 24),
-		Draw = function(canvas: Frame)
-			band(canvas, 1 / 3, 1 / 3, Color3.fromRGB(190, 40, 36))
-			band(canvas, 2 / 3, 1 / 3, Color3.fromRGB(230, 186, 40))
+		Draw = function(p: FlagPainter)
+			p.rect(0, 1 / 3, p.Aspect, 2 / 3, Color3.fromRGB(190, 40, 36))
+			p.rect(0, 2 / 3, p.Aspect, 1, Color3.fromRGB(230, 186, 40))
 		end,
 	},
+	-- United States: 13 stripes, blue canton with 50 stars (6/5 rows)
+	Usa = {
+		Field = Color3.fromRGB(168, 40, 44),
+		Draw = function(p: FlagPainter)
+			local stripe = 1 / 13
+			for i = 1, 12, 2 do
+				p.rect(0, i * stripe, p.Aspect, (i + 1) * stripe, WHITE)
+			end
+			local cantonW, cantonH = p.Aspect * 0.4, stripe * 7
+			p.rect(0, 0, cantonW, cantonH, Color3.fromRGB(34, 44, 92))
+			local star = 0.028
+			for row = 0, 8 do
+				local count = if row % 2 == 0 then 6 else 5
+				for col = 0, count - 1 do
+					local fx = if row % 2 == 0 then (col + 0.5) / 6 else (col + 1) / 6
+					local x = fx * cantonW
+					local y = (row + 1) / 10 * cantonH
+					p.rect(x - star / 2, y - star / 2, x + star / 2, y + star / 2, WHITE)
+				end
+			end
+		end,
+	},
+	-- 11th Armored Cavalry Regiment ("Blackhorse", on the Fulda Gap line
+	-- 1972-1994): cavalry colours scarlet over white, crossed sabres, 11
+	Cavalry = {
+		Field = WHITE,
+		Draw = function(p: FlagPainter)
+			local red = Color3.fromRGB(170, 34, 38)
+			local cx = p.Aspect / 2
+			p.rect(0, 0, p.Aspect, 0.5, red)
+			sabre(p, cx, 0.3, 0.5, 34, WHITE)
+			sabre(p, cx, 0.3, 0.5, -34, WHITE)
+			p.text(cx, 0.13, 0.16, 0.14, "11", WHITE)
+			p.text(cx, 0.75, p.Aspect * 0.8, 0.2, "BLACKHORSE", red)
+		end,
+	},
+	-- Camp garrison flag (fictional): olive, pale bands and a chevron
 	Base = {
 		Field = Color3.fromRGB(78, 88, 54),
-		Draw = function(canvas: Frame)
-			band(canvas, 0.1, 0.07, Color3.fromRGB(206, 196, 160))
-			band(canvas, 0.83, 0.07, Color3.fromRGB(206, 196, 160))
-			chevron(canvas, Color3.fromRGB(206, 196, 160))
+		Draw = function(p: FlagPainter)
+			local pale = Color3.fromRGB(206, 196, 160)
+			local cx = p.Aspect / 2
+			p.rect(0, 0.1, p.Aspect, 0.17, pale)
+			p.rect(0, 0.83, p.Aspect, 0.9, pale)
+			p.bar(cx - 0.12, 0.5, 0.36, 0.09, 55, pale)
+			p.bar(cx + 0.12, 0.5, 0.36, 0.09, -55, pale)
 		end,
 	},
-	Regiment = {
-		Field = Color3.fromRGB(122, 44, 40),
-		Draw = function(canvas: Frame)
-			band(canvas, 0.4, 0.2, Color3.fromRGB(206, 196, 160))
-		end,
-	},
-	Signals = {
-		Field = Color3.fromRGB(58, 84, 110),
-		Draw = function(canvas: Frame)
-			band(canvas, 0, 0.5, Color3.fromRGB(196, 184, 150))
-		end,
-	},
-}
+} :: { [string]: FlagDesign }
+
+for name, design in Architecture.Flags do
+	design.Name = name
+end
 
 return Architecture

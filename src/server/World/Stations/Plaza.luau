@@ -221,7 +221,7 @@ local function theaterMap(parent: Instance)
 	local _, titleGui = plate(-titleOffset, 6.2, "TitlePlate")
 	Kit.text(titleGui, {
 		Name = "Title",
-		Text = "THEATRE OF OPERATIONS",
+		Text = "THEATER OF OPERATIONS",
 		Color = Theme.UI.Accent,
 		Position = UDim2.fromScale(0.04, 0.05),
 		Size = UDim2.fromScale(0.92, 0.5),
@@ -315,7 +315,7 @@ function Plaza.build(root: Instance)
 	theaterMap(stations)
 	local tableBody = plaza:FindFirstChild("TableBody", true)
 	if tableBody and tableBody:IsA("BasePart") then
-		Interactions.attach(tableBody, "TheaterMap", "THEATER", "THEATRE MAP")
+		Interactions.attach(tableBody, "TheaterMap", "THEATER", "THEATER MAP")
 	end
 	pylonScreens(plaza)
 end

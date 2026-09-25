@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Effects = require(script.Parent.Effects)
 local Kit = require(script.Parent.Kit)
 local Nature = require(script.Parent.Nature)
+local Props = require(script.Parent.Props)
 local Theme = require(ReplicatedStorage.Lobby.Config.Theme)
 
 local W = Theme.World
@@ -122,7 +123,21 @@ EventDressings.Winter = function(dressing: Model, frame: CFrame)
 	)
 	Kit.anchor(flameBase, "Fire", "FireBarrel")
 	Effects.fire(flameBase, 2.4)
-	-- tyre tracks through the snow toward the display pad
+	-- burn barrel by the supply crates (winter only; the summer courtyard
+	-- has no open fire)
+	local barrelCf = frame * CFrame.new(-13, 0.2, -18)
+	Props.oilDrum(dressing, barrelCf, W.SteelDark)
+	local barrelFlame = Kit.part(
+		dressing,
+		Vector3.new(1.4, 0.4, 1.4),
+		barrelCf * CFrame.new(0, 2.95, 0),
+		W.Charcoal,
+		nil,
+		{ Name = "FlameBase", Transparency = 1, Decor = true }
+	)
+	Kit.anchor(barrelFlame, "Fire", "FireBarrel")
+	Effects.fire(barrelFlame, 2)
+	-- tire tracks through the snow toward the display pad
 	for i = 0, 5 do
 		for _, dx in { -2.6, 2.6 } do
 			Kit.part(

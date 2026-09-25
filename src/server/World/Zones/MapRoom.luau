@@ -44,7 +44,7 @@ function MapRoom.build(parent: Instance): (Model, CFrame)
 		frame,
 		Vector3.new(-halfW + t, floorY, -depth + t),
 		Vector3.new(halfW - t, floorY + 0.05, -t),
-		Color3.fromRGB(92, 78, 60),
+		Color3.fromRGB(136, 112, 82),
 		Enum.Material.WoodPlanks,
 		{
 			Name = "Parquet",

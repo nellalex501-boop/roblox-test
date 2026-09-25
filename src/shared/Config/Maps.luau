@@ -170,7 +170,7 @@ Maps.List = {
 		Players = "8",
 		Recommended = { "4V4" },
 		Landmark = "BLAST FURNACES",
-		Description = "A sprawling steelworks with rail spurs, slag heaps and a canal. Close-quarters armour hell.",
+		Description = "A sprawling steelworks with rail spurs, slag heaps and a canal. Close-quarters armor hell.",
 		TheaterPos = { 0.28, 0.66 },
 		Preview = {
 			Roads = {
@@ -305,7 +305,7 @@ Maps.List = {
 -- Regional theatre map shown on the central plaza table.
 -- Coordinates are normalised to the table (0,0 = north-west).
 Maps.Theater = {
-	Title = "THEATRE OF OPERATIONS — FULDA SECTOR",
+	Title = "THEATER OF OPERATIONS — FULDA SECTOR",
 	Border = { { 0.66, 0 }, { 0.62, 0.2 }, { 0.7, 0.42 }, { 0.64, 0.64 }, { 0.72, 0.86 }, { 0.68, 1 } },
 	Rivers = {
 		{ { 0.3, 1 }, { 0.36, 0.72 }, { 0.5, 0.48 }, { 0.52, 0.26 }, { 0.6, 0 } },

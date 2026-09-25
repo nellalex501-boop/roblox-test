@@ -52,7 +52,7 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 		frame,
 		Vector3.new(-halfW + t, floorY, -depth + t),
 		Vector3.new(halfW - t, floorY + 0.05, -t),
-		Color3.fromRGB(96, 70, 52),
+		Color3.fromRGB(138, 102, 72),
 		Enum.Material.WoodPlanks,
 		{
 			Name = "Floorboards",
@@ -329,8 +329,8 @@ function CommandHQ.build(parent: Instance): (Model, CFrame)
 	)
 	plate.Name = "BuildingNumber"
 
-	Architecture.flagpole(model, frame * CFrame.new(-15, 0.3, 3.2), 20, Architecture.Flags.WestGermany)
-	Architecture.flagpole(model, frame * CFrame.new(15, 0.3, 3.2), 20, Architecture.Flags.Regiment)
+	Architecture.flagpole(model, frame * CFrame.new(-15, 0.3, 3.2), 20, Architecture.Flags.Usa)
+	Architecture.flagpole(model, frame * CFrame.new(15, 0.3, 3.2), 20, Architecture.Flags.Cavalry)
 
 	return model, frame
 end

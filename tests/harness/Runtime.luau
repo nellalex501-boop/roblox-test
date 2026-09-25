@@ -14,6 +14,7 @@ local serde = require("@lune/serde")
 
 local Scheduler = require("./Scheduler")
 local Signal = require("./Signal")
+local Geometry = require("../lib/Geometry")
 
 local Instance = roblox.Instance
 local Vector3 = roblox.Vector3
@@ -578,7 +579,10 @@ local EVENTS = {
 		"LastInputTypeChanged",
 		"TouchStarted",
 		"TouchEnded",
+		"TouchMoved",
 		"TouchTap",
+		"TouchPinch",
+		"TouchPan",
 		"JumpRequest",
 		"WindowFocused",
 		"WindowFocusReleased",
@@ -1165,13 +1169,51 @@ local function install()
 	end)
 	roblox.implementMethod("ProximityPrompt", "InputHoldEnd", function() end)
 
-	-- Workspace
-	roblox.implementMethod("Workspace", "Raycast", function()
-		return nil
-	end)
-	roblox.implementMethod("WorldRoot", "Raycast", function()
-		return nil
-	end)
+	-- Workspace: ray casts against the real part geometry (blocks, wedges,
+	-- cylinders, balls) through a cached grid, honouring CanQuery and the
+	-- RaycastParams filter.
+	local function raycast(self, origin, direction, params)
+		local rt = runtimeOf(self)
+		local world = rt.workspace
+		local count = #world:GetDescendants()
+		if not rt.rayGrid or rt.rayGridCount ~= count then
+			rt.rayGrid = Geometry.index(world, function(part)
+				return part.CanQuery
+			end, 8)
+			rt.rayGridCount = count
+		end
+		local filter = params and params.FilterDescendantsInstances or {}
+		local include = params and params.FilterType == Enum.RaycastFilterType.Include
+		local function listed(part)
+			for _, root in filter do
+				if part == root or part:IsDescendantOf(root) then
+					return true
+				end
+			end
+			return false
+		end
+		local part, t = Geometry.raycast(rt.rayGrid, origin, direction, function(candidate)
+			if not candidate:IsDescendantOf(world) or not candidate.CanQuery then
+				return true
+			end
+			if include then
+				return not listed(candidate)
+			end
+			return listed(candidate)
+		end)
+		if not part then
+			return nil
+		end
+		return {
+			Instance = part,
+			Position = origin + direction * t,
+			Distance = direction.Magnitude * t,
+			Normal = -direction.Unit,
+			Material = part.Material,
+		}
+	end
+	roblox.implementMethod("Workspace", "Raycast", raycast)
+	roblox.implementMethod("WorldRoot", "Raycast", raycast)
 	roblox.implementMethod("Workspace", "GetServerTimeNow", function(self)
 		return runtimeOf(self).epoch + Scheduler.now
 	end)
@@ -1251,6 +1293,13 @@ function Runtime.new(options)
 	-- Input capability properties are reflection-DB properties without a
 	-- default in Lune (implementProperty cannot override them), so they
 	-- are assigned directly on the service.
+	-- Lighting.ClockTime has no default in Lune; the engine always has one
+	local lighting = game:GetService("Lighting")
+	if not pcall(function()
+		return lighting.ClockTime
+	end) then
+		lighting.ClockTime = 14
+	end
 	local uis = game:GetService("UserInputService")
 	for _, name in { "TouchEnabled", "KeyboardEnabled", "MouseEnabled", "GamepadEnabled" } do
 		pcall(function()
@@ -1397,6 +1446,17 @@ function Runtime:_makeGlobals()
 	}, { __index = roblox.Instance })
 	g.TweenInfo = TweenInfo
 	g.Random = Random
+	g.RaycastParams = {
+		new = function()
+			return {
+				FilterType = Enum.RaycastFilterType.Exclude,
+				FilterDescendantsInstances = {},
+				IgnoreWater = false,
+				RespectCanCollide = false,
+				CollisionGroup = "Default",
+			}
+		end,
+	}
 	g.DateTime = {
 		now = function()
 			local ts = rt.epoch + Scheduler.now
